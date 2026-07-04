@@ -52,6 +52,8 @@ Open http://localhost:3000.
 
 Log in at `/login` using the seeded parent credentials from `.env`.
 
+For Neon, put the pooled connection string in `DATABASE_URL` and the direct connection string in `DIRECT_URL`.
+
 ## One-command setup
 
 After copying `.env.example` to `.env`, this command installs dependencies, starts Postgres, runs the first migration, and seeds the database:
@@ -106,6 +108,7 @@ Recommended production setup:
 
 ```bash
 DATABASE_URL=...
+DIRECT_URL=...
 AUTH_SECRET=...
 ADMIN_EMAIL=parent@studytracker.local
 ADMIN_PASSWORD=...
@@ -133,6 +136,14 @@ npm run start
 ```
 
 For local Docker-based hosting, the app uses PostgreSQL on host port `5433`.
+
+## Local vs production envs
+
+- Keep local settings in `.env`.
+- Keep shared defaults in `.env.example`.
+- Set production secrets in your hosting provider's environment variables, not in the repo.
+- Use the same variable names in both places so Prisma and Next.js read them consistently.
+- If you use Neon, `DATABASE_URL` should usually be the pooled URL and `DIRECT_URL` should be the direct URL.
 
 ## Architecture
 
