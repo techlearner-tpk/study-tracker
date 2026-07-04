@@ -1,0 +1,21 @@
+services:
+  postgres:
+    image: postgres:16-alpine
+    container_name: study-tracker-postgres
+    restart: unless-stopped
+    environment:
+      POSTGRES_DB: study_tracker
+      POSTGRES_USER: study_tracker
+      POSTGRES_PASSWORD: study_tracker
+    ports:
+      - "5433:5432"
+    volumes:
+      - study_tracker_pg:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U study_tracker -d study_tracker"]
+      interval: 5s
+      timeout: 5s
+      retries: 10
+
+volumes:
+  study_tracker_pg:

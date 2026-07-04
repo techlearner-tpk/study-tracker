@@ -1,0 +1,58 @@
+import Link from "next/link";
+import { CalendarDays, LineChart, UsersRound } from "lucide-react";
+import { getChildren } from "@/features/dashboard/queries";
+import { logoutAction } from "@/features/auth/actions";
+import { requireCurrentUser } from "@/lib/auth";
+import { cn } from "@/lib/utils";
+import { Button } from "@/components/ui/button";
+
+export async function AppShell({ children }: { children: React.ReactNode }) {
+  const user = await requireCurrentUser();
+  const childrenList = await getChildren(user.id);
+
+  return (
+    <div className="min-h-screen bg-stone-50 text-stone-900">
+      <aside className="fixed inset-y-0 left-0 hidden w-64 border-r border-stone-200 bg-white px-5 py-6 lg:block">
+        <Link href="/" className="block text-xl font-semibold tracking-tight text-emerald-950">
+          Study Tracker
+        </Link>
+        <div className="mt-4 rounded-md bg-stone-50 p-3 text-sm text-stone-600">
+          <p className="font-medium text-stone-900">{user.name}</p>
+          <p>{user.email}</p>
+        </div>
+        <nav className="mt-8 grid gap-2 text-sm">
+          <NavLink href="/" icon={<UsersRound size={17} />}>Children</NavLink>
+          <NavLink href="/calendar" icon={<CalendarDays size={17} />}>Calendar</NavLink>
+          <NavLink href="/reports" icon={<LineChart size={17} />}>Reports</NavLink>
+        </nav>
+        <div className="mt-8">
+          <p className="text-xs font-semibold uppercase tracking-wide text-stone-500">Children</p>
+          <div className="mt-3 grid gap-2">
+            {childrenList.map((child) => (
+              <Link key={child.id} href={`/children/${child.id}`} className="rounded-md px-3 py-2 text-sm text-stone-700 hover:bg-stone-100">
+                {child.name}
+              </Link>
+            ))}
+          </div>
+        </div>
+        <form action={logoutAction} className="mt-8">
+          <Button type="submit" variant="secondary" className="w-full">
+            Sign out
+          </Button>
+        </form>
+      </aside>
+      <main className="lg:pl-64">
+        <div className="mx-auto max-w-7xl px-4 py-6 sm:px-6 lg:px-8">{children}</div>
+      </main>
+    </div>
+  );
+}
+
+function NavLink({ href, icon, children }: { href: string; icon: React.ReactNode; children: React.ReactNode }) {
+  return (
+    <Link href={href} className={cn("flex items-center gap-2 rounded-md px-3 py-2 text-stone-700 hover:bg-stone-100")}>
+      {icon}
+      {children}
+    </Link>
+  );
+}

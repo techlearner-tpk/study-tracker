@@ -1,36 +1,158 @@
-This is a [Next.js](https://nextjs.org) project bootstrapped with [`create-next-app`](https://nextjs.org/docs/app/api-reference/cli/create-next-app).
+# Study Tracker
 
-## Getting Started
+Study Tracker is a local MVP for parents to record, visualize, and motivate learning progress.
 
-First, run the development server:
+It is not an LMS. It tracks the rhythm:
+
+```txt
+Learn -> Practice -> Revise -> Master
+```
+
+## Stack
+
+- Next.js App Router
+- React + TypeScript
+- Tailwind CSS
+- Prisma ORM
+- PostgreSQL via Docker Compose on host port `5433`
+- Zod validation
+- Server Actions
+- Recharts
+- Lucide icons
+- Vitest
+
+## Setup
+
+1. Copy the environment file.
+
+```bash
+cp .env.example .env
+```
+
+2. Start PostgreSQL.
+
+```bash
+docker-compose up -d
+```
+
+3. Create the database schema and seed data.
+
+```bash
+npm run db:migrate
+npm run db:seed
+```
+
+4. Start the app.
 
 ```bash
 npm run dev
-# or
-yarn dev
-# or
-pnpm dev
-# or
-bun dev
 ```
 
-Open [http://localhost:3000](http://localhost:3000) with your browser to see the result.
+Open http://localhost:3000.
 
-You can start editing the page by modifying `app/page.tsx`. The page auto-updates as you edit the file.
+Log in at `/login` using the seeded parent credentials from `.env`.
 
-This project uses [`next/font`](https://nextjs.org/docs/app/building-your-application/optimizing/fonts) to automatically optimize and load [Geist](https://vercel.com/font), a new font family for Vercel.
+## One-command setup
 
-## Learn More
+After copying `.env.example` to `.env`, this command installs dependencies, starts Postgres, runs the first migration, and seeds the database:
 
-To learn more about Next.js, take a look at the following resources:
+```bash
+npm run setup
+```
 
-- [Next.js Documentation](https://nextjs.org/docs) - learn about Next.js features and API.
-- [Learn Next.js](https://nextjs.org/learn) - an interactive Next.js tutorial.
+## Test and quality commands
 
-You can check out [the Next.js GitHub repository](https://github.com/vercel/next.js) - your feedback and contributions are welcome!
+```bash
+npm run test
+npm run lint
+npm run build
+```
 
-## Deploy on Vercel
+## Seed data
 
-The easiest way to deploy your Next.js app is to use the [Vercel Platform](https://vercel.com/new?utm_medium=default-template&filter=next.js&utm_source=create-next-app&utm_campaign=create-next-app-readme) from the creators of Next.js.
+The seed creates two children:
 
-Check out our [Next.js deployment documentation](https://nextjs.org/docs/app/building-your-application/deploying) for more details.
+- Tisha
+- Aarav
+
+Each child receives the default subjects:
+
+- Marathi
+- Hindi
+- English
+- Mathematics
+- Science
+- Social Science
+
+Tisha also receives a sample Mathematics chapter and topics so the dashboard has realistic starter data.
+
+## Product notes
+
+- Authentication is enabled with a single parent account.
+- Authorization is parent-only, and every protected page and mutation checks the signed-in parent before reading or writing data.
+- Deleting a child cascades to subjects, chapters, topics, goals, and all sessions.
+- The delete flow requires typing the child name as a confirmation warning.
+- Topic confidence is optional.
+- Study session duration is editable even though start and end times are also recorded.
+- Outcome goals support topic-level and chapter-level targets.
+
+## Hosting
+
+Recommended production setup:
+
+1. Push the repo to GitHub.
+2. Create a hosted PostgreSQL database on Neon, Supabase, Render, or similar.
+3. Set these environment variables in your host:
+
+```bash
+DATABASE_URL=...
+AUTH_SECRET=...
+ADMIN_EMAIL=parent@studytracker.local
+ADMIN_PASSWORD=...
+ADMIN_NAME=Parent
+```
+
+4. Run migrations against the hosted database:
+
+```bash
+npm run db:migrate
+```
+
+5. Seed the parent account and starter data once:
+
+```bash
+npm run db:seed
+```
+
+6. Deploy the app to Vercel or another Node-friendly host.
+7. If the host needs explicit build/start commands, use:
+
+```bash
+npm run build
+npm run start
+```
+
+For local Docker-based hosting, the app uses PostgreSQL on host port `5433`.
+
+## Architecture
+
+```txt
+src/app
+src/features
+  children
+  subjects
+  chapters
+  topics
+  study-sessions
+  practice-sessions
+  revision-sessions
+  goals
+  dashboard
+  calendar
+  reports
+src/components
+src/lib
+prisma
+```
+
+Server Actions live inside feature folders. Shared analytics and validation logic live in `src/lib`.

@@ -1,0 +1,179 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+enum LearningStatus {
+  NOT_STARTED
+  IN_PROGRESS
+  COMPLETED
+}
+
+enum HabitGoalMetric {
+  STUDY_MINUTES_DAILY
+  STUDY_DAYS_WEEKLY
+  STUDY_SESSION_DAILY
+}
+
+enum OutcomeGoalType {
+  COMPLETE_TOPIC
+  COMPLETE_CHAPTER
+}
+
+enum UserRole {
+  PARENT
+}
+
+model User {
+  id           String   @id @default(cuid())
+  email        String   @unique
+  name         String
+  passwordHash String
+  role         UserRole @default(PARENT)
+  createdAt    DateTime @default(now())
+  updatedAt    DateTime @updatedAt
+  children     Child[]
+}
+
+model Child {
+  id           String        @id @default(cuid())
+  userId       String?
+  name         String
+  className    String
+  school       String?
+  themeColor   String?
+  createdAt    DateTime      @default(now())
+  updatedAt    DateTime      @updatedAt
+  user         User?         @relation(fields: [userId], references: [id], onDelete: Cascade)
+  subjects     Subject[]
+  habitGoals   HabitGoal[]
+  outcomeGoals OutcomeGoal[]
+
+  @@index([name])
+  @@index([userId])
+}
+
+model Subject {
+  id        String    @id @default(cuid())
+  childId   String
+  name      String
+  color     String?
+  createdAt DateTime  @default(now())
+  updatedAt DateTime  @updatedAt
+  child     Child     @relation(fields: [childId], references: [id], onDelete: Cascade)
+  chapters  Chapter[]
+
+  @@unique([childId, name])
+  @@index([childId])
+}
+
+model Chapter {
+  id        String   @id @default(cuid())
+  subjectId String
+  name      String
+  order     Int      @default(0)
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+  subject   Subject  @relation(fields: [subjectId], references: [id], onDelete: Cascade)
+  topics    Topic[]
+
+  @@index([subjectId])
+}
+
+model Topic {
+  id               String             @id @default(cuid())
+  chapterId        String
+  name             String
+  description      String?
+  status           LearningStatus     @default(NOT_STARTED)
+  confidenceRating Int?
+  notes            String?
+  createdAt        DateTime           @default(now())
+  updatedAt        DateTime           @updatedAt
+  completedAt      DateTime?
+  chapter          Chapter            @relation(fields: [chapterId], references: [id], onDelete: Cascade)
+  studySessions    StudySession[]
+  practiceSessions PracticeSession[]
+  revisionSessions RevisionSession[]
+
+  @@index([chapterId])
+  @@index([status])
+}
+
+model StudySession {
+  id              String   @id @default(cuid())
+  topicId         String
+  startTime       DateTime
+  endTime         DateTime
+  durationMinutes Int
+  notes           String?
+  createdAt       DateTime @default(now())
+  topic           Topic    @relation(fields: [topicId], references: [id], onDelete: Cascade)
+
+  @@index([topicId])
+  @@index([startTime])
+}
+
+model PracticeSession {
+  id                 String   @id @default(cuid())
+  topicId            String
+  date               DateTime
+  durationMinutes    Int
+  questionsAttempted Int?
+  questionsCorrect   Int?
+  notes              String?
+  createdAt          DateTime @default(now())
+  topic              Topic    @relation(fields: [topicId], references: [id], onDelete: Cascade)
+
+  @@index([topicId])
+  @@index([date])
+}
+
+model RevisionSession {
+  id              String   @id @default(cuid())
+  topicId         String
+  date            DateTime
+  durationMinutes Int
+  notes           String?
+  createdAt       DateTime @default(now())
+  topic           Topic    @relation(fields: [topicId], references: [id], onDelete: Cascade)
+
+  @@index([topicId])
+  @@index([date])
+}
+
+model HabitGoal {
+  id          String          @id @default(cuid())
+  childId     String
+  title       String
+  metric      HabitGoalMetric
+  targetValue Int
+  isActive    Boolean         @default(true)
+  createdAt   DateTime        @default(now())
+  updatedAt   DateTime        @updatedAt
+  child       Child           @relation(fields: [childId], references: [id], onDelete: Cascade)
+
+  @@index([childId])
+}
+
+model OutcomeGoal {
+  id             String          @id @default(cuid())
+  childId        String
+  title          String
+  type           OutcomeGoalType
+  targetTopicId  String?
+  targetChapterId String?
+  dueDate        DateTime?
+  isActive       Boolean         @default(true)
+  createdAt      DateTime        @default(now())
+  updatedAt      DateTime        @updatedAt
+  child          Child           @relation(fields: [childId], references: [id], onDelete: Cascade)
+
+  @@index([childId])
+  @@index([targetTopicId])
+  @@index([targetChapterId])
+}
