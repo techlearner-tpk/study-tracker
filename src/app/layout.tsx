@@ -1,9 +1,11 @@
+import { ClerkProvider } from "@clerk/nextjs";
 import type { Metadata } from "next";
 import "./globals.css";
 
 export const metadata: Metadata = {
   title: "Study Tracker",
-  description: "A calm local tracker for study progress, practice, revision, and goals.",
+  description:
+    "A calm local tracker for study progress, practice, revision, and goals.",
 };
 
 export default function RootLayout({
@@ -12,11 +14,10 @@ export default function RootLayout({
   children: React.ReactNode;
 }>) {
   return (
-    <html
-      lang="en"
-      className="h-full antialiased"
-    >
-      <body className="min-h-full">{children}</body>
+    <html lang="en" className="h-full antialiased">
+      <body className="min-h-full">
+        <ClerkProvider>{children}</ClerkProvider>
+      </body>
     </html>
   );
 }

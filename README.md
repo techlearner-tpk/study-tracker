@@ -15,6 +15,7 @@ Learn -> Practice -> Revise -> Master
 - Tailwind CSS
 - Prisma ORM
 - PostgreSQL via Docker Compose on host port `5433`
+- Clerk authentication with email verification
 - Zod validation
 - Server Actions
 - Recharts
@@ -50,9 +51,12 @@ npm run dev
 
 Open http://localhost:3000.
 
-Log in at `/login` using the seeded parent credentials from `.env`.
+Log in at `/login`, then continue to `/sign-in` or `/sign-up`.
 
 For Neon, put the pooled connection string in `DATABASE_URL` and the direct connection string in `DIRECT_URL`.
+Set `APP_URL` to your local URL in development and your deployed URL in production.
+Set the Clerk sign-in and sign-up URLs to `/sign-in` and `/sign-up` locally, then update them to your production domain after deploy.
+Use the Clerk publishable and secret keys for the matching environment.
 
 ## One-command setup
 
@@ -90,8 +94,10 @@ Tisha also receives a sample Mathematics chapter and topics so the dashboard has
 
 ## Product notes
 
-- Authentication is enabled with a single parent account.
-- Authorization is parent-only, and every protected page and mutation checks the signed-in parent before reading or writing data.
+- Authentication is handled by Clerk for both parent and kid accounts.
+- Sign-in and sign-up are handled by Clerk, with email verification required before the app syncs the account locally.
+- Kid access is parent-onboarded by email. When the kid signs up with Clerk, the app links that Clerk user to the existing child record.
+- Authorization is parent-only for the management surfaces, while kids are routed to their own read-only portal.
 - Deleting a child cascades to subjects, chapters, topics, goals, and all sessions.
 - The delete flow requires typing the child name as a confirmation warning.
 - Topic confidence is optional.
@@ -109,10 +115,15 @@ Recommended production setup:
 ```bash
 DATABASE_URL=...
 DIRECT_URL=...
-AUTH_SECRET=...
+APP_URL=https://your-domain.com
 ADMIN_EMAIL=parent@studytracker.local
-ADMIN_PASSWORD=...
 ADMIN_NAME=Parent
+NEXT_PUBLIC_CLERK_SIGN_IN_URL=/sign-in
+NEXT_PUBLIC_CLERK_SIGN_UP_URL=/sign-up
+NEXT_PUBLIC_CLERK_SIGN_IN_FALLBACK_REDIRECT_URL=/
+NEXT_PUBLIC_CLERK_SIGN_UP_FALLBACK_REDIRECT_URL=/
+NEXT_PUBLIC_CLERK_PUBLISHABLE_KEY=...
+CLERK_SECRET_KEY=...
 ```
 
 4. Run migrations against the hosted database:
@@ -128,7 +139,8 @@ npm run db:seed
 ```
 
 6. Deploy the app to Vercel or another Node-friendly host.
-7. If the host needs explicit build/start commands, use:
+7. In the Clerk dashboard, set the production instance URLs and ensure email verification is enabled for sign-up.
+8. If the host needs explicit build/start commands, use:
 
 ```bash
 npm run build
@@ -144,6 +156,7 @@ For local Docker-based hosting, the app uses PostgreSQL on host port `5433`.
 - Set production secrets in your hosting provider's environment variables, not in the repo.
 - Use the same variable names in both places so Prisma and Next.js read them consistently.
 - If you use Neon, `DATABASE_URL` should usually be the pooled URL and `DIRECT_URL` should be the direct URL.
+- Keep Clerk development keys in local `.env` and production keys in your host environment. The sign-in and sign-up URLs should match the deployed routes in both places.
 
 ## Architecture
 

@@ -8,6 +8,7 @@ export const childSchema = z.object({
   className: z.string().trim().min(1, "Class is required"),
   school: optionalText,
   themeColor: optionalText,
+  kidEmail: z.string().trim().email("Enter a valid kid email").optional().or(z.literal("").transform(() => undefined)),
 });
 
 export const subjectSchema = z.object({
@@ -111,4 +112,3 @@ export const deleteChildSchema = z.object({
 export function formDataToObject(formData: FormData) {
   return Object.fromEntries(formData.entries());
 }
-

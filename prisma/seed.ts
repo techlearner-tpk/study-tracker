@@ -1,5 +1,4 @@
 import { PrismaClient, LearningStatus, HabitGoalMetric, OutcomeGoalType } from "@prisma/client";
-import { hashPassword } from "../src/lib/security";
 
 const prisma = new PrismaClient();
 
@@ -13,8 +12,8 @@ const defaultSubjects = [
 ];
 
 const parentEmail = process.env.ADMIN_EMAIL ?? "parent@studytracker.local";
-const parentPassword = process.env.ADMIN_PASSWORD ?? "studytracker123";
 const parentName = process.env.ADMIN_NAME ?? "Parent";
+const placeholderPasswordHash = "clerk-managed-account";
 
 const children = [
   { name: "Tisha", className: "8", school: "Sanskriti Public School", themeColor: "#4f766a" },
@@ -26,14 +25,15 @@ async function seedParent() {
     where: { email: parentEmail },
     update: {
       name: parentName,
-      passwordHash: hashPassword(parentPassword),
       role: "PARENT",
+      verifiedAt: new Date(),
     },
     create: {
       email: parentEmail,
       name: parentName,
-      passwordHash: hashPassword(parentPassword),
       role: "PARENT",
+      verifiedAt: new Date(),
+      passwordHash: placeholderPasswordHash,
     },
   });
 }
@@ -84,6 +84,24 @@ async function seedChild(userId: string, child: (typeof children)[number]) {
       });
     }
   }
+
+  await prisma.user.upsert({
+    where: { email: `${child.name.toLowerCase()}@studytracker.local` },
+    update: {
+      name: child.name,
+      role: "KID",
+      childId: created.id,
+      verifiedAt: new Date(),
+    },
+    create: {
+      email: `${child.name.toLowerCase()}@studytracker.local`,
+      name: child.name,
+      role: "KID",
+      childId: created.id,
+      verifiedAt: new Date(),
+      passwordHash: placeholderPasswordHash,
+    },
+  });
 
   await prisma.habitGoal.createMany({
     data: [

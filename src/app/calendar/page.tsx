@@ -3,13 +3,13 @@ import { AppShell } from "@/components/layout/app-shell";
 import { Card, CardTitle } from "@/components/ui/card";
 import { calendarActivity } from "@/lib/analytics";
 import { getChildren, getChildDashboard } from "@/features/dashboard/queries";
-import { requireCurrentUser } from "@/lib/auth";
+import { requireParentUser } from "@/lib/auth";
 import { cn, minutesLabel } from "@/lib/utils";
 
 export const dynamic = "force-dynamic";
 
 export default async function CalendarPage() {
-  const user = await requireCurrentUser();
+  const user = await requireParentUser();
   const children = await getChildren(user.id);
   const dashboards = (await Promise.all(children.map((child) => getChildDashboard(user.id, child.id)))).filter(Boolean);
   const sessions = dashboards.flatMap((dashboard) => dashboard!.analytics.sessions);

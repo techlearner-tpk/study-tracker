@@ -1,10 +1,9 @@
 import Link from "next/link";
 import { CalendarDays, LineChart, UsersRound } from "lucide-react";
+import { UserButton } from "@clerk/nextjs";
 import { getChildren } from "@/features/dashboard/queries";
-import { logoutAction } from "@/features/auth/actions";
 import { requireCurrentUser } from "@/lib/auth";
 import { cn } from "@/lib/utils";
-import { Button } from "@/components/ui/button";
 
 export async function AppShell({ children }: { children: React.ReactNode }) {
   const user = await requireCurrentUser();
@@ -17,8 +16,13 @@ export async function AppShell({ children }: { children: React.ReactNode }) {
           Study Tracker
         </Link>
         <div className="mt-4 rounded-md bg-stone-50 p-3 text-sm text-stone-600">
-          <p className="font-medium text-stone-900">{user.name}</p>
-          <p>{user.email}</p>
+          <div className="flex items-start gap-3">
+            <UserButton />
+            <div className="min-w-0">
+              <p className="truncate font-medium text-stone-900">{user.name}</p>
+              <p className="truncate">{user.email}</p>
+            </div>
+          </div>
         </div>
         <nav className="mt-8 grid gap-2 text-sm">
           <NavLink href="/" icon={<UsersRound size={17} />}>Children</NavLink>
@@ -35,11 +39,6 @@ export async function AppShell({ children }: { children: React.ReactNode }) {
             ))}
           </div>
         </div>
-        <form action={logoutAction} className="mt-8">
-          <Button type="submit" variant="secondary" className="w-full">
-            Sign out
-          </Button>
-        </form>
       </aside>
       <main className="lg:pl-64">
         <div className="mx-auto max-w-7xl px-4 py-6 sm:px-6 lg:px-8">{children}</div>

@@ -27,6 +27,13 @@ enum OutcomeGoalType {
 
 enum UserRole {
   PARENT
+  KID
+}
+
+enum MagicLinkType {
+  SIGNUP
+  SIGNIN
+  INVITE
 }
 
 model User {
@@ -34,10 +41,14 @@ model User {
   email        String   @unique
   name         String
   passwordHash String
+  clerkUserId  String?  @unique
   role         UserRole @default(PARENT)
+  verifiedAt   DateTime?
+  childId      String?  @unique
   createdAt    DateTime @default(now())
   updatedAt    DateTime @updatedAt
-  children     Child[]
+  child        Child?    @relation("KidChild", fields: [childId], references: [id], onDelete: Cascade)
+  children     Child[]   @relation("ParentChildren")
 }
 
 model Child {
@@ -49,13 +60,31 @@ model Child {
   themeColor   String?
   createdAt    DateTime      @default(now())
   updatedAt    DateTime      @updatedAt
-  user         User?         @relation(fields: [userId], references: [id], onDelete: Cascade)
+  user         User?         @relation("ParentChildren", fields: [userId], references: [id], onDelete: Cascade)
+  kidUser      User?         @relation("KidChild")
+  magicLinkTokens MagicLinkToken[]
   subjects     Subject[]
   habitGoals   HabitGoal[]
   outcomeGoals OutcomeGoal[]
 
   @@index([name])
   @@index([userId])
+}
+
+model MagicLinkToken {
+  id         String         @id @default(cuid())
+  email      String
+  type       MagicLinkType
+  tokenHash  String         @unique
+  childId    String?
+  expiresAt  DateTime
+  usedAt     DateTime?
+  createdAt  DateTime       @default(now())
+  child      Child?         @relation(fields: [childId], references: [id], onDelete: Cascade)
+
+  @@index([email])
+  @@index([childId])
+  @@index([expiresAt])
 }
 
 model Subject {

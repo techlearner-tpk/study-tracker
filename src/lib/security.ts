@@ -3,7 +3,8 @@ import { createHmac, randomBytes, scryptSync, timingSafeEqual } from "node:crypt
 export type SessionClaims = {
   userId: string;
   email: string;
-  role: "PARENT";
+  role: "PARENT" | "KID";
+  childId?: string | null;
   expiresAt: number;
 };
 
@@ -11,7 +12,8 @@ export type CurrentUser = {
   id: string;
   email: string;
   name: string;
-  role: "PARENT";
+  role: "PARENT" | "KID";
+  childId?: string | null;
 };
 
 const SESSION_TTL_MS = 1000 * 60 * 60 * 24 * 30;
@@ -37,6 +39,7 @@ export function createSessionToken(user: CurrentUser) {
     userId: user.id,
     email: user.email,
     role: user.role,
+    childId: user.childId ?? null,
     expiresAt: Date.now() + SESSION_TTL_MS,
   };
   const payload = base64UrlEncode(JSON.stringify(session));
@@ -77,4 +80,3 @@ export function verifyPassword(password: string, hash: string) {
   if (derivedBytes.length !== storedBytes.length) return false;
   return timingSafeEqual(derivedBytes, storedBytes);
 }
-

@@ -10,14 +10,14 @@ import { ChapterForm } from "@/features/chapters/components";
 import { getChildDashboard } from "@/features/dashboard/queries";
 import { SubjectForm } from "@/features/subjects/components";
 import { TopicForm, TopicRow } from "@/features/topics/components";
-import { requireCurrentUser } from "@/lib/auth";
+import { requireParentUser } from "@/lib/auth";
 import { calculateTopicProgress } from "@/lib/analytics";
 import { minutesLabel } from "@/lib/utils";
 
 export const dynamic = "force-dynamic";
 
 export default async function ChildPage({ params }: { params: Promise<{ childId: string }> }) {
-  const user = await requireCurrentUser();
+  const user = await requireParentUser();
   const { childId } = await params;
   const dashboard = await getChildDashboard(user.id, childId);
   if (!dashboard) notFound();

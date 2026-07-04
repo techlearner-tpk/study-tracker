@@ -1,9 +1,15 @@
 import { Button } from "@/components/ui/button";
 import { Card, CardTitle } from "@/components/ui/card";
 import { Input, Label } from "@/components/ui/form";
-import { createChild, deleteChild, updateChild } from "./actions";
+import { createChild, deleteChild, inviteKid, updateChild } from "./actions";
 
-export function ChildForm({ child }: { child?: { id: string; name: string; className: string; school: string | null; themeColor: string | null } }) {
+export function ChildForm({
+  child,
+  showKidEmail = false,
+}: {
+  child?: { id: string; name: string; className: string; school: string | null; themeColor: string | null };
+  showKidEmail?: boolean;
+}) {
   return (
     <form action={child ? updateChild : createChild} className="grid gap-3 sm:grid-cols-2">
       {child ? <input type="hidden" name="id" value={child.id} /> : null}
@@ -11,6 +17,9 @@ export function ChildForm({ child }: { child?: { id: string; name: string; class
       <Label>Class<Input name="className" defaultValue={child?.className} required /></Label>
       <Label>School<Input name="school" defaultValue={child?.school ?? ""} /></Label>
       <Label>Theme color<Input name="themeColor" type="color" defaultValue={child?.themeColor ?? "#4f766a"} /></Label>
+      {showKidEmail ? (
+        <Label className="sm:col-span-2">Kid email<Input name="kidEmail" type="email" placeholder="kid@example.com" /></Label>
+      ) : null}
       <div className="sm:col-span-2">
         <Button type="submit">{child ? "Save child" : "Add child"}</Button>
       </div>
@@ -33,3 +42,19 @@ export function DangerDeleteChild({ child }: { child: { id: string; name: string
   );
 }
 
+export function KidInviteForm() {
+  return (
+    <Card>
+      <CardTitle>Invite kid by email</CardTitle>
+      <form action={inviteKid} className="mt-4 grid gap-3 sm:grid-cols-[1fr_auto]">
+        <Label className="sm:col-span-1">
+          Kid email
+          <Input name="kidEmail" type="email" placeholder="kid@example.com" required />
+        </Label>
+        <Button type="submit" className="self-end">
+          Send invite
+        </Button>
+      </form>
+    </Card>
+  );
+}
