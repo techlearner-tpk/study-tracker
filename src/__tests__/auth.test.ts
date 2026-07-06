@@ -8,6 +8,9 @@ const mocks = vi.hoisted(() => ({
     create: vi.fn(),
     update: vi.fn(),
   },
+  prismaChild: {
+    findUnique: vi.fn(),
+  },
 }));
 
 vi.mock("@clerk/nextjs/server", () => ({
@@ -18,6 +21,7 @@ vi.mock("@clerk/nextjs/server", () => ({
 vi.mock("@/lib/prisma", () => ({
   prisma: {
     user: mocks.prismaUser,
+    child: mocks.prismaChild,
   },
 }));
 
@@ -87,6 +91,10 @@ describe("auth", () => {
       lastName: "",
       fullName: "Aarav",
       primaryEmailAddressId: "email_1",
+      publicMetadata: {
+        role: "KID",
+        childId: "child_1",
+      },
       emailAddresses: [
         {
           id: "email_1",
@@ -102,16 +110,17 @@ describe("auth", () => {
       name: "Aarav",
       role: "KID",
       childId: "child_1",
-      clerkUserId: null,
-      verifiedAt: null,
-    };
-
-    mocks.prismaUser.findUnique.mockResolvedValueOnce(null).mockResolvedValueOnce(kidRecord);
-    mocks.prismaUser.update.mockResolvedValue({
-      ...kidRecord,
       clerkUserId: "clerk_kid_1",
       verifiedAt: new Date("2026-07-04T00:00:00.000Z"),
+    };
+
+    mocks.prismaUser.findUnique.mockResolvedValueOnce(null).mockResolvedValueOnce({
+      ...kidRecord,
+      clerkUserId: null,
+      verifiedAt: null,
     });
+    mocks.prismaChild.findUnique.mockResolvedValue({ id: "child_1" });
+    mocks.prismaUser.update.mockResolvedValue(kidRecord);
 
     await expect(getCurrentUser()).resolves.toMatchObject({
       id: "user_kid_1",
@@ -128,6 +137,60 @@ describe("auth", () => {
           clerkUserId: "clerk_kid_1",
           email: "kid@example.com",
           name: "Aarav",
+        }),
+      }),
+    );
+  });
+
+  it("keeps the invited kid link when Clerk metadata is missing", async () => {
+    mocks.authMock.mockResolvedValue({ userId: "clerk_kid_2" });
+    mocks.currentUserMock.mockResolvedValue({
+      id: "clerk_kid_2",
+      firstName: "Sara",
+      lastName: "",
+      fullName: "Sara",
+      primaryEmailAddressId: "email_1",
+      emailAddresses: [
+        {
+          id: "email_1",
+          emailAddress: "sara@example.com",
+          verification: { status: "verified" },
+        },
+      ],
+    });
+
+    const placeholder = {
+      id: "user_kid_2",
+      email: "sara@example.com",
+      name: "sara",
+      role: "KID",
+      childId: "child_2",
+      clerkUserId: null,
+      verifiedAt: null,
+    };
+
+    mocks.prismaUser.findUnique.mockResolvedValueOnce(null).mockResolvedValueOnce(placeholder);
+    mocks.prismaChild.findUnique.mockResolvedValue({ id: "child_2" });
+    mocks.prismaUser.update.mockResolvedValue({
+      ...placeholder,
+      name: "Sara",
+      clerkUserId: "clerk_kid_2",
+      verifiedAt: new Date("2026-07-04T00:00:00.000Z"),
+    });
+
+    await expect(getCurrentUser()).resolves.toMatchObject({
+      id: "user_kid_2",
+      email: "sara@example.com",
+      name: "Sara",
+      role: "KID",
+      childId: "child_2",
+    });
+
+    expect(mocks.prismaUser.update).toHaveBeenCalledWith(
+      expect.objectContaining({
+        data: expect.objectContaining({
+          role: "KID",
+          childId: "child_2",
         }),
       }),
     );

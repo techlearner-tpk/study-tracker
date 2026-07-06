@@ -2,9 +2,10 @@ import { notFound } from "next/navigation";
 import { prisma } from "@/lib/prisma";
 
 export async function getOwnedChild(userId: string, childId: string) {
-  const child = await prisma.child.findFirst({
-    where: { id: childId, userId },
+  const child = await prisma.child.findUnique({
+    where: { id: childId },
     include: {
+      kidUser: true,
       subjects: {
         include: {
           chapters: {
@@ -25,7 +26,7 @@ export async function getOwnedChild(userId: string, childId: string) {
     },
   });
 
-  if (!child) notFound();
+  if (!child || (child.userId !== userId && child.kidUser?.id !== userId)) notFound();
   return child;
 }
 
@@ -50,16 +51,17 @@ export async function getOwnedChapter(userId: string, chapterId: string) {
 }
 
 export async function getOwnedTopic(userId: string, topicId: string) {
-  const topic = await prisma.topic.findFirst({
-    where: { id: topicId, chapter: { subject: { child: { userId } } } },
+  const topic = await prisma.topic.findUnique({
+    where: { id: topicId },
     include: {
-      chapter: { include: { subject: { include: { child: true } } } },
+      chapter: { include: { subject: { include: { child: { include: { kidUser: true } } } } } },
       studySessions: { orderBy: { startTime: "desc" } },
       practiceSessions: { orderBy: { date: "desc" } },
       revisionSessions: { orderBy: { date: "desc" } },
     },
   });
 
-  if (!topic) notFound();
+  const child = topic?.chapter.subject.child;
+  if (!topic || !child || (child.userId !== userId && child.kidUser?.id !== userId)) notFound();
   return topic;
 }

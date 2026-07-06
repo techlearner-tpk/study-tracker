@@ -38,8 +38,11 @@ async function getVerifiedClerkProfile() {
 
   const email = primaryEmail.emailAddress.toLowerCase();
   const name = displayNameFromClerkUser(clerkUser) || displayNameFromEmail(email);
+  const publicMetadata = clerkUser.publicMetadata as Record<string, unknown> | undefined;
+  const role: UserRole = publicMetadata?.role === "KID" ? "KID" : "PARENT";
+  const childId = typeof publicMetadata?.childId === "string" ? publicMetadata.childId : null;
 
-  return { clerkUserId: clerkUser.id, email, name };
+  return { clerkUserId: clerkUser.id, email, name, role, childId };
 }
 
 async function upsertCurrentUser() {
@@ -68,15 +71,28 @@ async function upsertCurrentUser() {
       select,
     }));
 
+  const mergedRole: UserRole =
+    profile.role === "KID" || existingByEmail?.role === "KID" ? "KID" : "PARENT";
+
+  const resolvedChildId =
+    (profile.role === "KID" ? profile.childId : null) ??
+    (existingByEmail?.role === "KID" ? existingByEmail.childId : null);
+
+  const verifiedChildId =
+    resolvedChildId && mergedRole === "KID"
+      ? (await prisma.child.findUnique({ where: { id: resolvedChildId }, select: { id: true } }))?.id ?? null
+      : null;
+
   if (!existingByEmail) {
     return prisma.user.create({
       data: {
         email: profile.email,
         name: profile.name,
-        role: "PARENT",
+        role: mergedRole,
         clerkUserId: profile.clerkUserId,
         verifiedAt: new Date(),
         passwordHash: placeholderPasswordHash,
+        childId: verifiedChildId,
       },
       select,
     });
@@ -86,6 +102,8 @@ async function upsertCurrentUser() {
     existingByEmail.clerkUserId !== profile.clerkUserId ||
     existingByEmail.email !== profile.email ||
     existingByEmail.name !== profile.name ||
+    existingByEmail.role !== mergedRole ||
+    existingByEmail.childId !== verifiedChildId ||
     !existingByEmail.verifiedAt;
 
   if (!needsUpdate) {
@@ -97,8 +115,10 @@ async function upsertCurrentUser() {
     data: {
       email: profile.email,
       name: profile.name,
+      role: mergedRole,
       clerkUserId: profile.clerkUserId,
       verifiedAt: existingByEmail.verifiedAt ?? new Date(),
+      childId: verifiedChildId,
     },
     select,
   });

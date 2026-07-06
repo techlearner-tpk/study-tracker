@@ -7,6 +7,8 @@ import { getOwnedChild } from "@/lib/ownership";
 import { requireParentUser } from "@/lib/auth";
 import { childSchema, deleteChildSchema, formDataToObject } from "@/lib/validations";
 import { defaultSubjects } from "@/features/subjects/constants";
+import { clerkClient } from "@clerk/nextjs/server";
+import { appUrl } from "@/lib/app-url";
 
 const displayNameFromEmail = (email: string) => email.split("@")[0].replace(/[._-]+/g, " ");
 
@@ -40,6 +42,18 @@ export async function inviteKid(formData: FormData) {
       childId: child.id,
       verifiedAt: null,
       passwordHash: "clerk-pending-kid-account",
+    },
+  });
+
+  const client = await clerkClient();
+  await client.invitations.createInvitation({
+    emailAddress: email,
+    redirectUrl: `${appUrl()}/sign-up`,
+    ignoreExisting: true,
+    publicMetadata: {
+      role: "KID",
+      childId: child.id,
+      childName: child.name,
     },
   });
 
@@ -78,6 +92,18 @@ export async function createChild(formData: FormData) {
         passwordHash: "clerk-pending-kid-account",
       },
     });
+
+    const client = await clerkClient();
+    await client.invitations.createInvitation({
+      emailAddress: email,
+      redirectUrl: `${appUrl()}/sign-up`,
+      ignoreExisting: true,
+      publicMetadata: {
+        role: "KID",
+        childId: child.id,
+        childName: child.name,
+      },
+    });
   }
 
   revalidatePath("/");
@@ -103,8 +129,16 @@ export async function updateChild(formData: FormData) {
 export async function deleteChild(formData: FormData) {
   const user = await requireParentUser();
   const data = deleteChildSchema.parse(formDataToObject(formData));
-  await getOwnedChild(user.id, data.childId);
+  const child = await getOwnedChild(user.id, data.childId);
+  const clerkUserId = child.kidUser?.clerkUserId;
+
   await prisma.child.delete({ where: { id: data.childId } });
+
+  if (clerkUserId) {
+    const client = await clerkClient();
+    await client.users.deleteUser(clerkUserId);
+  }
+
   revalidatePath("/");
   redirect("/");
 }
