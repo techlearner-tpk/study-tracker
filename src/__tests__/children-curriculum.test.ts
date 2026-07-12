@@ -6,6 +6,7 @@ const mocks = vi.hoisted(() => ({
   childCreate: vi.fn(),
   subjectCreateMany: vi.fn(),
   userUpsert: vi.fn(),
+  loadCurriculumVersionTree: vi.fn(),
   snapshotCurriculumToChild: vi.fn(),
   clerkClient: vi.fn(),
   createInvitation: vi.fn(),
@@ -22,6 +23,7 @@ vi.mock("@/lib/prisma", () => ({
 }));
 
 vi.mock("@/features/curriculum/service", () => ({
+  loadCurriculumVersionTree: mocks.loadCurriculumVersionTree,
   snapshotCurriculumToChild: mocks.snapshotCurriculumToChild,
 }));
 
@@ -42,6 +44,31 @@ describe("create child curriculum integration", () => {
     mocks.childCreate.mockResolvedValue({ id: "child_1" });
     mocks.subjectCreateMany.mockResolvedValue({ count: 6 });
     mocks.userUpsert.mockResolvedValue({ id: "kid_1" });
+    mocks.loadCurriculumVersionTree.mockResolvedValue({
+      id: "version_1",
+      academicYear: "2026-27",
+      version: "1.0",
+      name: "CBSE Starter",
+      status: "PUBLISHED",
+      verificationStatus: "REVIEW_REQUIRED",
+      sourceUrl: null,
+      notes: null,
+      sourceReferences: null,
+      publishedAt: null,
+      archivedAt: null,
+      updatedAt: new Date(),
+      board: { id: "board_1", code: "CBSE", name: "Central Board" },
+      classes: [
+        {
+          id: "class_1",
+          level: 5,
+          name: "Class 5",
+          stableKey: "class-5",
+          sequence: 1,
+          subjects: [],
+        },
+      ],
+    });
     mocks.snapshotCurriculumToChild.mockResolvedValue({ id: "assignment_1" });
     mocks.clerkClient.mockResolvedValue({
       invitations: {
@@ -106,6 +133,9 @@ describe("create child curriculum integration", () => {
         curriculumVersionId: "version_1",
         curriculumClassId: "class_1",
         selectedSubjectIds: ["subject_math"],
+      }),
+      expect.objectContaining({
+        id: "version_1",
       }),
     );
     expect(mocks.subjectCreateMany).not.toHaveBeenCalled();

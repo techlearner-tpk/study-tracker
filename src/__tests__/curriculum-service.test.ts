@@ -296,21 +296,21 @@ function createSnapshotTx() {
       },
     },
     subject: {
-      create: async ({ data }: any) => {
-        calls.subject.push(data);
-        return { id: `subject_${calls.subject.length}`, ...data };
+      createMany: async ({ data }: any) => {
+        calls.subject.push(...data);
+        return { count: data.length };
       },
     },
     chapter: {
-      create: async ({ data }: any) => {
-        calls.chapter.push(data);
-        return { id: `chapter_${calls.chapter.length}`, ...data };
+      createMany: async ({ data }: any) => {
+        calls.chapter.push(...data);
+        return { count: data.length };
       },
     },
     topic: {
-      create: async ({ data }: any) => {
-        calls.topic.push(data);
-        return { id: `topic_${calls.topic.length}`, ...data };
+      createMany: async ({ data }: any) => {
+        calls.topic.push(...data);
+        return { count: data.length };
       },
     },
   };

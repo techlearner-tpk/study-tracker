@@ -16,8 +16,7 @@ import {
   curriculumVersionFormSchema,
   normalizeStableKey,
 } from "./schema";
-import { importCurriculumSeed, parseCurriculumSeedText, snapshotCurriculumToChild } from "./service";
-import { loadCurriculumVersionTree } from "./service";
+import { importCurriculumSeed, loadCurriculumVersionTree, parseCurriculumSeedText, snapshotCurriculumToChild } from "./service";
 
 async function requireEditableVersion(versionId: string) {
   const version = await prisma.curriculumVersion.findUnique({
