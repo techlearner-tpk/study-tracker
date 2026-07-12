@@ -1,30 +1,10 @@
-import { LearningStatus, Prisma } from "@prisma/client";
+import { LearningStatus } from "@prisma/client";
 import { isSameDay, startOfMonth, startOfWeek } from "date-fns";
 import { getOwnedChild } from "@/lib/ownership";
 import { prisma } from "@/lib/prisma";
 import { ActivitySession, calculateTopicProgress, currentStudyStreak, habitGoalProgress, longestStudyStreak } from "@/lib/analytics";
 
-export type ChildWithStudyTree = Prisma.ChildGetPayload<{
-  include: {
-    subjects: {
-      include: {
-        chapters: {
-          include: {
-            topics: {
-              include: {
-                studySessions: true;
-                practiceSessions: true;
-                revisionSessions: true;
-              };
-            };
-          };
-        };
-      };
-    };
-    habitGoals: true;
-    outcomeGoals: true;
-  };
-}>;
+export type ChildWithStudyTree = Awaited<ReturnType<typeof getOwnedChild>>;
 
 export async function getChildren(userId: string) {
   return prisma.child.findMany({ where: { userId }, orderBy: { createdAt: "asc" } });

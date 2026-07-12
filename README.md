@@ -43,6 +43,12 @@ npm run db:migrate
 npm run db:seed
 ```
 
+To import the reusable curriculum catalog used by the admin screens and Add Kid flow:
+
+```bash
+npm run curriculum:seed
+```
+
 4. Start the app.
 
 ```bash
@@ -54,6 +60,7 @@ Open http://localhost:3000.
 Log in at `/login`, then continue to `/sign-in` or `/sign-up`.
 
 For Neon, put the pooled connection string in `DATABASE_URL` and the direct connection string in `DIRECT_URL`.
+Set `SHADOW_DATABASE_URL` to a disposable PostgreSQL database for `prisma migrate dev` so Prisma can replay migrations safely.
 Set `APP_URL` to your local URL in development and your deployed URL in production.
 Set the Clerk sign-in and sign-up URLs to `/sign-in` and `/sign-up` locally, then update them to your production domain after deploy.
 Use the Clerk publishable and secret keys for the matching environment.
@@ -97,6 +104,8 @@ Tisha also receives a sample Mathematics chapter and topics so the dashboard has
 - Authentication is handled by Clerk for both parent and kid accounts.
 - Sign-in and sign-up are handled by Clerk, with email verification required before the app syncs the account locally.
 - Kid access is parent-onboarded by email. When the kid signs up with Clerk, the app links that Clerk user to the existing child record.
+- Curriculum templates live in the admin area at `/admin/curriculum` and can be assigned to a child during Add Kid.
+- Curriculum assignments snapshot the selected subjects, chapters, and topics into the child-owned tree so later template edits do not rewrite the child record.
 - Authorization is parent-only for the management surfaces, while kids are routed to their own read-only portal.
 - Deleting a child cascades to subjects, chapters, topics, goals, and all sessions.
 - The delete flow requires typing the child name as a confirmation warning.
@@ -164,6 +173,7 @@ For local Docker-based hosting, the app uses PostgreSQL on host port `5433`.
 src/app
 src/features
   children
+  curriculum
   subjects
   chapters
   topics
@@ -180,3 +190,5 @@ prisma
 ```
 
 Server Actions live inside feature folders. Shared analytics and validation logic live in `src/lib`.
+
+See [`docs/architecture.md`](docs/architecture.md) for the curriculum-specific data flow and import notes.

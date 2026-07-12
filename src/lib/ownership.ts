@@ -1,16 +1,43 @@
 import { notFound } from "next/navigation";
+import { Prisma } from "@prisma/client";
 import { prisma } from "@/lib/prisma";
 
-export async function getOwnedChild(userId: string, childId: string) {
+export type OwnedChild = Prisma.ChildGetPayload<{
+  include: {
+    kidUser: true;
+    subjects: {
+      include: {
+        chapters: {
+          include: {
+            topics: {
+              include: {
+                studySessions: true;
+                practiceSessions: true;
+                revisionSessions: true;
+              };
+            };
+          };
+        };
+      };
+    };
+    habitGoals: true;
+    outcomeGoals: true;
+  };
+}>;
+
+export async function getOwnedChild(userId: string, childId: string): Promise<OwnedChild> {
   const child = await prisma.child.findUnique({
     where: { id: childId },
     include: {
       kidUser: true,
       subjects: {
+        orderBy: [{ order: "asc" }, { createdAt: "asc" }],
         include: {
           chapters: {
+            orderBy: [{ order: "asc" }, { createdAt: "asc" }],
             include: {
               topics: {
+                orderBy: [{ order: "asc" }, { createdAt: "asc" }],
                 include: {
                   studySessions: true,
                   practiceSessions: true,

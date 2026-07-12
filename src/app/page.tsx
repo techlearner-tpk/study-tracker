@@ -7,6 +7,7 @@ import { Button } from "@/components/ui/button";
 import { Card, CardTitle } from "@/components/ui/card";
 import { ChildForm, KidInviteForm } from "@/features/children/components";
 import { getChildren, getChildDashboard } from "@/features/dashboard/queries";
+import { loadPublishedCurriculumCatalog } from "@/features/curriculum/service";
 import { requireCurrentUser } from "@/lib/auth";
 import { minutesLabel } from "@/lib/utils";
 
@@ -18,6 +19,7 @@ export default async function Home() {
     redirect("/kid");
   }
   const children = await getChildren(user.id);
+  const curricula = await loadPublishedCurriculumCatalog();
   const firstDashboard = children[0] ? await getChildDashboard(user.id, children[0].id) : null;
 
   return (
@@ -52,7 +54,7 @@ export default async function Home() {
           <Card>
             <CardTitle className="flex items-center gap-2"><Plus size={16} /> Add child</CardTitle>
             <div className="mt-4">
-              <ChildForm showKidEmail />
+              <ChildForm showKidEmail curricula={curricula} />
             </div>
           </Card>
           <KidInviteForm />

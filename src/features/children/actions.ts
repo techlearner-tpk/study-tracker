@@ -9,6 +9,7 @@ import { childSchema, deleteChildSchema, formDataToObject } from "@/lib/validati
 import { defaultSubjects } from "@/features/subjects/constants";
 import { clerkClient } from "@clerk/nextjs/server";
 import { appUrl } from "@/lib/app-url";
+import { snapshotCurriculumToChild } from "@/features/curriculum/service";
 
 const displayNameFromEmail = (email: string) => email.split("@")[0].replace(/[._-]+/g, " ");
 
@@ -24,7 +25,12 @@ export async function inviteKid(formData: FormData) {
       userId: parent.id,
       name: displayNameFromEmail(email),
       className: "Not set",
-      subjects: { create: defaultSubjects.map((name) => ({ name })) },
+      subjects: {
+        create: defaultSubjects.map((name, index) => ({
+          name,
+          order: index + 1,
+        })),
+      },
     },
   });
 
@@ -63,36 +69,68 @@ export async function inviteKid(formData: FormData) {
 export async function createChild(formData: FormData) {
   const user = await requireParentUser();
   const data = childSchema.parse(formDataToObject(formData));
-  const child = await prisma.child.create({
-    data: {
-      userId: user.id,
-      name: data.name,
-      className: data.className,
-      school: data.school,
-      themeColor: data.themeColor,
-      subjects: { create: defaultSubjects.map((name) => ({ name })) },
-    },
+  const curriculumVersionId = String(formData.get("curriculumVersionId") ?? "").trim();
+  const curriculumClassId = String(formData.get("curriculumClassId") ?? "").trim();
+  const selectedSubjectIds = formData.getAll("selectedSubjectIds").map(String).filter(Boolean);
+  const usingCurriculum = Boolean(curriculumVersionId && curriculumClassId);
+
+  if (usingCurriculum && selectedSubjectIds.length === 0) {
+    throw new Error("Select at least one subject");
+  }
+
+  const child = await prisma.$transaction(async (tx) => {
+    const createdChild = await tx.child.create({
+      data: {
+        userId: user.id,
+        name: data.name,
+        className: data.className,
+        school: data.school,
+        themeColor: data.themeColor,
+      },
+    });
+
+    if (data.kidEmail) {
+      const email = data.kidEmail.toLowerCase();
+      await tx.user.upsert({
+        where: { email },
+        update: {
+          role: "KID",
+          childId: createdChild.id,
+          name: displayNameFromEmail(email),
+        },
+        create: {
+          email,
+          name: displayNameFromEmail(email),
+          role: "KID",
+          childId: createdChild.id,
+          verifiedAt: null,
+          passwordHash: "clerk-pending-kid-account",
+        },
+      });
+    }
+
+    if (usingCurriculum) {
+      await snapshotCurriculumToChild(tx, {
+        childId: createdChild.id,
+        curriculumVersionId,
+        curriculumClassId,
+        selectedSubjectIds,
+      });
+    } else {
+      await tx.subject.createMany({
+        data: defaultSubjects.map((name, index) => ({
+          childId: createdChild.id,
+          name,
+          order: index + 1,
+        })),
+      });
+    }
+
+    return createdChild;
   });
 
   if (data.kidEmail) {
     const email = data.kidEmail.toLowerCase();
-    await prisma.user.upsert({
-      where: { email },
-      update: {
-        role: "KID",
-        childId: child.id,
-        name: displayNameFromEmail(email),
-      },
-      create: {
-        email,
-        name: displayNameFromEmail(email),
-        role: "KID",
-        childId: child.id,
-        verifiedAt: null,
-        passwordHash: "clerk-pending-kid-account",
-      },
-    });
-
     const client = await clerkClient();
     await client.invitations.createInvitation({
       emailAddress: email,
