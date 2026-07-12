@@ -69,8 +69,8 @@ export default async function ChildPage({ params }: { params: Promise<{ childId:
           </Card>
         </section>
 
-        <section className="grid gap-4 lg:grid-cols-[1fr_360px]">
-          <div className="grid gap-4">
+        <section className="grid gap-4 lg:grid-cols-[minmax(0,1fr)_360px] lg:items-start">
+          <div className="grid gap-4 min-w-0">
             {child.subjects.map((subject) => {
               const subjectTopics = subject.chapters.flatMap((chapter) => chapter.topics);
               const subjectProgress = calculateTopicProgress(subjectTopics.map((topic) => ({ status: topic.status })));
@@ -115,7 +115,7 @@ export default async function ChildPage({ params }: { params: Promise<{ childId:
             })}
           </div>
 
-          <aside className="grid content-start gap-4">
+          <aside className="grid content-start gap-4 min-w-0">
             <Card>
               <CardTitle>Edit child</CardTitle>
               <div className="mt-4"><ChildForm child={child} /></div>
