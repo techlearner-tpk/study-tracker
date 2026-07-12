@@ -17,6 +17,7 @@ import {
   normalizeStableKey,
 } from "./schema";
 import { importCurriculumSeed, parseCurriculumSeedText, snapshotCurriculumToChild } from "./service";
+import { loadCurriculumVersionTree } from "./service";
 
 async function requireEditableVersion(versionId: string) {
   const version = await prisma.curriculumVersion.findUnique({
@@ -480,6 +481,10 @@ export async function applyCurriculumToChild(formData: FormData) {
     curriculumClassId: String(formData.get("curriculumClassId") ?? ""),
     selectedSubjectIds: formData.getAll("selectedSubjectIds").map(String),
   });
+  const curriculumVersion = await loadCurriculumVersionTree(data.curriculumVersionId);
+  if (!curriculumVersion) {
+    throw new Error("Choose a published curriculum version");
+  }
 
   await prisma.$transaction(async (tx) => {
     const childId = String(formData.get("childId") ?? "");
@@ -488,7 +493,7 @@ export async function applyCurriculumToChild(formData: FormData) {
       curriculumVersionId: data.curriculumVersionId,
       curriculumClassId: data.curriculumClassId,
       selectedSubjectIds: data.selectedSubjectIds,
-    });
+    }, curriculumVersion);
   });
 
   revalidatePath("/");

@@ -9,7 +9,7 @@ import { childSchema, deleteChildSchema, formDataToObject } from "@/lib/validati
 import { defaultSubjects } from "@/features/subjects/constants";
 import { clerkClient } from "@clerk/nextjs/server";
 import { appUrl } from "@/lib/app-url";
-import { snapshotCurriculumToChild } from "@/features/curriculum/service";
+import { loadCurriculumVersionTree, snapshotCurriculumToChild } from "@/features/curriculum/service";
 
 const displayNameFromEmail = (email: string) => email.split("@")[0].replace(/[._-]+/g, " ");
 
@@ -78,6 +78,11 @@ export async function createChild(formData: FormData) {
     throw new Error("Select at least one subject");
   }
 
+  const curriculumVersion = usingCurriculum ? await loadCurriculumVersionTree(curriculumVersionId) : null;
+  if (usingCurriculum && !curriculumVersion) {
+    throw new Error("Choose a published curriculum version");
+  }
+
   const child = await prisma.$transaction(async (tx) => {
     const createdChild = await tx.child.create({
       data: {
@@ -115,7 +120,7 @@ export async function createChild(formData: FormData) {
         curriculumVersionId,
         curriculumClassId,
         selectedSubjectIds,
-      });
+      }, curriculumVersion);
     } else {
       await tx.subject.createMany({
         data: defaultSubjects.map((name, index) => ({
