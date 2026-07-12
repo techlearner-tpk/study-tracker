@@ -96,7 +96,7 @@ export default async function CurriculumVersionPage({
           <Card>
             <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
               <CardTitle className="text-base">Version details</CardTitle>
-              <form className="flex items-center gap-2">
+              <form method="get" className="flex items-center gap-2">
                 <input name="q" defaultValue={q} placeholder="Search classes, subjects, chapters, topics" className="h-10 rounded-md border border-stone-300 bg-white px-3 text-sm" />
                 <button type="submit" className="inline-flex h-10 items-center justify-center rounded-md border border-stone-300 bg-white px-4 text-sm font-medium hover:bg-stone-100">
                   Search
@@ -207,4 +207,3 @@ export default async function CurriculumVersionPage({
     </AppShell>
   );
 }
-

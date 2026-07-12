@@ -36,7 +36,7 @@ export default async function CurriculumAdminPage({
             <p className="text-sm font-medium text-emerald-800">Admin</p>
             <h1 className="text-3xl font-semibold tracking-tight">Curriculum</h1>
           </div>
-          <form className="flex items-center gap-2">
+          <form method="get" className="flex items-center gap-2">
             <Input name="q" defaultValue={q} placeholder="Search board, year, version" className="w-72" />
             <Button type="submit" variant="secondary">Search</Button>
           </form>
