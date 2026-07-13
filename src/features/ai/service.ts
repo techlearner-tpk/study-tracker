@@ -151,10 +151,36 @@ function topicContext(topic: Awaited<ReturnType<typeof getOwnedTopic>>): TopicCo
 
 function fallbackTeachLesson(input: TeachTopicInput): TeachTopicResult {
   const topicLower = input.topicName.toLowerCase();
-  const explanation =
-    topicLower.includes("passage")
-      ? `A ${input.topicName.toLowerCase()} is a reading passage that presents ideas, explains a topic, or shares a viewpoint.`
-      : input.topicDescription?.trim() || `This topic is part of ${input.subjectName} for ${input.className}.`;
+  const isMathTopic =
+    topicLower.includes("integer") ||
+    topicLower.includes("number") ||
+    topicLower.includes("fraction") ||
+    topicLower.includes("decimal") ||
+    topicLower.includes("equation") ||
+    topicLower.includes("operation");
+  const isReadingTopic = topicLower.includes("passage") || topicLower.includes("reading") || topicLower.includes("comprehension");
+
+  let explanation = input.topicDescription?.trim() || `This topic is part of ${input.subjectName} for ${input.className}.`;
+  let whyItMatters = `Knowing ${input.topicName.toLowerCase()} helps you understand questions, read more carefully, and remember the main idea.`;
+  let example = `Think of one real-life example from ${input.topicName.toLowerCase()}.`;
+  let tryThis = "Say the idea back in your own words, then add one example.";
+  let checkQuestion = `What is ${input.topicName} in your own words?`;
+
+  if (isMathTopic) {
+    explanation = `This topic teaches how to work with numbers in a clear step-by-step way.`;
+    whyItMatters = `You use ${input.topicName.toLowerCase()} when solving sums, checking answers, and understanding number patterns.`;
+    example = `Example: if you add -3 and 5, the answer is 2 because 5 has 3 more than -3.`;
+    tryThis = "Try one calculation from the lesson and explain each step out loud.";
+    checkQuestion = `Can you explain how you solved a small ${input.topicName.toLowerCase()} example?`;
+  } else if (isReadingTopic) {
+    explanation = `A ${input.topicName.toLowerCase()} is a piece of reading that can tell a story, explain an idea, or give information.`;
+    whyItMatters = `It helps you find the main idea, notice details, and answer questions from the text.`;
+    example = `Example: a passage about school rules may explain why we line up quietly and how it helps everyone.`;
+    tryThis = "Read one sentence and tell what it is mainly about.";
+    checkQuestion = `What is the main idea of a ${input.topicName.toLowerCase()}?`;
+  } else if (input.topicDescription?.trim()) {
+    explanation = input.topicDescription.trim();
+  }
 
   return {
     title: `Learning ${input.topicName}`,
@@ -165,15 +191,15 @@ function fallbackTeachLesson(input: TeachTopicInput): TeachTopicResult {
       },
       {
         heading: "Why it matters",
-        body: `Knowing ${input.topicName.toLowerCase()} helps you understand questions, read more carefully, and remember the main idea.`,
+        body: whyItMatters,
       },
       {
         heading: "Simple example",
-        body: `Think of one real-life example from ${input.topicName.toLowerCase()}.`,
+        body: example,
       },
       {
         heading: "Try this",
-        body: "Say the idea back in your own words, then add one example.",
+        body: tryThis,
       },
     ],
     suggestedActions: [
@@ -182,7 +208,7 @@ function fallbackTeachLesson(input: TeachTopicInput): TeachTopicResult {
       "Ask me a question",
       "I did not understand",
     ],
-    checkQuestion: `What is ${input.topicName} in your own words?`,
+    checkQuestion,
   };
 }
 

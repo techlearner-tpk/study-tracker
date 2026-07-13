@@ -28,6 +28,12 @@ function lessonFromSession(session: AiSession) {
   return aiTeachResultSchema.safeParse(parsed).success ? aiTeachResultSchema.parse(parsed) : null;
 }
 
+function lessonFromMessage(message: AiSession["messages"][number]) {
+  if (message.role !== "ASSISTANT") return null;
+  const parsed = safeJsonParse(message.content);
+  return aiTeachResultSchema.safeParse(parsed).success ? aiTeachResultSchema.parse(parsed) : null;
+}
+
 function testFromSession(session: AiSession) {
   if (!session.testAttempt) return null;
   const parsed = aiGeneratedTestSchema.safeParse(session.testAttempt.questionsJson);
@@ -107,7 +113,7 @@ export function AiLearningPanel({
 export function AiTeachSessionView({ session, backHref }: { session: AiSession; backHref: string }) {
   const lesson = lessonFromSession(session);
   const requestId = randomUUID();
-  const childMessages = session.messages.filter((message) => message.role === "CHILD");
+  const conversationMessages = session.messages.filter((message) => message.role !== "SYSTEM");
 
   return (
     <div className="grid gap-6">
@@ -175,16 +181,45 @@ export function AiTeachSessionView({ session, backHref }: { session: AiSession; 
         </form>
       </Card>
 
-      {childMessages.length ? (
+      {conversationMessages.length ? (
         <Card>
           <CardTitle>Conversation</CardTitle>
           <div className="mt-4 grid gap-3">
-            {childMessages.map((message) => (
-              <div key={message.id} className="rounded-md border border-stone-200 p-3">
-                <p className="text-xs font-semibold uppercase tracking-wide text-stone-500">Your question</p>
-                <p className="mt-1 text-sm text-stone-700">{message.content}</p>
-              </div>
-            ))}
+            {conversationMessages.map((message) => {
+              if (message.role === "CHILD") {
+                return (
+                  <div key={message.id} className="rounded-md border border-stone-200 p-3">
+                    <p className="text-xs font-semibold uppercase tracking-wide text-stone-500">Your question</p>
+                    <p className="mt-1 text-sm text-stone-700">{message.content}</p>
+                  </div>
+                );
+              }
+
+              const reply = lessonFromMessage(message);
+              return (
+                <div key={message.id} className="rounded-md border border-emerald-200 bg-emerald-50 p-3">
+                  <p className="text-xs font-semibold uppercase tracking-wide text-emerald-800">Teacher answer</p>
+                  {reply ? (
+                    <div className="mt-2 grid gap-2">
+                      <p className="text-sm font-medium text-stone-900">{reply.title}</p>
+                      <div className="grid gap-2 md:grid-cols-2">
+                        {reply.sections.map((section) => (
+                          <div key={section.heading} className="rounded-md border border-emerald-100 bg-white p-3">
+                            <p className="text-xs font-semibold text-stone-500">{section.heading}</p>
+                            <p className="mt-1 text-sm text-stone-700">{section.body}</p>
+                          </div>
+                        ))}
+                      </div>
+                      <p className="text-sm text-emerald-900">
+                        <span className="font-medium">Quick check:</span> {reply.checkQuestion}
+                      </p>
+                    </div>
+                  ) : (
+                    <p className="mt-1 text-sm text-stone-700">{message.content}</p>
+                  )}
+                </div>
+              );
+            })}
           </div>
         </Card>
       ) : null}
