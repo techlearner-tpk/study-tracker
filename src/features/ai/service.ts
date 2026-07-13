@@ -102,8 +102,12 @@ export async function getAiUsage(childId: string, topicId: string) {
   };
 }
 
-async function consumeAiUsageInTx(tx: Prisma.TransactionClient, childId: string, topicId: string) {
-  const settings = await resolveRuntimeAiSettings();
+async function consumeAiUsageInTx(
+  tx: Prisma.TransactionClient,
+  childId: string,
+  topicId: string,
+  settings: RuntimeAiSettings,
+) {
   await tx.aiTopicUsage.upsert({
     where: { childId_topicId: { childId, topicId } },
     create: { childId, topicId, promptCount: 0 },
@@ -125,7 +129,8 @@ async function consumeAiUsageInTx(tx: Prisma.TransactionClient, childId: string,
 }
 
 export async function consumeAiUsage(childId: string, topicId: string) {
-  return prisma.$transaction(async (tx) => consumeAiUsageInTx(tx, childId, topicId), {
+  const settings = await resolveRuntimeAiSettings();
+  return prisma.$transaction(async (tx) => consumeAiUsageInTx(tx, childId, topicId, settings), {
     timeout: 15000,
   });
 }
@@ -610,9 +615,10 @@ export async function startTeachSession(userId: string, topicId: string, assignm
     const teachInput = topicContext(access.topic);
     const teachPrompt = teachPromptPayload(teachInput);
     const lesson = aiTeachResultSchema.parse(await provider.teachTopic(teachInput));
+    const settings = await resolveRuntimeAiSettings();
 
     const session = await prisma.$transaction(async (tx) => {
-      await consumeAiUsageInTx(tx, access.topic.chapter.subject.child.id, topicId);
+      await consumeAiUsageInTx(tx, access.topic.chapter.subject.child.id, topicId, settings);
       return tx.aiLearningSession.create({
         data: {
           childId: access.topic.chapter.subject.child.id,
@@ -687,9 +693,10 @@ export async function sendTeachMessage(formData: FormData) {
       topicDescription: [access.topic.description, `Child question: ${data.message}`].filter(Boolean).join("\n"),
     };
     const followUpLesson = aiTeachResultSchema.parse(await provider.teachTopic(teachInput));
+    const settings = await resolveRuntimeAiSettings();
 
     await prisma.$transaction(async (tx) => {
-      await consumeAiUsageInTx(tx, access.topic.chapter.subject.child.id, session.topicId);
+      await consumeAiUsageInTx(tx, access.topic.chapter.subject.child.id, session.topicId, settings);
       const nextSequence = (await tx.aiLearningMessage.count({ where: { sessionId: session.id } })) + 1;
       await tx.aiLearningMessage.createMany({
         data: [
@@ -760,7 +767,7 @@ export async function generateTopicTest(userId: string, topicId: string, assignm
     const test = aiGeneratedTestSchema.parse(await provider.generateTest(testInput));
 
     const session = await prisma.$transaction(async (tx) => {
-      await consumeAiUsageInTx(tx, access.topic.chapter.subject.child.id, topicId);
+      await consumeAiUsageInTx(tx, access.topic.chapter.subject.child.id, topicId, settings);
       return tx.aiLearningSession.create({
         data: {
           childId: access.topic.chapter.subject.child.id,
