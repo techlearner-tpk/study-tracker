@@ -37,6 +37,18 @@ export default async function Home() {
           ) : null}
         </header>
 
+        <section className="grid gap-4 md:grid-cols-2 xl:grid-cols-[minmax(0,1.5fr)_minmax(360px,0.8fr)] xl:items-start">
+          <Card className="self-start">
+            <CardTitle className="flex items-center gap-2">
+              <Plus size={16} /> Add child
+            </CardTitle>
+            <div className="mt-4">
+              <ChildForm showKidEmail curricula={curricula} />
+            </div>
+          </Card>
+          <KidInviteForm />
+        </section>
+
         <section className="grid gap-4 md:grid-cols-3">
           {children.map((child) => (
             <Link key={child.id} href={`/children/${child.id}`}>
@@ -51,13 +63,6 @@ export default async function Home() {
               </Card>
             </Link>
           ))}
-          <Card>
-            <CardTitle className="flex items-center gap-2"><Plus size={16} /> Add child</CardTitle>
-            <div className="mt-4">
-              <ChildForm showKidEmail curricula={curricula} />
-            </div>
-          </Card>
-          <KidInviteForm />
         </section>
 
         {firstDashboard ? (
