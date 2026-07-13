@@ -1,4 +1,4 @@
-import { PrismaClient, LearningStatus, HabitGoalMetric, OutcomeGoalType } from "@prisma/client";
+import { PrismaClient, LearningStatus, HabitGoalMetric, OutcomeGoalType, SubscriptionStatus } from "@prisma/client";
 
 const prisma = new PrismaClient();
 
@@ -21,7 +21,7 @@ const children = [
 ];
 
 async function seedParent() {
-  return prisma.user.upsert({
+  const parent = await prisma.user.upsert({
     where: { email: parentEmail },
     update: {
       name: parentName,
@@ -36,6 +36,37 @@ async function seedParent() {
       passwordHash: placeholderPasswordHash,
     },
   });
+
+  await prisma.subscription.upsert({
+    where: { parentId: parent.id },
+    update: {
+      status: SubscriptionStatus.ACTIVE,
+      startsAt: new Date(),
+      expiresAt: null,
+    },
+    create: {
+      parentId: parent.id,
+      status: SubscriptionStatus.ACTIVE,
+      startsAt: new Date(),
+    },
+  });
+
+  await prisma.aiSetting.upsert({
+    where: { id: 1 },
+    update: {
+      topicPromptLimit: 5,
+      testQuestionCount: 5,
+      maxUserPromptLength: 500,
+    },
+    create: {
+      id: 1,
+      topicPromptLimit: 5,
+      testQuestionCount: 5,
+      maxUserPromptLength: 500,
+    },
+  });
+
+  return parent;
 }
 
 async function seedChild(userId: string, child: (typeof children)[number]) {
@@ -138,16 +169,22 @@ async function seedChild(userId: string, child: (typeof children)[number]) {
 }
 
 async function main() {
-  await prisma.user.deleteMany();
+  await prisma.aiLearningMessage.deleteMany();
+  await prisma.aiTestAttempt.deleteMany();
+  await prisma.aiLearningSession.deleteMany();
+  await prisma.aiTopicUsage.deleteMany();
+  await prisma.aiRequestLog.deleteMany();
   await prisma.revisionSession.deleteMany();
   await prisma.practiceSession.deleteMany();
   await prisma.studySession.deleteMany();
+  await prisma.assignment.deleteMany();
   await prisma.outcomeGoal.deleteMany();
   await prisma.habitGoal.deleteMany();
   await prisma.topic.deleteMany();
   await prisma.chapter.deleteMany();
   await prisma.subject.deleteMany();
   await prisma.child.deleteMany();
+  await prisma.user.deleteMany();
 
   const parent = await seedParent();
   for (const child of children) {

@@ -76,20 +76,46 @@ enum AssignmentPriority {
   HIGH
 }
 
+enum SubscriptionStatus {
+  FREE
+  TRIAL
+  ACTIVE
+  EXPIRED
+  CANCELLED
+}
+
+enum AiLearningMode {
+  TEACH
+  TEST
+}
+
+enum AiSessionStatus {
+  ACTIVE
+  COMPLETED
+  FAILED
+}
+
+enum AiLearningMessageRole {
+  SYSTEM
+  CHILD
+  ASSISTANT
+}
+
 model User {
-  id           String       @id @default(cuid())
-  email        String       @unique
+  id           String        @id @default(cuid())
+  email        String        @unique
   name         String
   passwordHash String
-  clerkUserId  String?      @unique
-  role         UserRole     @default(PARENT)
+  clerkUserId  String?       @unique
+  role         UserRole      @default(PARENT)
   verifiedAt   DateTime?
-  childId      String?      @unique
-  createdAt    DateTime     @default(now())
-  updatedAt    DateTime     @updatedAt
-  child        Child?       @relation("KidChild", fields: [childId], references: [id], onDelete: Cascade)
-  children     Child[]      @relation("ParentChildren")
-  assignments  Assignment[] @relation("AssignmentsCreatedBy")
+  childId      String?       @unique
+  createdAt    DateTime      @default(now())
+  updatedAt    DateTime      @updatedAt
+  child        Child?        @relation("KidChild", fields: [childId], references: [id], onDelete: Cascade)
+  children     Child[]       @relation("ParentChildren")
+  assignments  Assignment[]  @relation("AssignmentsCreatedBy")
+  subscription Subscription? @relation("ParentSubscription")
 }
 
 model Child {
@@ -109,6 +135,9 @@ model Child {
   outcomeGoals          OutcomeGoal[]
   curriculumAssignments CurriculumAssignment[]
   assignments           Assignment[]
+  aiTopicUsages         AiTopicUsage[]
+  aiLearningSessions    AiLearningSession[]
+  aiTestAttempts        AiTestAttempt[]
 
   @@index([name])
   @@index([userId])
@@ -241,15 +270,15 @@ model CurriculumAssignment {
 }
 
 model Assignment {
-  id                    String             @id @default(cuid())
+  id                    String              @id @default(cuid())
   childId               String
   topicId               String
   assignedByUserId      String
   source                AssignmentSource
   type                  AssignmentType
-  status                AssignmentStatus   @default(PLANNED)
-  priority              AssignmentPriority @default(MEDIUM)
-  isActive              Boolean            @default(true)
+  status                AssignmentStatus    @default(PLANNED)
+  priority              AssignmentPriority  @default(MEDIUM)
+  isActive              Boolean             @default(true)
   plannedDate           DateTime?
   dueDate               DateTime?
   instructions          String?
@@ -261,14 +290,16 @@ model Assignment {
   durationMinutes       Int?
   score                 Int?
   completedAt           DateTime?
-  createdAt             DateTime           @default(now())
-  updatedAt             DateTime           @updatedAt
-  child                 Child              @relation(fields: [childId], references: [id], onDelete: Cascade)
-  topic                 Topic              @relation(fields: [topicId], references: [id], onDelete: Restrict)
-  assignedBy            User               @relation("AssignmentsCreatedBy", fields: [assignedByUserId], references: [id], onDelete: Restrict)
+  createdAt             DateTime            @default(now())
+  updatedAt             DateTime            @updatedAt
+  child                 Child               @relation(fields: [childId], references: [id], onDelete: Cascade)
+  topic                 Topic               @relation(fields: [topicId], references: [id], onDelete: Restrict)
+  assignedBy            User                @relation("AssignmentsCreatedBy", fields: [assignedByUserId], references: [id], onDelete: Restrict)
   studySessions         StudySession[]
   practiceSessions      PracticeSession[]
   revisionSessions      RevisionSession[]
+  aiLearningSessions    AiLearningSession[]
+  aiTestAttempts        AiTestAttempt[]
 
   @@index([childId])
   @@index([topicId])
@@ -357,6 +388,9 @@ model Topic {
   practiceSessions       PracticeSession[]
   revisionSessions       RevisionSession[]
   assignments            Assignment[]
+  aiTopicUsages          AiTopicUsage[]
+  aiLearningSessions     AiLearningSession[]
+  aiTestAttempts         AiTestAttempt[]
 
   @@index([chapterId])
   @@index([status])
@@ -413,6 +447,121 @@ model RevisionSession {
   @@index([topicId])
   @@index([assignmentId])
   @@index([date])
+}
+
+model Subscription {
+  id        String             @id @default(cuid())
+  parentId  String             @unique
+  status    SubscriptionStatus @default(FREE)
+  planCode  String?
+  startsAt  DateTime?
+  expiresAt DateTime?
+  createdAt DateTime           @default(now())
+  updatedAt DateTime           @updatedAt
+  parent    User               @relation("ParentSubscription", fields: [parentId], references: [id], onDelete: Cascade)
+
+  @@index([status])
+  @@index([expiresAt])
+}
+
+model AiSetting {
+  id                  Int      @id @default(1)
+  topicPromptLimit    Int?
+  testQuestionCount   Int?
+  maxUserPromptLength Int?
+  updatedAt           DateTime @updatedAt
+  createdAt           DateTime @default(now())
+}
+
+model AiRequestLog {
+  id        String   @id @default(cuid())
+  requestId String   @unique
+  operation String
+  sessionId String?
+  status    String
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@index([operation])
+  @@index([sessionId])
+}
+
+model AiTopicUsage {
+  id          String   @id @default(cuid())
+  childId     String
+  topicId     String
+  promptCount Int      @default(0)
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+  child       Child    @relation(fields: [childId], references: [id], onDelete: Cascade)
+  topic       Topic    @relation(fields: [topicId], references: [id], onDelete: Cascade)
+
+  @@unique([childId, topicId])
+  @@index([childId])
+  @@index([topicId])
+}
+
+model AiLearningSession {
+  id            String              @id @default(cuid())
+  childId       String
+  topicId       String
+  assignmentId  String?
+  mode          AiLearningMode
+  status        AiSessionStatus     @default(ACTIVE)
+  provider      String
+  model         String
+  promptVersion String
+  createdAt     DateTime            @default(now())
+  updatedAt     DateTime            @updatedAt
+  child         Child               @relation(fields: [childId], references: [id], onDelete: Cascade)
+  topic         Topic               @relation(fields: [topicId], references: [id], onDelete: Cascade)
+  assignment    Assignment?         @relation(fields: [assignmentId], references: [id], onDelete: SetNull)
+  messages      AiLearningMessage[]
+  testAttempt   AiTestAttempt?
+
+  @@index([childId])
+  @@index([topicId])
+  @@index([assignmentId])
+  @@index([status])
+  @@index([mode])
+}
+
+model AiLearningMessage {
+  id        String                @id @default(cuid())
+  sessionId String
+  role      AiLearningMessageRole
+  content   String
+  sequence  Int
+  createdAt DateTime              @default(now())
+  session   AiLearningSession     @relation(fields: [sessionId], references: [id], onDelete: Cascade)
+
+  @@unique([sessionId, sequence])
+  @@index([sessionId])
+}
+
+model AiTestAttempt {
+  id              String            @id @default(cuid())
+  sessionId       String            @unique
+  childId         String
+  topicId         String
+  assignmentId    String?
+  questionCount   Int
+  correctCount    Int
+  scorePercentage Int
+  startedAt       DateTime
+  submittedAt     DateTime?
+  questionsJson   Json
+  answersJson     Json?
+  evaluationJson  Json?
+  createdAt       DateTime          @default(now())
+  session         AiLearningSession @relation(fields: [sessionId], references: [id], onDelete: Cascade)
+  child           Child             @relation(fields: [childId], references: [id], onDelete: Cascade)
+  topic           Topic             @relation(fields: [topicId], references: [id], onDelete: Cascade)
+  assignment      Assignment?       @relation(fields: [assignmentId], references: [id], onDelete: SetNull)
+
+  @@index([childId])
+  @@index([topicId])
+  @@index([assignmentId])
 }
 
 model HabitGoal {

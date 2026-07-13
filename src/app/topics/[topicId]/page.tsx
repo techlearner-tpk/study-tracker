@@ -2,6 +2,8 @@ import { format } from "date-fns";
 import { AppShell } from "@/components/layout/app-shell";
 import { Badge } from "@/components/ui/badge";
 import { Card, CardTitle } from "@/components/ui/card";
+import { AiLearningPanel } from "@/features/ai/components";
+import { getTopicAiAccessState } from "@/features/ai/service";
 import { PracticeSessionForm } from "@/features/practice-sessions/components";
 import { RevisionSessionForm } from "@/features/revision-sessions/components";
 import { StudySessionForm } from "@/features/study-sessions/components";
@@ -15,6 +17,7 @@ export default async function TopicPage({ params }: { params: Promise<{ topicId:
   const user = await requireCurrentUser();
   const { topicId } = await params;
   const topic = await getOwnedTopic(user.id, topicId);
+  const access = await getTopicAiAccessState(user.id, topicId);
 
   const totalStudyTime = topic.studySessions.reduce((total, session) => total + session.durationMinutes, 0);
   const timeline = [
@@ -42,6 +45,8 @@ export default async function TopicPage({ params }: { params: Promise<{ topicId:
           <Card><CardTitle>Notes</CardTitle><p className="mt-3 whitespace-pre-wrap text-sm text-stone-600">{topic.notes ?? "No notes yet."}</p></Card>
           <Card><CardTitle>Last studied</CardTitle><p className="mt-3 text-sm text-stone-600">{topic.studySessions[0] ? format(topic.studySessions[0].startTime, "PP p") : "Not studied yet"}</p></Card>
         </section>
+
+        <AiLearningPanel access={access} topicId={topic.id} />
 
         <section className="grid gap-4">
           <Card><CardTitle>Study Sessions</CardTitle><div className="mt-4"><StudySessionForm topicId={topic.id} /></div></Card>

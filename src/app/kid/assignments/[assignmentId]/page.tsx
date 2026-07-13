@@ -3,6 +3,8 @@ import { notFound } from "next/navigation";
 import { ArrowLeft } from "lucide-react";
 import { UserButton } from "@clerk/nextjs";
 import { Button } from "@/components/ui/button";
+import { AiLearningPanel } from "@/features/ai/components";
+import { getAssignmentAiAccessState } from "@/features/ai/service";
 import { AssignmentDetailView } from "@/features/assignments/components";
 import { getOwnedAssignment } from "@/lib/ownership";
 import { requireKidUser } from "@/lib/auth";
@@ -14,6 +16,7 @@ export default async function KidAssignmentPage({ params }: { params: Promise<{ 
   if (!user.childId) notFound();
   const { assignmentId } = await params;
   const assignment = await getOwnedAssignment(user.id, assignmentId);
+  const access = await getAssignmentAiAccessState(user.id, assignmentId);
   if (!assignment) notFound();
 
   return (
@@ -35,7 +38,10 @@ export default async function KidAssignmentPage({ params }: { params: Promise<{ 
           </div>
         </header>
 
-        <AssignmentDetailView assignment={assignment} hrefBase="/kid/assignments" />
+        <div className="grid gap-6">
+          <AiLearningPanel access={access} topicId={assignment.topicId} assignmentId={assignment.id} assignmentType={assignment.type} />
+          <AssignmentDetailView assignment={assignment} hrefBase="/kid/assignments" />
+        </div>
       </div>
     </main>
   );

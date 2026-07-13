@@ -22,6 +22,16 @@ export type OwnedChild = Prisma.ChildGetPayload<{
     };
     habitGoals: true;
     outcomeGoals: true;
+    curriculumAssignments: {
+      include: {
+        curriculumVersion: {
+          include: {
+            board: true;
+          };
+        };
+        curriculumClass: true;
+      };
+    };
     assignments: {
       include: {
         topic: {
@@ -91,6 +101,16 @@ export async function getOwnedChild(userId: string, childId: string): Promise<Ow
       },
       habitGoals: { where: { isActive: true }, orderBy: { createdAt: "asc" } },
       outcomeGoals: { where: { isActive: true }, orderBy: { createdAt: "asc" } },
+      curriculumAssignments: {
+        include: {
+          curriculumVersion: {
+            include: {
+              board: true,
+            },
+          },
+          curriculumClass: true,
+        },
+      },
       assignments: {
         include: {
           topic: {

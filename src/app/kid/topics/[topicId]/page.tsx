@@ -2,6 +2,8 @@ import { format } from "date-fns";
 import { notFound } from "next/navigation";
 import { Badge } from "@/components/ui/badge";
 import { Card, CardTitle } from "@/components/ui/card";
+import { AiLearningPanel } from "@/features/ai/components";
+import { getTopicAiAccessState } from "@/features/ai/service";
 import { requireKidUser } from "@/lib/auth";
 import { getOwnedTopic } from "@/lib/ownership";
 import { minutesLabel } from "@/lib/utils";
@@ -14,6 +16,7 @@ export default async function KidTopicPage({ params }: { params: Promise<{ topic
   if (!user.childId) notFound();
 
   const topic = await getOwnedTopic(user.id, topicId);
+  const access = await getTopicAiAccessState(user.id, topicId);
 
   const totalStudyTime = topic.studySessions.reduce((total, session) => total + session.durationMinutes, 0);
 
@@ -35,6 +38,8 @@ export default async function KidTopicPage({ params }: { params: Promise<{ topic
           <p className="mt-3 text-sm text-stone-600">{topic.description ?? "No description yet."}</p>
           <p className="mt-3 whitespace-pre-wrap text-sm text-stone-600">{topic.notes ?? "No notes yet."}</p>
         </Card>
+
+        <AiLearningPanel access={access} topicId={topic.id} />
 
         <Card>
           <CardTitle>Study timeline</CardTitle>
