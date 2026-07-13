@@ -155,7 +155,29 @@ export async function getOwnedTopic(userId: string, topicId: string) {
   const topic = await prisma.topic.findUnique({
     where: { id: topicId },
     include: {
-      chapter: { include: { subject: { include: { child: { include: { kidUser: true } } } } } },
+      chapter: {
+        include: {
+          subject: {
+            include: {
+              child: {
+                include: {
+                  kidUser: true,
+                  curriculumAssignments: {
+                    include: {
+                      curriculumVersion: {
+                        include: {
+                          board: true,
+                        },
+                      },
+                      curriculumClass: true,
+                    },
+                  },
+                },
+              },
+            },
+          },
+        },
+      },
       studySessions: { orderBy: { startTime: "desc" } },
       practiceSessions: { orderBy: { date: "desc" } },
       revisionSessions: { orderBy: { date: "desc" } },

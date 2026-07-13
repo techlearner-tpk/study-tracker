@@ -138,10 +138,12 @@ export async function resetAiUsage(childId: string, topicId: string) {
 
 function topicContext(topic: Awaited<ReturnType<typeof getOwnedTopic>>): TopicContext {
   const child = topic.chapter.subject.child;
+  const boardName = child.curriculumAssignments[0]?.curriculumVersion.board.name ?? null;
   return {
     childId: child.id,
     childName: child.name,
     className: child.className,
+    boardName,
     subjectName: topic.chapter.subject.name,
     chapterName: topic.chapter.name,
     topicName: topic.name,
@@ -787,7 +789,33 @@ export async function getAiSession(sessionId: string) {
     include: {
       messages: { orderBy: { sequence: "asc" } },
       testAttempt: true,
-      topic: { include: { chapter: { include: { subject: { include: { child: { include: { kidUser: true } } } } } } } },
+      topic: {
+        include: {
+          chapter: {
+            include: {
+              subject: {
+                include: {
+                  child: {
+                    include: {
+                      kidUser: true,
+                      curriculumAssignments: {
+                        include: {
+                          curriculumVersion: {
+                            include: {
+                              board: true,
+                            },
+                          },
+                          curriculumClass: true,
+                        },
+                      },
+                    },
+                  },
+                },
+              },
+            },
+          },
+        },
+      },
       assignment: true,
       child: true,
     },

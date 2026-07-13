@@ -145,10 +145,12 @@ export function AiTeachSessionView({ session, backHref }: { session: AiSession; 
   const lesson = lessonFromSession(session);
   const requestId = randomUUID();
   const conversationMessages = session.messages.filter((message) => message.role !== "SYSTEM");
+  const boardName = session.topic.chapter.subject.child.curriculumAssignments[0]?.curriculumVersion.board.name ?? null;
   const teachPrompt =
     storedPrompt(session) ??
     buildTeachTopicPrompt({
       className: session.topic.chapter.subject.child.className,
+      boardName,
       subjectName: session.topic.chapter.subject.name,
       chapterName: session.topic.chapter.name,
       topicName: session.topic.name,
@@ -191,19 +193,19 @@ export function AiTeachSessionView({ session, backHref }: { session: AiSession; 
           <div className="grid gap-3 rounded-md border border-stone-200 p-4 text-sm text-stone-700">
             <div>
               <p className="text-xs font-semibold uppercase tracking-wide text-stone-500">Explanation</p>
-              <p className="mt-1 leading-6 text-stone-700">{lesson.explanation}</p>
+              <p className="mt-1 whitespace-pre-wrap leading-6 text-stone-700">{lesson.explanation}</p>
             </div>
             <div>
               <p className="text-xs font-semibold uppercase tracking-wide text-stone-500">Example</p>
-              <p className="mt-1 leading-6 text-stone-700">{lesson.example}</p>
+              <p className="mt-1 whitespace-pre-wrap leading-6 text-stone-700">{lesson.example}</p>
             </div>
             <div>
               <p className="text-xs font-semibold uppercase tracking-wide text-stone-500">Common mistake</p>
-              <p className="mt-1 leading-6 text-stone-700">{lesson.mistake}</p>
+              <p className="mt-1 whitespace-pre-wrap leading-6 text-stone-700">{lesson.mistake}</p>
             </div>
             <div>
               <p className="text-xs font-semibold uppercase tracking-wide text-stone-500">Try this</p>
-              <p className="mt-1 leading-6 text-stone-700">{lesson.practice}</p>
+              <p className="mt-1 whitespace-pre-wrap leading-6 text-stone-700">{lesson.practice}</p>
             </div>
           </div>
           <div className="grid gap-2">
@@ -279,19 +281,19 @@ export function AiTeachSessionView({ session, backHref }: { session: AiSession; 
                       <div className="grid gap-3 rounded-md border border-emerald-100 bg-white p-3">
                         <div>
                           <p className="text-xs font-semibold uppercase tracking-wide text-stone-500">Explanation</p>
-                          <p className="mt-1 text-sm text-stone-700">{reply.explanation}</p>
+                          <p className="mt-1 whitespace-pre-wrap text-sm leading-6 text-stone-700">{reply.explanation}</p>
                         </div>
                         <div>
                           <p className="text-xs font-semibold uppercase tracking-wide text-stone-500">Example</p>
-                          <p className="mt-1 text-sm text-stone-700">{reply.example}</p>
+                          <p className="mt-1 whitespace-pre-wrap text-sm leading-6 text-stone-700">{reply.example}</p>
                         </div>
                         <div>
                           <p className="text-xs font-semibold uppercase tracking-wide text-stone-500">Common mistake</p>
-                          <p className="mt-1 text-sm text-stone-700">{reply.mistake}</p>
+                          <p className="mt-1 whitespace-pre-wrap text-sm leading-6 text-stone-700">{reply.mistake}</p>
                         </div>
                         <div>
                           <p className="text-xs font-semibold uppercase tracking-wide text-stone-500">Try this</p>
-                          <p className="mt-1 text-sm text-stone-700">{reply.practice}</p>
+                          <p className="mt-1 whitespace-pre-wrap text-sm leading-6 text-stone-700">{reply.practice}</p>
                         </div>
                       </div>
                       <p className="text-sm text-emerald-900">
@@ -319,10 +321,12 @@ export function AiTestSessionView({ session, backHref }: { session: AiSession; b
   const test = testFromSession(session);
   const attempt = session.testAttempt;
   const submitted = Boolean(attempt?.submittedAt);
+  const boardName = session.topic.chapter.subject.child.curriculumAssignments[0]?.curriculumVersion.board.name ?? null;
   const testPrompt =
     storedPrompt(session) ??
     buildGenerateTestPrompt({
       className: session.topic.chapter.subject.child.className,
+      boardName,
       subjectName: session.topic.chapter.subject.name,
       chapterName: session.topic.chapter.name,
       topicName: session.topic.name,
