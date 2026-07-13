@@ -34,13 +34,22 @@ function normalizeGeminiModelName(model: string) {
   const value = model.trim();
   if (!value) return value;
 
+  const extractModelId = (input: string) => {
+    const match = input.match(/(?:^|\/)models\/([^/?#:]+)/i);
+    if (match?.[1]) return match[1];
+    return null;
+  };
+
   try {
     const url = new URL(value);
-    const match = url.pathname.match(/\/models\/([^/]+)$/);
-    if (match?.[1]) return match[1];
+    const fromUrl = extractModelId(url.pathname);
+    if (fromUrl) return fromUrl;
   } catch {
     // Not a URL, keep going.
   }
+
+  const fromRaw = extractModelId(value);
+  if (fromRaw) return fromRaw;
 
   return value
     .replace(/^v1beta\/models\//, "")
@@ -48,7 +57,9 @@ function normalizeGeminiModelName(model: string) {
     .replace(/^models\//, "")
     .replace(/^\/+/, "")
     .split("?")[0]
-    .split("#")[0];
+    .split("#")[0]
+    .split(":")[0]
+    .split("/")[0];
 }
 
 export function getAiConfig(): AiConfig {
