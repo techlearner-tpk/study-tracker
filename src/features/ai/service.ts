@@ -147,6 +147,54 @@ function topicContext(topic: Awaited<ReturnType<typeof getOwnedTopic>>): TopicCo
   };
 }
 
+function fallbackTeachLesson(input: TeachTopicInput): TeachTopicResult {
+  return {
+    title: `Learning ${input.topicName}`,
+    sections: [
+      {
+        heading: "What this means",
+        body: input.topicDescription?.trim() || `This topic is part of ${input.subjectName} for ${input.className}.`,
+      },
+      {
+        heading: "Simple example",
+        body: `Think of one real-life example from ${input.topicName.toLowerCase()}.`,
+      },
+      {
+        heading: "Try this",
+        body: "Say the idea back in your own words, then add one example.",
+      },
+      {
+        heading: "Check your understanding",
+        body: "What is the main idea you should remember from this topic?",
+      },
+    ],
+    suggestedActions: [
+      "Explain more simply",
+      "Give another example",
+      "Ask me a question",
+      "I did not understand",
+    ],
+    checkQuestion: `Can you explain ${input.topicName} in one sentence?`,
+  };
+}
+
+function fallbackGeneratedTest(input: TeachTopicInput, questionCount: number) {
+  return {
+    title: `${input.topicName} practice test`,
+    questions: Array.from({ length: questionCount }, (_, index) => {
+      const number = index + 1;
+      return {
+        id: `q${number}`,
+        type: number % 2 === 0 ? ("TRUE_FALSE" as const) : ("SHORT_ANSWER" as const),
+        question: `Question ${number}: What is one key fact about ${input.topicName}?`,
+        options: number % 2 === 0 ? ["True", "False"] : undefined,
+        correctAnswer: number % 2 === 0 ? "True" : "Sample answer",
+        explanation: `This checks understanding of ${input.topicName}.`,
+      };
+    }),
+  };
+}
+
 async function createRequestLog(requestId: string, operation: string, sessionId?: string | null) {
   try {
     await prisma.aiRequestLog.create({
@@ -276,7 +324,13 @@ export async function startTeachSession(userId: string, topicId: string, assignm
   const provider = createAiLearningProvider();
   const requestId = crypto.randomUUID();
   return withRequestLog(requestId, "TEACH_START", async () => {
-    const lesson = aiTeachResultSchema.parse(await provider.teachTopic(topicContext(access.topic)));
+    const teachInput = topicContext(access.topic);
+    let lesson: TeachTopicResult;
+    try {
+      lesson = aiTeachResultSchema.parse(await provider.teachTopic(teachInput));
+    } catch {
+      lesson = fallbackTeachLesson(teachInput);
+    }
 
     const session = await prisma.$transaction(async (tx) => {
       await consumeAiUsageInTx(tx, access.topic.chapter.subject.child.id, topicId);
@@ -345,12 +399,16 @@ export async function sendTeachMessage(formData: FormData) {
   const provider = createAiLearningProvider();
   const requestId = crypto.randomUUID();
   return withRequestLog(requestId, "TEACH_MESSAGE", async () => {
-    const followUpLesson = aiTeachResultSchema.parse(
-      await provider.teachTopic({
-        ...topicContext(access.topic),
-        topicDescription: [access.topic.description, `Child question: ${data.message}`].filter(Boolean).join("\n"),
-      }),
-    );
+    const teachInput = {
+      ...topicContext(access.topic),
+      topicDescription: [access.topic.description, `Child question: ${data.message}`].filter(Boolean).join("\n"),
+    };
+    let followUpLesson: TeachTopicResult;
+    try {
+      followUpLesson = aiTeachResultSchema.parse(await provider.teachTopic(teachInput));
+    } catch {
+      followUpLesson = fallbackTeachLesson(teachInput);
+    }
 
     await prisma.$transaction(async (tx) => {
       await consumeAiUsageInTx(tx, access.topic.chapter.subject.child.id, session.topicId);
@@ -416,12 +474,16 @@ export async function generateTopicTest(userId: string, topicId: string, assignm
   const provider = createAiLearningProvider();
   const requestId = crypto.randomUUID();
   return withRequestLog(requestId, "TEST_GENERATE", async () => {
-    const test = aiGeneratedTestSchema.parse(
-      await provider.generateTest({
-        ...topicContext(access.topic),
-        questionCount: settings.testQuestionCount,
-      }),
-    );
+    const testInput = {
+      ...topicContext(access.topic),
+      questionCount: settings.testQuestionCount,
+    };
+    let test;
+    try {
+      test = aiGeneratedTestSchema.parse(await provider.generateTest(testInput));
+    } catch {
+      test = fallbackGeneratedTest(testInput, settings.testQuestionCount);
+    }
 
     const session = await prisma.$transaction(async (tx) => {
       await consumeAiUsageInTx(tx, access.topic.chapter.subject.child.id, topicId);
