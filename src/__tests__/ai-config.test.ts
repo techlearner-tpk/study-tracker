@@ -25,5 +25,13 @@ describe("ai config", () => {
     resetAiConfigForTests();
     vi.stubEnv("AI_MODEL", "models/gemini-2.5-flash");
     expect(getAiConfig().model).toBe("gemini-2.5-flash");
+
+    resetAiConfigForTests();
+    vi.stubEnv("AI_MODEL", "https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash:generateContent");
+    expect(getAiConfig().model).toBe("gemini-2.5-flash");
+
+    resetAiConfigForTests();
+    vi.stubEnv("AI_MODEL", "v1beta/models/gemini-2.5-flash");
+    expect(getAiConfig().model).toBe("gemini-2.5-flash");
   });
 });

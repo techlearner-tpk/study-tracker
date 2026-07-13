@@ -34,32 +34,34 @@ function normalizeGeminiModelName(model: string) {
   const value = model.trim();
   if (!value) return value;
 
-  const extractModelId = (input: string) => {
-    const match = input.match(/(?:^|\/)models\/([^/?#:]+)/i);
-    if (match?.[1]) return match[1];
-    return null;
-  };
+  const stripSuffixes = (input: string) =>
+    input
+      .replace(/^v1beta\/models\//, "")
+      .replace(/^v1\/models\//, "")
+      .replace(/^models\//, "")
+      .replace(/^\/+/, "")
+      .split("?")[0]
+      .split("#")[0]
+      .split(":")[0]
+      .split("/")[0];
 
   try {
     const url = new URL(value);
-    const fromUrl = extractModelId(url.pathname);
-    if (fromUrl) return fromUrl;
+    const segments = url.pathname.split("/").filter(Boolean);
+    if (segments.length) {
+      const lastSegment = segments[segments.length - 1];
+      return stripSuffixes(lastSegment);
+    }
   } catch {
     // Not a URL, keep going.
   }
 
-  const fromRaw = extractModelId(value);
-  if (fromRaw) return fromRaw;
+  const rawSegments = value.split("/").filter(Boolean);
+  if (rawSegments.length) {
+    return stripSuffixes(rawSegments[rawSegments.length - 1]);
+  }
 
-  return value
-    .replace(/^v1beta\/models\//, "")
-    .replace(/^v1\/models\//, "")
-    .replace(/^models\//, "")
-    .replace(/^\/+/, "")
-    .split("?")[0]
-    .split("#")[0]
-    .split(":")[0]
-    .split("/")[0];
+  return stripSuffixes(value);
 }
 
 export function getAiConfig(): AiConfig {
