@@ -5,16 +5,22 @@ export const aiLearningModeValues = ["TEACH", "TEST"] as const;
 export const aiSessionStatusValues = ["ACTIVE", "COMPLETED", "FAILED"] as const;
 export const aiLearningMessageRoleValues = ["SYSTEM", "CHILD", "ASSISTANT"] as const;
 
-export const aiTeachSectionSchema = z.object({
-  heading: z.string().min(1),
-  body: z.string().min(1),
+export const aiTeachCheckQuestionSchema = z.object({
+  question: z.string().min(1),
+  expectedAnswer: z.string().min(1),
+  hint: z.string().min(1),
 });
 
 export const aiTeachResultSchema = z.object({
   title: z.string().min(1),
-  sections: z.array(aiTeachSectionSchema).min(1),
+  learningGoal: z.string().min(1),
+  prerequisite: z.string().min(1),
+  explanation: z.string().min(1),
+  example: z.string().min(1),
+  mistake: z.string().min(1),
+  practice: z.string().min(1),
   suggestedActions: z.array(z.string().min(1)).min(1).max(4),
-  checkQuestion: z.string().min(1),
+  checkQuestion: aiTeachCheckQuestionSchema,
 });
 
 export const aiQuestionSchema = z.object({

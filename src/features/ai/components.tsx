@@ -5,6 +5,8 @@ import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Card, CardTitle } from "@/components/ui/card";
 import { Input, Label, Textarea } from "@/components/ui/form";
+import { buildGenerateTestPrompt } from "@/lib/ai/prompts/generate-test";
+import { buildTeachTopicPrompt } from "@/lib/ai/prompts/teach-topic";
 import { aiGeneratedTestSchema, aiTeachResultSchema } from "./schema";
 import { sendTeachMessageAction, startTeachSessionAction, startTestSessionAction, submitTopicTestAction } from "./actions";
 import type { getAiSession, getTopicAiAccessState, getAssignmentAiAccessState } from "./service";
@@ -21,6 +23,17 @@ function safeJsonParse(value: string) {
   }
 }
 
+function storedPrompt(session: AiSession) {
+  const message = session.messages.find((item) => item.role === "SYSTEM");
+  if (!message) return null;
+  const parsed = safeJsonParse(message.content);
+  if (!parsed || typeof parsed !== "object") return null;
+  const systemPrompt = "systemPrompt" in parsed ? String((parsed as { systemPrompt?: unknown }).systemPrompt ?? "") : "";
+  const userPrompt = "userPrompt" in parsed ? String((parsed as { userPrompt?: unknown }).userPrompt ?? "") : "";
+  if (!systemPrompt || !userPrompt) return null;
+  return { system: systemPrompt, user: userPrompt };
+}
+
 function lessonFromSession(session: AiSession) {
   const assistantMessage = session.messages.find((message) => message.role === "ASSISTANT");
   if (!assistantMessage) return null;
@@ -32,6 +45,24 @@ function lessonFromMessage(message: AiSession["messages"][number]) {
   if (message.role !== "ASSISTANT") return null;
   const parsed = safeJsonParse(message.content);
   return aiTeachResultSchema.safeParse(parsed).success ? aiTeachResultSchema.parse(parsed) : null;
+}
+
+function promptPreviewBlock({ title, system, user }: { title: string; system: string; user: string }) {
+  return (
+    <Card className="grid gap-3">
+      <CardTitle className="text-base">{title}</CardTitle>
+      <div className="grid gap-3">
+        <details className="rounded-md border border-stone-200 p-3">
+          <summary className="cursor-pointer text-sm font-medium text-stone-900">System prompt</summary>
+          <pre className="mt-2 whitespace-pre-wrap break-words text-xs leading-5 text-stone-700">{system}</pre>
+        </details>
+        <details className="rounded-md border border-stone-200 p-3">
+          <summary className="cursor-pointer text-sm font-medium text-stone-900">User prompt</summary>
+          <pre className="mt-2 whitespace-pre-wrap break-words text-xs leading-5 text-stone-700">{user}</pre>
+        </details>
+      </div>
+    </Card>
+  );
 }
 
 function testFromSession(session: AiSession) {
@@ -114,6 +145,15 @@ export function AiTeachSessionView({ session, backHref }: { session: AiSession; 
   const lesson = lessonFromSession(session);
   const requestId = randomUUID();
   const conversationMessages = session.messages.filter((message) => message.role !== "SYSTEM");
+  const teachPrompt =
+    storedPrompt(session) ??
+    buildTeachTopicPrompt({
+      className: session.topic.chapter.subject.child.className,
+      subjectName: session.topic.chapter.subject.name,
+      chapterName: session.topic.chapter.name,
+      topicName: session.topic.name,
+      topicDescription: session.topic.description ?? null,
+    });
 
   return (
     <div className="grid gap-6">
@@ -140,13 +180,31 @@ export function AiTeachSessionView({ session, backHref }: { session: AiSession; 
           <div className="flex items-center gap-2">
             <CardTitle className="text-base">{lesson.title}</CardTitle>
           </div>
-          <div className="grid gap-3 md:grid-cols-2">
-            {lesson.sections.map((section) => (
-              <div key={section.heading} className="rounded-md border border-stone-200 p-4">
-                <p className="text-sm font-semibold text-stone-900">{section.heading}</p>
-                <p className="mt-2 text-sm text-stone-600">{section.body}</p>
-              </div>
-            ))}
+          <div className="grid gap-2 rounded-md border border-stone-200 bg-stone-50 p-4 text-sm text-stone-700">
+            <p>
+              <span className="font-semibold text-stone-900">Learning goal:</span> {lesson.learningGoal}
+            </p>
+            <p>
+              <span className="font-semibold text-stone-900">Prerequisite:</span> {lesson.prerequisite}
+            </p>
+          </div>
+          <div className="grid gap-3 rounded-md border border-stone-200 p-4 text-sm text-stone-700">
+            <div>
+              <p className="text-xs font-semibold uppercase tracking-wide text-stone-500">Explanation</p>
+              <p className="mt-1 leading-6 text-stone-700">{lesson.explanation}</p>
+            </div>
+            <div>
+              <p className="text-xs font-semibold uppercase tracking-wide text-stone-500">Example</p>
+              <p className="mt-1 leading-6 text-stone-700">{lesson.example}</p>
+            </div>
+            <div>
+              <p className="text-xs font-semibold uppercase tracking-wide text-stone-500">Common mistake</p>
+              <p className="mt-1 leading-6 text-stone-700">{lesson.mistake}</p>
+            </div>
+            <div>
+              <p className="text-xs font-semibold uppercase tracking-wide text-stone-500">Try this</p>
+              <p className="mt-1 leading-6 text-stone-700">{lesson.practice}</p>
+            </div>
           </div>
           <div className="grid gap-2">
             <p className="text-sm font-semibold text-stone-900">Suggested actions</p>
@@ -161,10 +219,18 @@ export function AiTeachSessionView({ session, backHref }: { session: AiSession; 
           </div>
           <div className="rounded-md bg-emerald-50 p-4 text-sm text-emerald-900">
             <p className="font-medium">Quick check</p>
-            <p className="mt-1">{lesson.checkQuestion}</p>
+            <p className="mt-1">{lesson.checkQuestion.question}</p>
+            <p className="mt-2 text-xs text-emerald-800">Expected answer: {lesson.checkQuestion.expectedAnswer}</p>
+            <p className="mt-1 text-xs text-emerald-800">Hint: {lesson.checkQuestion.hint}</p>
           </div>
         </Card>
       ) : null}
+
+      {promptPreviewBlock({
+        title: "Teach Me prompt preview",
+        system: teachPrompt.system,
+        user: teachPrompt.user,
+      })}
 
       <Card>
         <CardTitle>Ask a follow-up</CardTitle>
@@ -202,16 +268,34 @@ export function AiTeachSessionView({ session, backHref }: { session: AiSession; 
                   {reply ? (
                     <div className="mt-2 grid gap-2">
                       <p className="text-sm font-medium text-stone-900">{reply.title}</p>
-                      <div className="grid gap-2 md:grid-cols-2">
-                        {reply.sections.map((section) => (
-                          <div key={section.heading} className="rounded-md border border-emerald-100 bg-white p-3">
-                            <p className="text-xs font-semibold text-stone-500">{section.heading}</p>
-                            <p className="mt-1 text-sm text-stone-700">{section.body}</p>
-                          </div>
-                        ))}
+                      <div className="rounded-md border border-emerald-100 bg-white p-3 text-sm text-stone-700">
+                        <p>
+                          <span className="font-semibold text-stone-900">Learning goal:</span> {reply.learningGoal}
+                        </p>
+                        <p className="mt-1">
+                          <span className="font-semibold text-stone-900">Prerequisite:</span> {reply.prerequisite}
+                        </p>
+                      </div>
+                      <div className="grid gap-3 rounded-md border border-emerald-100 bg-white p-3">
+                        <div>
+                          <p className="text-xs font-semibold uppercase tracking-wide text-stone-500">Explanation</p>
+                          <p className="mt-1 text-sm text-stone-700">{reply.explanation}</p>
+                        </div>
+                        <div>
+                          <p className="text-xs font-semibold uppercase tracking-wide text-stone-500">Example</p>
+                          <p className="mt-1 text-sm text-stone-700">{reply.example}</p>
+                        </div>
+                        <div>
+                          <p className="text-xs font-semibold uppercase tracking-wide text-stone-500">Common mistake</p>
+                          <p className="mt-1 text-sm text-stone-700">{reply.mistake}</p>
+                        </div>
+                        <div>
+                          <p className="text-xs font-semibold uppercase tracking-wide text-stone-500">Try this</p>
+                          <p className="mt-1 text-sm text-stone-700">{reply.practice}</p>
+                        </div>
                       </div>
                       <p className="text-sm text-emerald-900">
-                        <span className="font-medium">Quick check:</span> {reply.checkQuestion}
+                        <span className="font-medium">Quick check:</span> {reply.checkQuestion.question}
                       </p>
                     </div>
                   ) : (
@@ -235,6 +319,16 @@ export function AiTestSessionView({ session, backHref }: { session: AiSession; b
   const test = testFromSession(session);
   const attempt = session.testAttempt;
   const submitted = Boolean(attempt?.submittedAt);
+  const testPrompt =
+    storedPrompt(session) ??
+    buildGenerateTestPrompt({
+      className: session.topic.chapter.subject.child.className,
+      subjectName: session.topic.chapter.subject.name,
+      chapterName: session.topic.chapter.name,
+      topicName: session.topic.name,
+      topicDescription: session.topic.description ?? null,
+      questionCount: attempt?.questionCount ?? test?.questions.length ?? 5,
+    });
 
   if (!test || !attempt) {
     return (
@@ -286,6 +380,12 @@ export function AiTestSessionView({ session, backHref }: { session: AiSession; b
           </div>
         </Card>
       ) : null}
+
+      {promptPreviewBlock({
+        title: "Test Me prompt preview",
+        system: testPrompt.system,
+        user: testPrompt.user,
+      })}
 
       {!submitted ? (
         <Card>
