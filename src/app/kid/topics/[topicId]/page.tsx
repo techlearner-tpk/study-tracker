@@ -39,7 +39,7 @@ export default async function KidTopicPage({ params }: { params: Promise<{ topic
           <p className="mt-3 whitespace-pre-wrap text-sm text-stone-600">{topic.notes ?? "No notes yet."}</p>
         </Card>
 
-        <AiLearningPanel access={access} topicId={topic.id} />
+        <AiLearningPanel access={access} topicId={topic.id} topicName={topic.name} />
 
         <Card>
           <CardTitle>Study timeline</CardTitle>

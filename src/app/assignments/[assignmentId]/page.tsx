@@ -18,7 +18,14 @@ export default async function AssignmentPage({ params }: { params: Promise<{ ass
   return (
     <AppShell>
       <div className="grid gap-6">
-        <AiLearningPanel access={access} topicId={assignment.topicId} assignmentId={assignment.id} assignmentType={assignment.type} />
+        <AiLearningPanel
+          access={access}
+          topicId={assignment.topicId}
+          topicName={assignment.topic.name}
+          assignmentId={assignment.id}
+          assignmentType={assignment.type}
+          isAdmin
+        />
         <AssignmentDetailView assignment={assignment} hrefBase="/assignments" />
       </div>
     </AppShell>

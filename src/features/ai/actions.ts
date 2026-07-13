@@ -101,11 +101,15 @@ export async function resetAiUsageAction(formData: FormData) {
 export async function deleteTopicAiHistoryAction(formData: FormData) {
   const parent = await requireParentUser();
   const topicId = String(formData.get("topicId") ?? "").trim();
+  const confirmTopicName = String(formData.get("confirmTopicName") ?? "").trim();
   if (!topicId) {
     throw new Error("Topic is required");
   }
 
   const topic = await getOwnedTopic(parent.id, topicId);
+  if (!confirmTopicName || confirmTopicName !== topic.name) {
+    throw new Error(`Type the exact topic name (${topic.name}) to confirm deletion.`);
+  }
   const childId = topic.chapter.subject.child.id;
 
   await prisma.$transaction(async (tx) => {

@@ -18,6 +18,7 @@ export default async function TopicPage({ params }: { params: Promise<{ topicId:
   const { topicId } = await params;
   const topic = await getOwnedTopic(user.id, topicId);
   const access = await getTopicAiAccessState(user.id, topicId);
+  const isAdmin = user.role === "PARENT";
 
   const totalStudyTime = topic.studySessions.reduce((total, session) => total + session.durationMinutes, 0);
   const timeline = [
@@ -46,7 +47,7 @@ export default async function TopicPage({ params }: { params: Promise<{ topicId:
           <Card><CardTitle>Last studied</CardTitle><p className="mt-3 text-sm text-stone-600">{topic.studySessions[0] ? format(topic.studySessions[0].startTime, "PP p") : "Not studied yet"}</p></Card>
         </section>
 
-        <AiLearningPanel access={access} topicId={topic.id} />
+        <AiLearningPanel access={access} topicId={topic.id} topicName={topic.name} isAdmin={isAdmin} />
 
         <section className="grid gap-4">
           <Card><CardTitle>Study Sessions</CardTitle><div className="mt-4"><StudySessionForm topicId={topic.id} /></div></Card>

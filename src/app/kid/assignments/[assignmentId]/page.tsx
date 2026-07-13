@@ -39,7 +39,13 @@ export default async function KidAssignmentPage({ params }: { params: Promise<{ 
         </header>
 
         <div className="grid gap-6">
-          <AiLearningPanel access={access} topicId={assignment.topicId} assignmentId={assignment.id} assignmentType={assignment.type} />
+          <AiLearningPanel
+            access={access}
+            topicId={assignment.topicId}
+            topicName={assignment.topic.name}
+            assignmentId={assignment.id}
+            assignmentType={assignment.type}
+          />
           <AssignmentDetailView assignment={assignment} hrefBase="/kid/assignments" />
         </div>
       </div>

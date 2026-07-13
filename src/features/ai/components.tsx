@@ -23,6 +23,12 @@ function safeJsonParse(value: string) {
   }
 }
 
+function prettyJson(value: string) {
+  const parsed = safeJsonParse(value);
+  if (parsed === null) return value;
+  return JSON.stringify(parsed, null, 2);
+}
+
 function storedPrompt(session: AiSession) {
   const message = session.messages.find((item) => item.role === "SYSTEM");
   if (!message) return null;
@@ -52,30 +58,46 @@ function promptPreviewBlock({ title, system, user }: { title: string; system: st
     <Card className="grid gap-3">
       <CardTitle className="text-base">{title}</CardTitle>
       <div className="grid gap-3">
-        <details className="rounded-md border border-stone-200 p-3">
-          <summary className="cursor-pointer text-sm font-medium text-stone-900">System prompt</summary>
+        <div className="rounded-md border border-stone-200 p-3">
+          <p className="text-xs font-semibold uppercase tracking-wide text-stone-500">System prompt</p>
           <pre className="mt-2 whitespace-pre-wrap break-words text-xs leading-5 text-stone-700">{system}</pre>
-        </details>
-        <details className="rounded-md border border-stone-200 p-3">
-          <summary className="cursor-pointer text-sm font-medium text-stone-900">User prompt</summary>
+        </div>
+        <div className="rounded-md border border-stone-200 p-3">
+          <p className="text-xs font-semibold uppercase tracking-wide text-stone-500">User prompt</p>
           <pre className="mt-2 whitespace-pre-wrap break-words text-xs leading-5 text-stone-700">{user}</pre>
-        </details>
+        </div>
       </div>
     </Card>
   );
 }
 
-function AdminTopicTools({ topicId }: { topicId: string }) {
+function AdminTopicTools({ topicId, topicName }: { topicId: string; topicName: string }) {
   return (
     <Card className="grid gap-3 border-amber-200 bg-amber-50/60">
       <CardTitle className="text-base">Admin tools</CardTitle>
       <p className="text-sm text-stone-700">Clear the AI history for this topic and start fresh.</p>
+      <p className="text-xs text-stone-600">Type the topic name to confirm: {topicName}</p>
       <form action={deleteTopicAiHistoryAction}>
         <input type="hidden" name="topicId" value={topicId} />
+        <Label>
+          Confirm topic
+          <Input name="confirmTopicName" placeholder={topicName} />
+        </Label>
         <Button type="submit" variant="secondary" className="border-amber-300 bg-white text-stone-900 hover:bg-amber-100">
           Delete topic AI history
         </Button>
       </form>
+    </Card>
+  );
+}
+
+function RawAiResponseCard({ title, content }: { title: string; content: string }) {
+  return (
+    <Card className="grid gap-3 border-slate-200 bg-slate-50">
+      <CardTitle className="text-base">{title}</CardTitle>
+      <pre className="whitespace-pre-wrap break-words rounded-md border border-slate-200 bg-white p-3 text-xs leading-5 text-slate-700">
+        {prettyJson(content)}
+      </pre>
     </Card>
   );
 }
@@ -112,13 +134,17 @@ function AiActionButtons({ topicId, assignmentId, disabled }: { topicId: string;
 export function AiLearningPanel({
   access,
   topicId,
+  topicName,
   assignmentId,
   assignmentType,
+  isAdmin = false,
 }: {
   access: TopicAccessState | AssignmentAccessState;
   topicId: string;
+  topicName: string;
   assignmentId?: string | null;
   assignmentType?: string | null;
+  isAdmin?: boolean;
 }) {
   return (
     <Card className="grid gap-4 lg:grid-cols-[minmax(0,1fr)_280px]">
@@ -152,6 +178,11 @@ export function AiLearningPanel({
         <p>Subscription status: {access.subscriptionStatus}</p>
         {access.hasAccess ? <p>Ask only about the current topic. No general chat memory.</p> : null}
       </div>
+      {isAdmin ? (
+        <div className="lg:col-span-2">
+          <AdminTopicTools topicId={topicId} topicName={topicName} />
+        </div>
+      ) : null}
     </Card>
   );
 }
@@ -161,6 +192,7 @@ export function AiTeachSessionView({ session, backHref, isAdmin }: { session: Ai
   const requestId = randomUUID();
   const conversationMessages = session.messages.filter((message) => message.role !== "SYSTEM");
   const boardName = session.topic.chapter.subject.child.curriculumAssignments[0]?.curriculumVersion.board.name ?? null;
+  const assistantMessage = session.messages.find((message) => message.role === "ASSISTANT");
   const teachPrompt =
     storedPrompt(session) ??
     buildTeachTopicPrompt({
@@ -255,7 +287,8 @@ export function AiTeachSessionView({ session, backHref, isAdmin }: { session: Ai
             system: teachPrompt.system,
             user: teachPrompt.user,
           })}
-          <AdminTopicTools topicId={session.topicId} />
+          {assistantMessage ? <RawAiResponseCard title="Raw AI response" content={assistantMessage.content} /> : null}
+          <AdminTopicTools topicId={session.topicId} topicName={session.topic.name} />
         </>
       ) : null}
 
@@ -349,6 +382,7 @@ export function AiTestSessionView({ session, backHref, isAdmin }: { session: AiS
   const attempt = session.testAttempt;
   const submitted = Boolean(attempt?.submittedAt);
   const boardName = session.topic.chapter.subject.child.curriculumAssignments[0]?.curriculumVersion.board.name ?? null;
+  const testAttemptContent = session.testAttempt ? JSON.stringify(session.testAttempt.questionsJson) : "";
   const testPrompt =
     storedPrompt(session) ??
     buildGenerateTestPrompt({
@@ -419,7 +453,8 @@ export function AiTestSessionView({ session, backHref, isAdmin }: { session: AiS
             system: testPrompt.system,
             user: testPrompt.user,
           })}
-          <AdminTopicTools topicId={session.topicId} />
+          {testAttemptContent ? <RawAiResponseCard title="Raw AI test payload" content={testAttemptContent} /> : null}
+          <AdminTopicTools topicId={session.topicId} topicName={session.topic.name} />
         </>
       ) : null}
 
