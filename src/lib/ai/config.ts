@@ -31,7 +31,15 @@ export type AiConfig = {
 let cachedConfig: AiConfig | null = null;
 
 function normalizeGeminiModelName(model: string) {
-  const value = model.trim();
+  const safeDecode = (input: string) => {
+    try {
+      return decodeURIComponent(input);
+    } catch {
+      return input;
+    }
+  };
+
+  const value = safeDecode(model.trim());
   if (!value) return value;
 
   const stripSuffixes = (input: string) =>
@@ -61,7 +69,15 @@ function normalizeGeminiModelName(model: string) {
     return stripSuffixes(rawSegments[rawSegments.length - 1]);
   }
 
-  return stripSuffixes(value);
+  return stripSuffixes(safeDecode(value));
+}
+
+function assertGeminiModelName(model: string) {
+  if (!/^[a-z0-9][a-z0-9._-]*$/i.test(model)) {
+    throw new Error(
+      `AI_MODEL must be a plain Gemini model id like "gemini-2.5-flash". Received: ${model || "<empty>"}`,
+    );
+  }
 }
 
 export function getAiConfig(): AiConfig {
@@ -82,7 +98,11 @@ export function getAiConfig(): AiConfig {
   cachedConfig = {
     enabled,
     provider: parsed.AI_PROVIDER,
-    model: normalizeGeminiModelName(parsed.AI_MODEL),
+    model: (() => {
+      const normalized = normalizeGeminiModelName(parsed.AI_MODEL);
+      assertGeminiModelName(normalized);
+      return normalized;
+    })(),
     apiKey: parsed.AI_API_KEY,
     topicPromptLimit: parsed.AI_TOPIC_PROMPT_LIMIT,
     testQuestionCount: parsed.AI_TEST_QUESTION_COUNT,
