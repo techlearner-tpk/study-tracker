@@ -121,6 +121,7 @@ export function AiTeachSessionView({ session, backHref }: { session: AiSession; 
           <span>{session.topic.chapter.name}</span>
         </div>
         <h1 className="text-3xl font-semibold tracking-tight">{session.topic.name}</h1>
+        <p className="text-sm text-stone-600">This page explains the topic first, then asks a quick check question at the end.</p>
         <p className="text-sm text-stone-600">
           <Link href={backHref} className="text-emerald-800 hover:underline">
             Back to topic
@@ -153,7 +154,7 @@ export function AiTeachSessionView({ session, backHref }: { session: AiSession; 
             </ul>
           </div>
           <div className="rounded-md bg-emerald-50 p-4 text-sm text-emerald-900">
-            <p className="font-medium">Check question</p>
+            <p className="font-medium">Quick check</p>
             <p className="mt-1">{lesson.checkQuestion}</p>
           </div>
         </Card>

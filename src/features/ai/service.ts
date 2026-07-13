@@ -150,12 +150,22 @@ function topicContext(topic: Awaited<ReturnType<typeof getOwnedTopic>>): TopicCo
 }
 
 function fallbackTeachLesson(input: TeachTopicInput): TeachTopicResult {
+  const topicLower = input.topicName.toLowerCase();
+  const explanation =
+    topicLower.includes("passage")
+      ? `A ${input.topicName.toLowerCase()} is a reading passage that presents ideas, explains a topic, or shares a viewpoint.`
+      : input.topicDescription?.trim() || `This topic is part of ${input.subjectName} for ${input.className}.`;
+
   return {
     title: `Learning ${input.topicName}`,
     sections: [
       {
-        heading: "What this means",
-        body: input.topicDescription?.trim() || `This topic is part of ${input.subjectName} for ${input.className}.`,
+        heading: "Plain-English explanation",
+        body: explanation,
+      },
+      {
+        heading: "Why it matters",
+        body: `Knowing ${input.topicName.toLowerCase()} helps you understand questions, read more carefully, and remember the main idea.`,
       },
       {
         heading: "Simple example",
@@ -165,10 +175,6 @@ function fallbackTeachLesson(input: TeachTopicInput): TeachTopicResult {
         heading: "Try this",
         body: "Say the idea back in your own words, then add one example.",
       },
-      {
-        heading: "Check your understanding",
-        body: "What is the main idea you should remember from this topic?",
-      },
     ],
     suggestedActions: [
       "Explain more simply",
@@ -176,7 +182,7 @@ function fallbackTeachLesson(input: TeachTopicInput): TeachTopicResult {
       "Ask me a question",
       "I did not understand",
     ],
-    checkQuestion: `Can you explain ${input.topicName} in one sentence?`,
+    checkQuestion: `What is ${input.topicName} in your own words?`,
   };
 }
 

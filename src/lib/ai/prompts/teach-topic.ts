@@ -19,6 +19,9 @@ export function buildTeachTopicPrompt(input: TeachTopicPromptInput) {
     "If the child asks for unsafe or unrelated help, gently redirect to learning.",
     "Return JSON only with keys: title, sections, suggestedActions, checkQuestion.",
     "Sections must be an array of objects with heading and body.",
+    "The first section must explain what the topic is in simple plain language.",
+    "Include a second section that explains why the topic matters or what the child should notice.",
+    "The final checkQuestion must be a short comprehension check, not a trick question.",
   ].join(" ");
 
   const user = [
@@ -28,11 +31,11 @@ export function buildTeachTopicPrompt(input: TeachTopicPromptInput) {
     `Chapter: ${input.chapterName}`,
     `Topic: ${input.topicName}`,
     input.topicDescription ? `Topic description: ${input.topicDescription}` : null,
-    "Create a short, friendly lesson with:",
-    "1. What this means",
-    "2. Simple example",
-    "3. Try this",
-    "4. Check your understanding",
+    "Create a short, friendly lesson with these sections:",
+    "1. Plain-English explanation",
+    "2. Why it matters",
+    "3. Simple example",
+    "4. Try this",
     "Use concise wording and include one worked example where relevant.",
     "Suggested actions should be exactly 4 items and may include: Explain more simply, Give another example, Ask me a question, I did not understand.",
   ]
