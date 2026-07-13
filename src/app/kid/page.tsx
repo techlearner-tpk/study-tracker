@@ -2,6 +2,7 @@ import Link from "next/link";
 import { notFound } from "next/navigation";
 import { Clock, Target, Trophy } from "lucide-react";
 import { UserButton } from "@clerk/nextjs";
+import { Button } from "@/components/ui/button";
 import { Card, CardTitle } from "@/components/ui/card";
 import { Progress } from "@/components/ui/progress";
 import { buildChildAnalytics } from "@/features/dashboard/queries";
@@ -33,6 +34,12 @@ export default async function KidPage() {
           <Metric icon={<Clock size={18} />} label="Today" value={minutesLabel(analytics.todayStudyTime)} />
           <Metric icon={<Target size={18} />} label="Current streak" value={`${analytics.currentStreak} days`} />
           <Metric icon={<Trophy size={18} />} label="Completed topics" value={`${analytics.topicProgress.completed}`} />
+        </section>
+
+        <section>
+          <Link href="/kid/assignments">
+            <Button type="button" variant="secondary">Open assignments</Button>
+          </Link>
         </section>
 
         <section className="grid gap-4 lg:grid-cols-2">

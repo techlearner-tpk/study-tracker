@@ -1,5 +1,5 @@
 import Link from "next/link";
-import { BookOpen, CalendarDays, LineChart, UsersRound } from "lucide-react";
+import { BookOpen, CalendarDays, ClipboardList, LineChart, UsersRound } from "lucide-react";
 import { UserButton } from "@clerk/nextjs";
 import { getChildren } from "@/features/dashboard/queries";
 import { requireCurrentUser } from "@/lib/auth";
@@ -26,6 +26,7 @@ export async function AppShell({ children }: { children: React.ReactNode }) {
         </div>
         <nav className="mt-8 grid gap-2 text-sm">
           <NavLink href="/" icon={<UsersRound size={17} />}>Children</NavLink>
+          <NavLink href="/assignments" icon={<ClipboardList size={17} />}>Assignments</NavLink>
           <NavLink href="/calendar" icon={<CalendarDays size={17} />}>Calendar</NavLink>
           <NavLink href="/reports" icon={<LineChart size={17} />}>Reports</NavLink>
           {user.role === "PARENT" ? <NavLink href="/admin/curriculum" icon={<BookOpen size={17} />}>Curriculum</NavLink> : null}

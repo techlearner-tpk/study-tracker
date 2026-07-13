@@ -12,6 +12,7 @@ export async function saveTopic(formData: FormData) {
   const user = await requireParentUser();
   const data = topicSchema.parse(formDataToObject(formData));
   const chapter = await getOwnedChapter(user.id, data.chapterId);
+  const returnTo = String(formData.get("returnTo") ?? "").trim();
   const payload = {
     name: data.name,
     description: data.description,
@@ -30,6 +31,10 @@ export async function saveTopic(formData: FormData) {
 
   revalidatePath(`/children/${chapter.subject.childId}`);
   revalidatePath(`/topics/${topic.id}`);
+  if (returnTo && !data.id) {
+    const separator = returnTo.includes("?") ? "&" : "?";
+    redirect(`${returnTo}${separator}topicId=${topic.id}`);
+  }
 }
 
 export async function deleteTopic(formData: FormData) {

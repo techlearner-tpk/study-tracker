@@ -38,6 +38,7 @@ export const topicSchema = z.object({
 export const studySessionSchema = z
   .object({
     topicId: z.string().min(1),
+    assignmentId: z.string().optional().or(z.literal("").transform(() => undefined)),
     startTime: z.coerce.date(),
     endTime: z.coerce.date(),
     durationMinutes: z.coerce.number().int().positive("Duration must be positive"),
@@ -51,6 +52,7 @@ export const studySessionSchema = z
 export const practiceSessionSchema = z
   .object({
     topicId: z.string().min(1),
+    assignmentId: z.string().optional().or(z.literal("").transform(() => undefined)),
     date: z.coerce.date(),
     durationMinutes: z.coerce.number().int().positive(),
     questionsAttempted: z.coerce.number().int().min(0).optional().or(z.literal("").transform(() => undefined)),
@@ -70,6 +72,7 @@ export const practiceSessionSchema = z
 
 export const revisionSessionSchema = z.object({
   topicId: z.string().min(1),
+  assignmentId: z.string().optional().or(z.literal("").transform(() => undefined)),
   date: z.coerce.date(),
   durationMinutes: z.coerce.number().int().positive(),
   notes: optionalText,

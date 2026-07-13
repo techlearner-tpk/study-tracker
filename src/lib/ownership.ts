@@ -22,6 +22,47 @@ export type OwnedChild = Prisma.ChildGetPayload<{
     };
     habitGoals: true;
     outcomeGoals: true;
+    assignments: {
+      include: {
+        topic: {
+          include: {
+            chapter: {
+              include: {
+                subject: true;
+              };
+            };
+          };
+        };
+      };
+    };
+  };
+}>;
+
+export type OwnedAssignment = Prisma.AssignmentGetPayload<{
+  include: {
+    child: {
+      include: {
+        user: true;
+        kidUser: true;
+      };
+    };
+    topic: {
+      include: {
+        chapter: {
+          include: {
+            subject: {
+              include: {
+                child: true;
+              };
+            };
+          };
+        };
+      };
+    };
+    assignedBy: true;
+    studySessions: true;
+    practiceSessions: true;
+    revisionSessions: true;
   };
 }>;
 
@@ -50,6 +91,19 @@ export async function getOwnedChild(userId: string, childId: string): Promise<Ow
       },
       habitGoals: { where: { isActive: true }, orderBy: { createdAt: "asc" } },
       outcomeGoals: { where: { isActive: true }, orderBy: { createdAt: "asc" } },
+      assignments: {
+        include: {
+          topic: {
+            include: {
+              chapter: {
+                include: {
+                  subject: true,
+                },
+              },
+            },
+          },
+        },
+      },
     },
   });
 
@@ -91,4 +145,39 @@ export async function getOwnedTopic(userId: string, topicId: string) {
   const child = topic?.chapter.subject.child;
   if (!topic || !child || (child.userId !== userId && child.kidUser?.id !== userId)) notFound();
   return topic;
+}
+
+export async function getOwnedAssignment(userId: string, assignmentId: string): Promise<OwnedAssignment> {
+  const assignment = await prisma.assignment.findUnique({
+    where: { id: assignmentId },
+    include: {
+      child: {
+        include: {
+          user: true,
+          kidUser: true,
+        },
+      },
+      topic: {
+        include: {
+          chapter: {
+            include: {
+              subject: {
+                include: {
+                  child: true,
+                },
+              },
+            },
+          },
+        },
+      },
+      assignedBy: true,
+      studySessions: { orderBy: { startTime: "desc" } },
+      practiceSessions: { orderBy: { date: "desc" } },
+      revisionSessions: { orderBy: { date: "desc" } },
+    },
+  });
+
+  const child = assignment?.child;
+  if (!assignment || !child || (child.userId !== userId && child.kidUser?.id !== userId)) notFound();
+  return assignment;
 }

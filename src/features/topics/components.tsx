@@ -5,10 +5,11 @@ import { Button } from "@/components/ui/button";
 import { Input, Label, Select, Textarea } from "@/components/ui/form";
 import { saveTopic } from "./actions";
 
-export function TopicForm({ chapterId }: { chapterId: string }) {
+export function TopicForm({ chapterId, returnTo }: { chapterId: string; returnTo?: string }) {
   return (
     <form action={saveTopic} className="grid gap-3">
       <input type="hidden" name="chapterId" value={chapterId} />
+      {returnTo ? <input type="hidden" name="returnTo" value={returnTo} /> : null}
       <Label>Topic<Input name="name" required /></Label>
       <Label>Description<Textarea name="description" /></Label>
       <div className="grid gap-3 sm:grid-cols-2">
@@ -43,4 +44,3 @@ export function TopicRow({ topic }: { topic: { id: string; name: string; status:
     </Link>
   );
 }
-

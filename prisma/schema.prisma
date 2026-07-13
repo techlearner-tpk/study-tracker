@@ -3,9 +3,9 @@ generator client {
 }
 
 datasource db {
-  provider = "postgresql"
-  url      = env("DATABASE_URL")
-  directUrl = env("DIRECT_URL")
+  provider          = "postgresql"
+  url               = env("DATABASE_URL")
+  directUrl         = env("DIRECT_URL")
   shadowDatabaseUrl = env("SHADOW_DATABASE_URL")
 }
 
@@ -50,68 +50,96 @@ enum CurriculumVerificationStatus {
   REVIEW_REQUIRED
 }
 
+enum AssignmentSource {
+  PARENT
+  SELF
+}
+
+enum AssignmentType {
+  STUDY
+  PRACTICE
+  REVISION
+  TEST
+}
+
+enum AssignmentStatus {
+  PLANNED
+  IN_PROGRESS
+  COMPLETED
+  OVERDUE
+  SKIPPED
+}
+
+enum AssignmentPriority {
+  LOW
+  MEDIUM
+  HIGH
+}
+
 model User {
-  id           String   @id @default(cuid())
-  email        String   @unique
+  id           String       @id @default(cuid())
+  email        String       @unique
   name         String
   passwordHash String
-  clerkUserId  String?  @unique
-  role         UserRole @default(PARENT)
+  clerkUserId  String?      @unique
+  role         UserRole     @default(PARENT)
   verifiedAt   DateTime?
-  childId      String?  @unique
-  createdAt    DateTime @default(now())
-  updatedAt    DateTime @updatedAt
-  child        Child?    @relation("KidChild", fields: [childId], references: [id], onDelete: Cascade)
-  children     Child[]   @relation("ParentChildren")
+  childId      String?      @unique
+  createdAt    DateTime     @default(now())
+  updatedAt    DateTime     @updatedAt
+  child        Child?       @relation("KidChild", fields: [childId], references: [id], onDelete: Cascade)
+  children     Child[]      @relation("ParentChildren")
+  assignments  Assignment[] @relation("AssignmentsCreatedBy")
 }
 
 model Child {
-  id           String        @id @default(cuid())
-  userId       String?
-  name         String
-  className    String
-  school       String?
-  themeColor   String?
-  createdAt    DateTime      @default(now())
-  updatedAt    DateTime      @updatedAt
-  user         User?         @relation("ParentChildren", fields: [userId], references: [id], onDelete: Cascade)
-  kidUser      User?         @relation("KidChild")
-  magicLinkTokens MagicLinkToken[]
-  subjects     Subject[]
-  habitGoals   HabitGoal[]
-  outcomeGoals OutcomeGoal[]
+  id                    String                 @id @default(cuid())
+  userId                String?
+  name                  String
+  className             String
+  school                String?
+  themeColor            String?
+  createdAt             DateTime               @default(now())
+  updatedAt             DateTime               @updatedAt
+  user                  User?                  @relation("ParentChildren", fields: [userId], references: [id], onDelete: Cascade)
+  kidUser               User?                  @relation("KidChild")
+  magicLinkTokens       MagicLinkToken[]
+  subjects              Subject[]
+  habitGoals            HabitGoal[]
+  outcomeGoals          OutcomeGoal[]
   curriculumAssignments CurriculumAssignment[]
+  assignments           Assignment[]
 
   @@index([name])
   @@index([userId])
 }
 
 model CurriculumBoard {
-  id        String             @id @default(cuid())
-  code      String             @unique
+  id        String              @id @default(cuid())
+  code      String              @unique
   name      String
-  createdAt DateTime           @default(now())
-  updatedAt DateTime           @updatedAt
+  createdAt DateTime            @default(now())
+  updatedAt DateTime            @updatedAt
   versions  CurriculumVersion[]
 }
 
 model CurriculumVersion {
-  id                 String                           @id @default(cuid())
-  boardId            String
-  academicYear       String
-  version            String
-  name               String
-  status             CurriculumStatus                 @default(DRAFT)
-  verificationStatus CurriculumVerificationStatus     @default(REVIEW_REQUIRED)
-  sourceUrl          String?
-  notes              String?
-  sourceReferences   Json?
-  publishedAt        DateTime?
-  archivedAt         DateTime?
-  createdAt          DateTime                         @default(now())
-  updatedAt          DateTime                         @updatedAt
-  board              CurriculumBoard                  @relation(fields: [boardId], references: [id], onDelete: Cascade)
-  classes            CurriculumClass[]
+  id                    String                       @id @default(cuid())
+  boardId               String
+  academicYear          String
+  version               String
+  name                  String
+  status                CurriculumStatus             @default(DRAFT)
+  verificationStatus    CurriculumVerificationStatus @default(REVIEW_REQUIRED)
+  sourceUrl             String?
+  notes                 String?
+  sourceReferences      Json?
+  publishedAt           DateTime?
+  archivedAt            DateTime?
+  createdAt             DateTime                     @default(now())
+  updatedAt             DateTime                     @updatedAt
+  board                 CurriculumBoard              @relation(fields: [boardId], references: [id], onDelete: Cascade)
+  classes               CurriculumClass[]
   curriculumAssignments CurriculumAssignment[]
 
   @@unique([boardId, academicYear, version])
@@ -120,16 +148,16 @@ model CurriculumVersion {
 }
 
 model CurriculumClass {
-  id        String              @id @default(cuid())
-  versionId String
-  level     Int
-  name      String
-  stableKey String
-  sequence  Int                 @default(0)
-  createdAt DateTime            @default(now())
-  updatedAt DateTime            @updatedAt
-  version   CurriculumVersion   @relation(fields: [versionId], references: [id], onDelete: Cascade)
-  subjects  CurriculumSubject[]
+  id                    String                 @id @default(cuid())
+  versionId             String
+  level                 Int
+  name                  String
+  stableKey             String
+  sequence              Int                    @default(0)
+  createdAt             DateTime               @default(now())
+  updatedAt             DateTime               @updatedAt
+  version               CurriculumVersion      @relation(fields: [versionId], references: [id], onDelete: Cascade)
+  subjects              CurriculumSubject[]
   curriculumAssignments CurriculumAssignment[]
 
   @@unique([versionId, level])
@@ -138,20 +166,20 @@ model CurriculumClass {
 }
 
 model CurriculumSubject {
-  id                 String                          @id @default(cuid())
+  id                 String                       @id @default(cuid())
   classId            String
   stableKey          String
   name               String
-  sequence           Int                             @default(0)
-  isDefaultSelected   Boolean                         @default(false)
-  isOptional         Boolean                         @default(false)
-  isLanguageSubject  Boolean                         @default(false)
+  sequence           Int                          @default(0)
+  isDefaultSelected  Boolean                      @default(false)
+  isOptional         Boolean                      @default(false)
+  isLanguageSubject  Boolean                      @default(false)
   sourceUrl          String?
-  verificationStatus CurriculumVerificationStatus    @default(REVIEW_REQUIRED)
+  verificationStatus CurriculumVerificationStatus @default(REVIEW_REQUIRED)
   archivedAt         DateTime?
-  createdAt          DateTime                        @default(now())
-  updatedAt          DateTime                        @updatedAt
-  class              CurriculumClass                 @relation(fields: [classId], references: [id], onDelete: Cascade)
+  createdAt          DateTime                     @default(now())
+  updatedAt          DateTime                     @updatedAt
+  class              CurriculumClass              @relation(fields: [classId], references: [id], onDelete: Cascade)
   chapters           CurriculumChapter[]
 
   @@unique([classId, stableKey])
@@ -160,17 +188,17 @@ model CurriculumSubject {
 }
 
 model CurriculumChapter {
-  id                 String                          @id @default(cuid())
+  id                 String                       @id @default(cuid())
   subjectId          String
   stableKey          String
   name               String
-  sequence           Int                             @default(0)
+  sequence           Int                          @default(0)
   sourceUrl          String?
-  verificationStatus CurriculumVerificationStatus    @default(REVIEW_REQUIRED)
+  verificationStatus CurriculumVerificationStatus @default(REVIEW_REQUIRED)
   archivedAt         DateTime?
-  createdAt          DateTime                        @default(now())
-  updatedAt          DateTime                        @updatedAt
-  subject            CurriculumSubject               @relation(fields: [subjectId], references: [id], onDelete: Cascade)
+  createdAt          DateTime                     @default(now())
+  updatedAt          DateTime                     @updatedAt
+  subject            CurriculumSubject            @relation(fields: [subjectId], references: [id], onDelete: Cascade)
   topics             CurriculumTopic[]
 
   @@unique([subjectId, stableKey])
@@ -179,17 +207,17 @@ model CurriculumChapter {
 }
 
 model CurriculumTopic {
-  id                 String                          @id @default(cuid())
+  id                 String                       @id @default(cuid())
   chapterId          String
   stableKey          String
   name               String
-  sequence           Int                             @default(0)
+  sequence           Int                          @default(0)
   sourceUrl          String?
-  verificationStatus CurriculumVerificationStatus    @default(REVIEW_REQUIRED)
+  verificationStatus CurriculumVerificationStatus @default(REVIEW_REQUIRED)
   archivedAt         DateTime?
-  createdAt          DateTime                        @default(now())
-  updatedAt          DateTime                        @updatedAt
-  chapter            CurriculumChapter               @relation(fields: [chapterId], references: [id], onDelete: Cascade)
+  createdAt          DateTime                     @default(now())
+  updatedAt          DateTime                     @updatedAt
+  chapter            CurriculumChapter            @relation(fields: [chapterId], references: [id], onDelete: Cascade)
 
   @@unique([chapterId, stableKey])
   @@index([chapterId])
@@ -197,31 +225,68 @@ model CurriculumTopic {
 }
 
 model CurriculumAssignment {
-  id                 String              @id @default(cuid())
-  childId            String              @unique
+  id                  String            @id @default(cuid())
+  childId             String            @unique
   curriculumVersionId String
-  curriculumClassId  String
-  selectedSubjectIds String[]
-  createdAt          DateTime            @default(now())
-  updatedAt          DateTime            @updatedAt
-  child              Child               @relation(fields: [childId], references: [id], onDelete: Cascade)
-  curriculumVersion  CurriculumVersion   @relation(fields: [curriculumVersionId], references: [id], onDelete: Restrict)
-  curriculumClass    CurriculumClass     @relation(fields: [curriculumClassId], references: [id], onDelete: Restrict)
-  subjects           Subject[]
-  chapters           Chapter[]
-  topics             Topic[]
+  curriculumClassId   String
+  selectedSubjectIds  String[]
+  createdAt           DateTime          @default(now())
+  updatedAt           DateTime          @updatedAt
+  child               Child             @relation(fields: [childId], references: [id], onDelete: Cascade)
+  curriculumVersion   CurriculumVersion @relation(fields: [curriculumVersionId], references: [id], onDelete: Restrict)
+  curriculumClass     CurriculumClass   @relation(fields: [curriculumClassId], references: [id], onDelete: Restrict)
+  subjects            Subject[]
+  chapters            Chapter[]
+  topics              Topic[]
+}
+
+model Assignment {
+  id                    String             @id @default(cuid())
+  childId               String
+  topicId               String
+  assignedByUserId      String
+  source                AssignmentSource
+  type                  AssignmentType
+  status                AssignmentStatus   @default(PLANNED)
+  priority              AssignmentPriority @default(MEDIUM)
+  isActive              Boolean            @default(true)
+  plannedDate           DateTime?
+  dueDate               DateTime?
+  instructions          String?
+  studySessionTarget    Int?
+  practiceSessionTarget Int?
+  questionTarget        Int?
+  maximumMarks          Int?
+  passingMarks          Int?
+  durationMinutes       Int?
+  score                 Int?
+  completedAt           DateTime?
+  createdAt             DateTime           @default(now())
+  updatedAt             DateTime           @updatedAt
+  child                 Child              @relation(fields: [childId], references: [id], onDelete: Cascade)
+  topic                 Topic              @relation(fields: [topicId], references: [id], onDelete: Restrict)
+  assignedBy            User               @relation("AssignmentsCreatedBy", fields: [assignedByUserId], references: [id], onDelete: Restrict)
+  studySessions         StudySession[]
+  practiceSessions      PracticeSession[]
+  revisionSessions      RevisionSession[]
+
+  @@index([childId])
+  @@index([topicId])
+  @@index([assignedByUserId])
+  @@index([status])
+  @@index([dueDate])
 }
 
 model MagicLinkToken {
-  id         String         @id @default(cuid())
-  email      String
-  type       MagicLinkType
-  tokenHash  String         @unique
-  childId    String?
-  expiresAt  DateTime
-  usedAt     DateTime?
-  createdAt  DateTime       @default(now())
-  child      Child?         @relation(fields: [childId], references: [id], onDelete: Cascade)
+  id        String        @id @default(cuid())
+  email     String
+  type      MagicLinkType
+  tokenHash String        @unique
+  childId   String?
+  expiresAt DateTime
+  usedAt    DateTime?
+  createdAt DateTime      @default(now())
+  child     Child?        @relation(fields: [childId], references: [id], onDelete: Cascade)
 
   @@index([email])
   @@index([childId])
@@ -229,19 +294,19 @@ model MagicLinkToken {
 }
 
 model Subject {
-  id        String    @id @default(cuid())
-  childId   String
-  name      String
-  color     String?
-  order     Int       @default(0)
+  id                     String                @id @default(cuid())
+  childId                String
+  name                   String
+  color                  String?
+  order                  Int                   @default(0)
   curriculumAssignmentId String?
-  curriculumVersionId String?
-  curriculumSubjectId String?
-  createdAt DateTime  @default(now())
-  updatedAt DateTime  @updatedAt
-  child     Child     @relation(fields: [childId], references: [id], onDelete: Cascade)
-  curriculumAssignment CurriculumAssignment? @relation(fields: [curriculumAssignmentId], references: [id], onDelete: SetNull)
-  chapters  Chapter[]
+  curriculumVersionId    String?
+  curriculumSubjectId    String?
+  createdAt              DateTime              @default(now())
+  updatedAt              DateTime              @updatedAt
+  child                  Child                 @relation(fields: [childId], references: [id], onDelete: Cascade)
+  curriculumAssignment   CurriculumAssignment? @relation(fields: [curriculumAssignmentId], references: [id], onDelete: SetNull)
+  chapters               Chapter[]
 
   @@unique([childId, name])
   @@index([childId])
@@ -250,19 +315,19 @@ model Subject {
 }
 
 model Chapter {
-  id        String   @id @default(cuid())
-  subjectId String
-  name      String
-  order     Int      @default(0)
+  id                     String                @id @default(cuid())
+  subjectId              String
+  name                   String
+  order                  Int                   @default(0)
   curriculumAssignmentId String?
-  curriculumVersionId String?
-  curriculumSubjectId String?
-  curriculumChapterId String?
-  createdAt DateTime @default(now())
-  updatedAt DateTime @updatedAt
-  subject   Subject  @relation(fields: [subjectId], references: [id], onDelete: Cascade)
-  curriculumAssignment CurriculumAssignment? @relation(fields: [curriculumAssignmentId], references: [id], onDelete: SetNull)
-  topics    Topic[]
+  curriculumVersionId    String?
+  curriculumSubjectId    String?
+  curriculumChapterId    String?
+  createdAt              DateTime              @default(now())
+  updatedAt              DateTime              @updatedAt
+  subject                Subject               @relation(fields: [subjectId], references: [id], onDelete: Cascade)
+  curriculumAssignment   CurriculumAssignment? @relation(fields: [curriculumAssignmentId], references: [id], onDelete: SetNull)
+  topics                 Topic[]
 
   @@index([subjectId])
   @@index([curriculumVersionId])
@@ -270,27 +335,28 @@ model Chapter {
 }
 
 model Topic {
-  id               String             @id @default(cuid())
-  chapterId        String
-  name             String
-  description      String?
-  status           LearningStatus     @default(NOT_STARTED)
-  confidenceRating Int?
-  notes            String?
-  order            Int                @default(0)
+  id                     String                @id @default(cuid())
+  chapterId              String
+  name                   String
+  description            String?
+  status                 LearningStatus        @default(NOT_STARTED)
+  confidenceRating       Int?
+  notes                  String?
+  order                  Int                   @default(0)
   curriculumAssignmentId String?
-  curriculumVersionId String?
-  curriculumSubjectId String?
-  curriculumChapterId String?
-  curriculumTopicId String?
-  createdAt        DateTime           @default(now())
-  updatedAt        DateTime           @updatedAt
-  completedAt      DateTime?
-  chapter          Chapter            @relation(fields: [chapterId], references: [id], onDelete: Cascade)
-  curriculumAssignment CurriculumAssignment? @relation(fields: [curriculumAssignmentId], references: [id], onDelete: SetNull)
-  studySessions    StudySession[]
-  practiceSessions PracticeSession[]
-  revisionSessions RevisionSession[]
+  curriculumVersionId    String?
+  curriculumSubjectId    String?
+  curriculumChapterId    String?
+  curriculumTopicId      String?
+  createdAt              DateTime              @default(now())
+  updatedAt              DateTime              @updatedAt
+  completedAt            DateTime?
+  chapter                Chapter               @relation(fields: [chapterId], references: [id], onDelete: Cascade)
+  curriculumAssignment   CurriculumAssignment? @relation(fields: [curriculumAssignmentId], references: [id], onDelete: SetNull)
+  studySessions          StudySession[]
+  practiceSessions       PracticeSession[]
+  revisionSessions       RevisionSession[]
+  assignments            Assignment[]
 
   @@index([chapterId])
   @@index([status])
@@ -299,44 +365,53 @@ model Topic {
 }
 
 model StudySession {
-  id              String   @id @default(cuid())
+  id              String      @id @default(cuid())
   topicId         String
+  assignmentId    String?
   startTime       DateTime
   endTime         DateTime
   durationMinutes Int
   notes           String?
-  createdAt       DateTime @default(now())
-  topic           Topic    @relation(fields: [topicId], references: [id], onDelete: Cascade)
+  createdAt       DateTime    @default(now())
+  topic           Topic       @relation(fields: [topicId], references: [id], onDelete: Cascade)
+  assignment      Assignment? @relation(fields: [assignmentId], references: [id], onDelete: SetNull)
 
   @@index([topicId])
+  @@index([assignmentId])
   @@index([startTime])
 }
 
 model PracticeSession {
-  id                 String   @id @default(cuid())
+  id                 String      @id @default(cuid())
   topicId            String
+  assignmentId       String?
   date               DateTime
   durationMinutes    Int
   questionsAttempted Int?
   questionsCorrect   Int?
   notes              String?
-  createdAt          DateTime @default(now())
-  topic              Topic    @relation(fields: [topicId], references: [id], onDelete: Cascade)
+  createdAt          DateTime    @default(now())
+  topic              Topic       @relation(fields: [topicId], references: [id], onDelete: Cascade)
+  assignment         Assignment? @relation(fields: [assignmentId], references: [id], onDelete: SetNull)
 
   @@index([topicId])
+  @@index([assignmentId])
   @@index([date])
 }
 
 model RevisionSession {
-  id              String   @id @default(cuid())
+  id              String      @id @default(cuid())
   topicId         String
+  assignmentId    String?
   date            DateTime
   durationMinutes Int
   notes           String?
-  createdAt       DateTime @default(now())
-  topic           Topic    @relation(fields: [topicId], references: [id], onDelete: Cascade)
+  createdAt       DateTime    @default(now())
+  topic           Topic       @relation(fields: [topicId], references: [id], onDelete: Cascade)
+  assignment      Assignment? @relation(fields: [assignmentId], references: [id], onDelete: SetNull)
 
   @@index([topicId])
+  @@index([assignmentId])
   @@index([date])
 }
 
@@ -355,17 +430,17 @@ model HabitGoal {
 }
 
 model OutcomeGoal {
-  id             String          @id @default(cuid())
-  childId        String
-  title          String
-  type           OutcomeGoalType
-  targetTopicId  String?
+  id              String          @id @default(cuid())
+  childId         String
+  title           String
+  type            OutcomeGoalType
+  targetTopicId   String?
   targetChapterId String?
-  dueDate        DateTime?
-  isActive       Boolean         @default(true)
-  createdAt      DateTime        @default(now())
-  updatedAt      DateTime        @updatedAt
-  child          Child           @relation(fields: [childId], references: [id], onDelete: Cascade)
+  dueDate         DateTime?
+  isActive        Boolean         @default(true)
+  createdAt       DateTime        @default(now())
+  updatedAt       DateTime        @updatedAt
+  child           Child           @relation(fields: [childId], references: [id], onDelete: Cascade)
 
   @@index([childId])
   @@index([targetTopicId])
