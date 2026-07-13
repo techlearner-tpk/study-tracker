@@ -485,15 +485,13 @@ export async function applyCurriculumToChild(formData: FormData) {
     throw new Error("Choose a published curriculum version");
   }
 
-  await prisma.$transaction(async (tx) => {
-    const childId = String(formData.get("childId") ?? "");
-    await snapshotCurriculumToChild(tx, {
-      childId,
-      curriculumVersionId: data.curriculumVersionId,
-      curriculumClassId: data.curriculumClassId,
-      selectedSubjectIds: data.selectedSubjectIds,
-    }, curriculumVersion);
-  });
+  const childId = String(formData.get("childId") ?? "");
+  await snapshotCurriculumToChild(prisma, {
+    childId,
+    curriculumVersionId: data.curriculumVersionId,
+    curriculumClassId: data.curriculumClassId,
+    selectedSubjectIds: data.selectedSubjectIds,
+  }, curriculumVersion);
 
   revalidatePath("/");
   if (formData.get("redirectToChild") === "true") {

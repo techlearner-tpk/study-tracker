@@ -114,14 +114,7 @@ export async function createChild(formData: FormData) {
       });
     }
 
-    if (usingCurriculum) {
-      await snapshotCurriculumToChild(tx, {
-        childId: createdChild.id,
-        curriculumVersionId,
-        curriculumClassId,
-        selectedSubjectIds,
-      }, curriculumVersion);
-    } else {
+    if (!usingCurriculum) {
       await tx.subject.createMany({
         data: defaultSubjects.map((name, index) => ({
           childId: createdChild.id,
@@ -133,6 +126,19 @@ export async function createChild(formData: FormData) {
 
     return createdChild;
   });
+
+  if (usingCurriculum) {
+    await snapshotCurriculumToChild(
+      prisma,
+      {
+        childId: child.id,
+        curriculumVersionId,
+        curriculumClassId,
+        selectedSubjectIds,
+      },
+      curriculumVersion,
+    );
+  }
 
   if (data.kidEmail) {
     const email = data.kidEmail.toLowerCase();
