@@ -125,7 +125,9 @@ async function consumeAiUsageInTx(tx: Prisma.TransactionClient, childId: string,
 }
 
 export async function consumeAiUsage(childId: string, topicId: string) {
-  return prisma.$transaction(async (tx) => consumeAiUsageInTx(tx, childId, topicId));
+  return prisma.$transaction(async (tx) => consumeAiUsageInTx(tx, childId, topicId), {
+    timeout: 15000,
+  });
 }
 
 export async function resetAiUsage(childId: string, topicId: string) {
@@ -361,7 +363,7 @@ export async function startTeachSession(userId: string, topicId: string, assignm
         },
         include: { messages: { orderBy: { sequence: "asc" } } },
       });
-    });
+    }, { timeout: 15000 });
 
     return {
       ...access,
@@ -429,7 +431,7 @@ export async function sendTeachMessage(formData: FormData) {
           },
         ],
       });
-    });
+    }, { timeout: 15000 });
 
     return { sessionId: session.id };
   });
@@ -512,7 +514,7 @@ export async function generateTopicTest(userId: string, topicId: string, assignm
         },
         include: { testAttempt: true },
       });
-    });
+    }, { timeout: 15000 });
 
     return {
       ...access,

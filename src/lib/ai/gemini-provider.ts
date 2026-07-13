@@ -56,7 +56,8 @@ async function callGemini(system: string, user: string) {
   });
 
   if (!response.ok) {
-    throw new Error(`AI provider error: ${response.status}`);
+    const body = await response.text().catch(() => "");
+    throw new Error(`AI provider error: ${response.status}${body ? ` - ${body.slice(0, 500)}` : ""}`);
   }
 
   return readGeminiText(response);
