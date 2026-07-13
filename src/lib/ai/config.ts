@@ -30,6 +30,27 @@ export type AiConfig = {
 
 let cachedConfig: AiConfig | null = null;
 
+function normalizeGeminiModelName(model: string) {
+  const value = model.trim();
+  if (!value) return value;
+
+  try {
+    const url = new URL(value);
+    const match = url.pathname.match(/\/models\/([^/]+)$/);
+    if (match?.[1]) return match[1];
+  } catch {
+    // Not a URL, keep going.
+  }
+
+  return value
+    .replace(/^v1beta\/models\//, "")
+    .replace(/^v1\/models\//, "")
+    .replace(/^models\//, "")
+    .replace(/^\/+/, "")
+    .split("?")[0]
+    .split("#")[0];
+}
+
 export function getAiConfig(): AiConfig {
   if (cachedConfig) return cachedConfig;
 
@@ -48,7 +69,7 @@ export function getAiConfig(): AiConfig {
   cachedConfig = {
     enabled,
     provider: parsed.AI_PROVIDER,
-    model: parsed.AI_MODEL,
+    model: normalizeGeminiModelName(parsed.AI_MODEL),
     apiKey: parsed.AI_API_KEY,
     topicPromptLimit: parsed.AI_TOPIC_PROMPT_LIMIT,
     testQuestionCount: parsed.AI_TEST_QUESTION_COUNT,
