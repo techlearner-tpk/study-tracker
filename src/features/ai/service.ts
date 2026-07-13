@@ -208,7 +208,7 @@ function fallbackTeachLesson(input: TeachTopicInput): TeachTopicResult {
       hint: `Think about what the whole text is mostly about.`,
     };
   } else if (input.topicDescription?.trim()) {
-    concept = input.topicDescription.trim();
+    explanation = input.topicDescription.trim();
   }
 
   return {
