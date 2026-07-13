@@ -11,6 +11,18 @@ export const aiTeachCheckQuestionSchema = z.object({
   hint: z.string().min(1),
 });
 
+export const aiTeachLegacySectionSchema = z.object({
+  heading: z.string().min(1),
+  body: z.string().min(1),
+});
+
+export const aiTeachLegacyResultSchema = z.object({
+  title: z.string().min(1),
+  sections: z.array(aiTeachLegacySectionSchema).min(1),
+  suggestedActions: z.array(z.string().min(1)).min(1),
+  checkQuestion: z.string().min(1),
+});
+
 export const aiTeachResultSchema = z.object({
   title: z.string().min(1),
   learningGoal: z.string().min(1),

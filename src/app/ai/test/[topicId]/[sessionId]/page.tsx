@@ -21,7 +21,7 @@ export default async function AiTestSessionPage({
   }
 
   const backHref = user.role === "KID" ? `/kid/topics/${topicId}` : `/topics/${topicId}`;
-  const content = <AiTestSessionView session={session} backHref={backHref} />;
+  const content = <AiTestSessionView session={session} backHref={backHref} isAdmin={user.role === "PARENT"} />;
 
   if (user.role === "PARENT") {
     return <AppShell>{content}</AppShell>;

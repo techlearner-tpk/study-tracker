@@ -8,7 +8,7 @@ import { Input, Label, Textarea } from "@/components/ui/form";
 import { buildGenerateTestPrompt } from "@/lib/ai/prompts/generate-test";
 import { buildTeachTopicPrompt } from "@/lib/ai/prompts/teach-topic";
 import { aiGeneratedTestSchema, aiTeachResultSchema } from "./schema";
-import { sendTeachMessageAction, startTeachSessionAction, startTestSessionAction, submitTopicTestAction } from "./actions";
+import { deleteTopicAiHistoryAction, sendTeachMessageAction, startTeachSessionAction, startTestSessionAction, submitTopicTestAction } from "./actions";
 import type { getAiSession, getTopicAiAccessState, getAssignmentAiAccessState } from "./service";
 
 type TopicAccessState = Awaited<ReturnType<typeof getTopicAiAccessState>>;
@@ -61,6 +61,21 @@ function promptPreviewBlock({ title, system, user }: { title: string; system: st
           <pre className="mt-2 whitespace-pre-wrap break-words text-xs leading-5 text-stone-700">{user}</pre>
         </details>
       </div>
+    </Card>
+  );
+}
+
+function AdminTopicTools({ topicId }: { topicId: string }) {
+  return (
+    <Card className="grid gap-3 border-amber-200 bg-amber-50/60">
+      <CardTitle className="text-base">Admin tools</CardTitle>
+      <p className="text-sm text-stone-700">Clear the AI history for this topic and start fresh.</p>
+      <form action={deleteTopicAiHistoryAction}>
+        <input type="hidden" name="topicId" value={topicId} />
+        <Button type="submit" variant="secondary" className="border-amber-300 bg-white text-stone-900 hover:bg-amber-100">
+          Delete topic AI history
+        </Button>
+      </form>
     </Card>
   );
 }
@@ -141,7 +156,7 @@ export function AiLearningPanel({
   );
 }
 
-export function AiTeachSessionView({ session, backHref }: { session: AiSession; backHref: string }) {
+export function AiTeachSessionView({ session, backHref, isAdmin }: { session: AiSession; backHref: string; isAdmin: boolean }) {
   const lesson = lessonFromSession(session);
   const requestId = randomUUID();
   const conversationMessages = session.messages.filter((message) => message.role !== "SYSTEM");
@@ -226,13 +241,23 @@ export function AiTeachSessionView({ session, backHref }: { session: AiSession; 
             <p className="mt-1 text-xs text-emerald-800">Hint: {lesson.checkQuestion.hint}</p>
           </div>
         </Card>
-      ) : null}
+      ) : (
+        <Card className="grid gap-2">
+          <CardTitle className="text-base">Lesson unavailable</CardTitle>
+          <p className="text-sm text-stone-600">This lesson was saved in an older format. Delete the topic AI history and start a new lesson.</p>
+        </Card>
+      )}
 
-      {promptPreviewBlock({
-        title: "Teach Me prompt preview",
-        system: teachPrompt.system,
-        user: teachPrompt.user,
-      })}
+      {isAdmin ? (
+        <>
+          {promptPreviewBlock({
+            title: "Teach Me prompt preview",
+            system: teachPrompt.system,
+            user: teachPrompt.user,
+          })}
+          <AdminTopicTools topicId={session.topicId} />
+        </>
+      ) : null}
 
       <Card>
         <CardTitle>Ask a follow-up</CardTitle>
@@ -263,11 +288,11 @@ export function AiTeachSessionView({ session, backHref }: { session: AiSession; 
                 );
               }
 
-              const reply = lessonFromMessage(message);
-              return (
-                <div key={message.id} className="rounded-md border border-emerald-200 bg-emerald-50 p-3">
-                  <p className="text-xs font-semibold uppercase tracking-wide text-emerald-800">Teacher answer</p>
-                  {reply ? (
+                const reply = lessonFromMessage(message);
+                return (
+                  <div key={message.id} className="rounded-md border border-emerald-200 bg-emerald-50 p-3">
+                    <p className="text-xs font-semibold uppercase tracking-wide text-emerald-800">Teacher answer</p>
+                    {reply ? (
                     <div className="mt-2 grid gap-2">
                       <p className="text-sm font-medium text-stone-900">{reply.title}</p>
                       <div className="rounded-md border border-emerald-100 bg-white p-3 text-sm text-stone-700">
@@ -301,7 +326,9 @@ export function AiTeachSessionView({ session, backHref }: { session: AiSession; 
                       </p>
                     </div>
                   ) : (
-                    <p className="mt-1 text-sm text-stone-700">{message.content}</p>
+                    <p className="mt-1 text-sm text-stone-700">
+                      This lesson uses an older format. Delete the topic AI history to create a fresh lesson.
+                    </p>
                   )}
                 </div>
               );
@@ -317,7 +344,7 @@ function answerControlName(questionId: string) {
   return `answer_${questionId}`;
 }
 
-export function AiTestSessionView({ session, backHref }: { session: AiSession; backHref: string }) {
+export function AiTestSessionView({ session, backHref, isAdmin }: { session: AiSession; backHref: string; isAdmin: boolean }) {
   const test = testFromSession(session);
   const attempt = session.testAttempt;
   const submitted = Boolean(attempt?.submittedAt);
@@ -385,11 +412,16 @@ export function AiTestSessionView({ session, backHref }: { session: AiSession; b
         </Card>
       ) : null}
 
-      {promptPreviewBlock({
-        title: "Test Me prompt preview",
-        system: testPrompt.system,
-        user: testPrompt.user,
-      })}
+      {isAdmin ? (
+        <>
+          {promptPreviewBlock({
+            title: "Test Me prompt preview",
+            system: testPrompt.system,
+            user: testPrompt.user,
+          })}
+          <AdminTopicTools topicId={session.topicId} />
+        </>
+      ) : null}
 
       {!submitted ? (
         <Card>

@@ -1,9 +1,11 @@
 "use server";
 
+import { revalidatePath } from "next/cache";
 import { redirect } from "next/navigation";
 import { SubscriptionStatus } from "@prisma/client";
 import { prisma } from "@/lib/prisma";
 import { requireCurrentUser, requireParentUser } from "@/lib/auth";
+import { getOwnedTopic } from "@/lib/ownership";
 import { formDataToObject } from "@/lib/validations";
 import { aiTeachMessageSchema, aiTeachRequestSchema, aiTestRequestSchema, aiTestSubmissionSchema } from "./schema";
 import { getAiSession, generateTopicTest, resetAiUsage, sendTeachMessage, startTeachSession, submitTopicTest } from "./service";
@@ -94,4 +96,40 @@ export async function resetAiUsageAction(formData: FormData) {
   }
   await resetAiUsage(childId, topicId);
   redirect("/admin/ai");
+}
+
+export async function deleteTopicAiHistoryAction(formData: FormData) {
+  const parent = await requireParentUser();
+  const topicId = String(formData.get("topicId") ?? "").trim();
+  if (!topicId) {
+    throw new Error("Topic is required");
+  }
+
+  const topic = await getOwnedTopic(parent.id, topicId);
+  const childId = topic.chapter.subject.child.id;
+
+  await prisma.$transaction(async (tx) => {
+    await tx.aiLearningSession.deleteMany({
+      where: {
+        topicId,
+        childId,
+      },
+    });
+    await tx.aiTopicUsage.deleteMany({
+      where: {
+        topicId,
+        childId,
+      },
+    });
+    await tx.aiTestAttempt.deleteMany({
+      where: {
+        topicId,
+        childId,
+      },
+    });
+  });
+
+  revalidatePath(`/topics/${topicId}`);
+  revalidatePath(`/kid/topics/${topicId}`);
+  redirect(`/topics/${topicId}`);
 }
