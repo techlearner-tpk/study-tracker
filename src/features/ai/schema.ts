@@ -51,16 +51,13 @@ export const aiTestSubmissionSchema = z.object({
 export const aiTeachRequestSchema = z.object({
   topicId: z.string().min(1),
   assignmentId: z.string().optional().or(z.literal("").transform(() => undefined)),
-  requestId: z.string().min(1),
 });
 
 export const aiTestRequestSchema = z.object({
   topicId: z.string().min(1),
   assignmentId: z.string().optional().or(z.literal("").transform(() => undefined)),
-  requestId: z.string().min(1),
 });
 
 export const aiTextAnswerSchema = z.object({
   answer: z.string().trim().optional().transform((value) => value || ""),
 });
-
