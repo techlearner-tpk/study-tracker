@@ -32,6 +32,8 @@ vi.mock("@/lib/ai/config", () => ({
 }));
 
 import { canUseAiFeatures, getAiUsage, getTopicAiAccessState } from "@/features/ai/service";
+import { buildTeachTopicPrompt } from "@/lib/ai/prompts/teach-topic";
+import { buildGenerateTestPrompt } from "@/lib/ai/prompts/generate-test";
 
 describe("ai service", () => {
   beforeEach(() => {
@@ -128,4 +130,38 @@ describe("ai service", () => {
 
     await expect(canUseAiFeatures("parent_1")).resolves.toBe(false);
   });
+
+  it("builds a topic-specific teach prompt with stronger lesson guidance", () => {
+    const prompt = buildTeachTopicPrompt({
+      className: "8",
+      boardName: "CBSE",
+      subjectName: "Mathematics",
+      chapterName: "Geometry",
+      topicName: "Polygons",
+      topicDescription: null,
+    });
+
+    expect(prompt.system).toContain("Do not answer with a one-line definition or a vague overview.");
+    expect(prompt.system).toContain("Write a real mini-lesson");
+    expect(prompt.user).toContain("Geometry -> Polygons");
+    expect(prompt.user).toContain("Make the explanation at least 3 sentences long");
+  });
+
+  it("builds a topic-specific test prompt without template wording", () => {
+    const prompt = buildGenerateTestPrompt({
+      className: "8",
+      boardName: "CBSE",
+      subjectName: "Mathematics",
+      chapterName: "Geometry",
+      topicName: "Polygons",
+      topicDescription: null,
+      questionCount: 5,
+    });
+
+    expect(prompt.system).toContain("Every question must be specific to the exact topic");
+    expect(prompt.system).toContain("Do not use vague placeholders");
+    expect(prompt.user).toContain("Do not use generic questions like");
+    expect(prompt.user).toContain("Make the set feel like a proper challenge");
+  });
+
 });

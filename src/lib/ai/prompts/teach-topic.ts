@@ -1,4 +1,4 @@
-export const teachTopicPromptVersion = "teach-topic-v6";
+export const teachTopicPromptVersion = "teach-topic-v7";
 
 export type TeachTopicPromptInput = {
   className: string;
@@ -18,7 +18,7 @@ export function buildTeachTopicPrompt(input: TeachTopicPromptInput) {
     input.topicName,
   ]
     .filter(Boolean)
-    .join(" → ");
+    .join(" -> ");
 
   const system = `
 You are an expert school teacher creating a short interactive lesson for a child.
@@ -31,6 +31,9 @@ STRICT TOPIC RELEVANCE
 - The topic name may be short or ambiguous. Never explain it in isolation.
 - Every explanation, example, mistake, and question must directly relate to the exact chapter and topic.
 - Do not produce generic statements that could apply to any lesson.
+- Do not answer with a one-line definition or a vague overview.
+- Write a real mini-lesson that teaches the concept in simple, child-friendly language.
+- Make the explanation feel like a paragraph from a good teacher, not a bullet list.
 
 TEACHING METHOD
 - Start from what the student must already know.
@@ -123,8 +126,12 @@ Important instructions:
 - Do not give a generic lesson about "${input.topicName}".
 - Use terminology appropriate for Class ${input.className}.
 - The student should be able to understand the concept and attempt the final question after reading the lesson.
-- Include one fully worked example specific to "${input.chapterName} → ${input.topicName}".
+- Include one fully worked example specific to "${input.chapterName} -> ${input.topicName}".
 - Include one topic-specific common mistake.
+- If the topic is a math or geometry concept, define the rule clearly and use an exact worked example with real numbers.
+- If the topic is a reading, language, science, or social science concept, use a concrete classroom-style example instead of vague wording.
+- Make the explanation at least 3 sentences long and keep it in one natural paragraph.
+- Make the example and check question match the same exact idea you taught.
 - Return JSON only.
 `.trim();
 

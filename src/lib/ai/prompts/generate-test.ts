@@ -1,4 +1,4 @@
-export const generateTestPromptVersion = "generate-test-v2";
+export const generateTestPromptVersion = "generate-test-v4";
 
 export type GenerateTestPromptInput = {
   className: string;
@@ -20,10 +20,12 @@ export function buildGenerateTestPrompt(input: GenerateTestPromptInput) {
     "Each question must have id, type, question, options, correctAnswer, explanation.",
     "Question types must be one of: MULTIPLE_CHOICE, TRUE_FALSE, SHORT_ANSWER.",
     "Use age-appropriate wording for the class level.",
-    "Make the test feel like a real challenge, not a generic review.",
-    "Every question must be specific to the given topic and should not reuse the same vague wording.",
-    "Cover different skills across the set: definition, example, application, common mistake, and quick check.",
+    "Make the test feel like a real challenge, not a generic review or a template.",
+    "Every question must be specific to the exact topic, chapter, and subject context.",
+    "Do not use vague placeholders like 'a correct example', 'a random unrelated thing', or 'the one that fits the topic'.",
+    "Cover different skills across the set: understanding, application, one worked example, one common mistake, and one quick check.",
     "At least one question should ask the child to solve or explain a real topic example.",
+    "At least one question should require a calculation, a specific fact, or a topic-based explanation depending on the subject.",
     "If the topic is math, include actual numbers, symbols, or steps.",
     "If the topic is reading or language, ask about meaning, detail, vocabulary, or inference from the text idea.",
     "If the topic is science or social science, use concrete classroom or everyday situations.",
@@ -39,10 +41,11 @@ export function buildGenerateTestPrompt(input: GenerateTestPromptInput) {
     `Create exactly ${input.questionCount} questions.`,
     "Prefer a mix of multiple choice, true/false, and short answer questions.",
     "Keep questions short, clear, and age-appropriate.",
-    "Do not use generic questions like 'What is one key fact about the topic?'.",
-    "Instead, write topic-specific prompts that mention the real idea, a worked example, or an everyday use.",
+    "Do not use generic questions like 'What is one key fact about the topic?' or 'Which example best matches the topic?'.",
+    "Instead, write topic-specific prompts that mention the real idea, a worked example, or an exact application.",
     "For short-answer questions, provide a concise correctAnswer and explanation.",
     "Make the set feel like a proper challenge for a student who just learned the lesson.",
+    "Keep the correctAnswer precise and directly tied to the question.",
   ]
     .filter(Boolean)
     .join("\n");
