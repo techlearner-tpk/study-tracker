@@ -167,13 +167,13 @@ function fallbackTeachLesson(input: TeachTopicInput): TeachTopicResult {
   let checkQuestion = `What is ${input.topicName} in your own words?`;
 
   if (isMathTopic) {
-    explanation = `This topic teaches how to work with numbers in a clear step-by-step way.`;
+    explanation = `This topic teaches how to work with numbers in a clear step-by-step way. It shows you how to use rules, signs, and operations without getting confused. If you read the steps carefully, you can work out the answer one part at a time.`;
     whyItMatters = `You use ${input.topicName.toLowerCase()} when solving sums, checking answers, and understanding number patterns.`;
     example = `Example: if you add -3 and 5, the answer is 2 because 5 has 3 more than -3.`;
     tryThis = "Try one calculation from the lesson and explain each step out loud.";
     checkQuestion = `Can you explain how you solved a small ${input.topicName.toLowerCase()} example?`;
   } else if (isReadingTopic) {
-    explanation = `A ${input.topicName.toLowerCase()} is a piece of reading that can tell a story, explain an idea, or give information.`;
+    explanation = `A ${input.topicName.toLowerCase()} is a piece of reading that can tell a story, explain an idea, or give information. When you read it, you look for the main idea, important details, and the message the writer wants to share. It is a way to practice understanding text carefully instead of just reading the words quickly.`;
     whyItMatters = `It helps you find the main idea, notice details, and answer questions from the text.`;
     example = `Example: a passage about school rules may explain why we line up quietly and how it helps everyone.`;
     tryThis = "Read one sentence and tell what it is mainly about.";

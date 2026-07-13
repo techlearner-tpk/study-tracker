@@ -1,4 +1,4 @@
-export const teachTopicPromptVersion = "teach-topic-v2";
+export const teachTopicPromptVersion = "teach-topic-v3";
 
 export type TeachTopicPromptInput = {
   className: string;
@@ -20,9 +20,10 @@ export function buildTeachTopicPrompt(input: TeachTopicPromptInput) {
     "Return JSON only with keys: title, sections, suggestedActions, checkQuestion.",
     "Sections must be an array of objects with heading and body.",
     "The lesson must actually teach the topic, not just describe it.",
-    "The first section must define the topic in simple plain language using at most two short sentences.",
+    "The first section must be a short paragraph of 2 to 4 simple sentences in plain English, not a one-line label, list, or fragment.",
+    "That paragraph must define the topic clearly, name the main idea, and help a child understand it without already knowing the topic.",
     "The second section must explain why the topic matters or what the child should notice in real work.",
-    "The third section must include one concrete worked example with actual words, numbers, or steps, not a placeholder.",
+    "The third section must be another short paragraph with one concrete worked example using actual words, numbers, or steps, not a placeholder.",
     "The fourth section must give one short practice prompt that the child can try immediately.",
     "If the topic is mathematical, include real calculations or notation.",
     "If the topic is reading or language, explain the idea with a specific sentence, passage, or word example.",
