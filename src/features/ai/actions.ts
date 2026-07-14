@@ -41,7 +41,8 @@ export async function submitTopicTestAction(formData: FormData) {
   if (!session) {
     throw new Error("Session not found");
   }
-  redirect(`/ai/test/${session.topicId}/${session.id}`);
+  revalidatePath(`/ai/test/${session.topicId}/${session.id}`);
+  redirect(`/ai/test/${session.topicId}/${session.id}?submitted=1`);
 }
 
 export async function activateFamilySubscriptionAction() {
