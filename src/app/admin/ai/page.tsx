@@ -41,8 +41,8 @@ export default async function AiAdminPage() {
     <AppShell>
       <div className="grid gap-6">
         <header className="grid gap-2">
-          <p className="text-sm font-medium text-emerald-800">Admin</p>
-          <h1 className="text-3xl font-semibold tracking-tight">AI Learning</h1>
+          <p className="text-sm font-medium text-emerald-800">Parent</p>
+          <h1 className="text-3xl font-semibold tracking-tight">Parent AI Controls</h1>
           <p className="text-sm text-stone-600">Family-level AI controls, prompt usage, and topic resets.</p>
         </header>
 

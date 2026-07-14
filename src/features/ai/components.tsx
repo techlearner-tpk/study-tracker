@@ -91,7 +91,7 @@ function promptPreviewBlock({ title, system, user }: { title: string; system: st
 function AdminTopicTools({ topicId, topicName }: { topicId: string; topicName: string }) {
   return (
     <Card className="grid gap-3 border-amber-200 bg-amber-50/60">
-      <CardTitle className="text-base">Admin tools</CardTitle>
+      <CardTitle className="text-base">Parent AI tools</CardTitle>
       <p className="text-sm text-stone-700">Clear the AI history for this topic and start fresh.</p>
       <p className="text-xs text-stone-600">Type the topic name to confirm: {topicName}</p>
       <form action={deleteTopicAiHistoryAction}>
