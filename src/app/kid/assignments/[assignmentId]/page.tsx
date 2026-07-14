@@ -45,6 +45,7 @@ export default async function KidAssignmentPage({ params }: { params: Promise<{ 
             topicName={assignment.topic.name}
             assignmentId={assignment.id}
             assignmentType={assignment.type}
+            historyHref={`/kid/topics/${assignment.topicId}/ai-history`}
           />
           <AssignmentDetailView assignment={assignment} hrefBase="/kid/assignments" />
         </div>

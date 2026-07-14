@@ -7,6 +7,7 @@ import { Card, CardTitle } from "@/components/ui/card";
 import { Input, Label, Textarea } from "@/components/ui/form";
 import { buildGenerateTestPrompt } from "@/lib/ai/prompts/generate-test";
 import { buildTeachTopicPrompt } from "@/lib/ai/prompts/teach-topic";
+import { cn } from "@/lib/utils";
 import { aiGeneratedTestSchema, aiTeachResultSchema } from "./schema";
 import { deleteTopicAiHistoryAction, sendTeachMessageAction, startTeachSessionAction, startTestSessionAction, submitTopicTestAction } from "./actions";
 import type { getAiSession, getTopicAiAccessState, getAssignmentAiAccessState } from "./service";
@@ -55,9 +56,17 @@ function lessonFromMessage(message: AiSession["messages"][number]) {
 
 function promptPreviewBlock({ title, system, user }: { title: string; system: string; user: string }) {
   return (
-    <Card className="grid gap-3">
-      <CardTitle className="text-base">{title}</CardTitle>
-      <div className="grid gap-3">
+    <details className="rounded-md border border-stone-200 bg-white p-4 shadow-sm">
+      <summary
+        className={cn(
+          "flex cursor-pointer list-none items-center justify-between gap-3 text-base font-semibold text-stone-900",
+          "[&::-webkit-details-marker]:hidden",
+        )}
+      >
+        <span>{title}</span>
+        <span className="text-xs font-normal text-stone-500">Collapsed by default</span>
+      </summary>
+      <div className="mt-4 grid gap-3">
         <div className="rounded-md border border-stone-200 p-3">
           <p className="text-xs font-semibold uppercase tracking-wide text-stone-500">System prompt</p>
           <pre className="mt-2 whitespace-pre-wrap break-words text-xs leading-5 text-stone-700">{system}</pre>
@@ -67,7 +76,7 @@ function promptPreviewBlock({ title, system, user }: { title: string; system: st
           <pre className="mt-2 whitespace-pre-wrap break-words text-xs leading-5 text-stone-700">{user}</pre>
         </div>
       </div>
-    </Card>
+    </details>
   );
 }
 
@@ -93,12 +102,20 @@ function AdminTopicTools({ topicId, topicName }: { topicId: string; topicName: s
 
 function RawAiResponseCard({ title, content }: { title: string; content: string }) {
   return (
-    <Card className="grid gap-3 border-slate-200 bg-slate-50">
-      <CardTitle className="text-base">{title}</CardTitle>
-      <pre className="whitespace-pre-wrap break-words rounded-md border border-slate-200 bg-white p-3 text-xs leading-5 text-slate-700">
+    <details className="rounded-md border border-slate-200 bg-slate-50 p-4 shadow-sm">
+      <summary
+        className={cn(
+          "flex cursor-pointer list-none items-center justify-between gap-3 text-base font-semibold text-stone-900",
+          "[&::-webkit-details-marker]:hidden",
+        )}
+      >
+        <span>{title}</span>
+        <span className="text-xs font-normal text-stone-500">Collapsed by default</span>
+      </summary>
+      <pre className="mt-4 whitespace-pre-wrap break-words rounded-md border border-slate-200 bg-white p-3 text-xs leading-5 text-slate-700">
         {prettyJson(content)}
       </pre>
-    </Card>
+    </details>
   );
 }
 
@@ -137,6 +154,7 @@ export function AiLearningPanel({
   topicName,
   assignmentId,
   assignmentType,
+  historyHref,
   isAdmin = false,
 }: {
   access: TopicAccessState | AssignmentAccessState;
@@ -144,6 +162,7 @@ export function AiLearningPanel({
   topicName: string;
   assignmentId?: string | null;
   assignmentType?: string | null;
+  historyHref?: string;
   isAdmin?: boolean;
 }) {
   return (
@@ -164,6 +183,14 @@ export function AiLearningPanel({
             : access.message || "Activate the family subscription to use Teach Me and Test Me."}
         </p>
         <AiActionButtons topicId={topicId} assignmentId={assignmentId} disabled={!access.hasAccess} />
+        {historyHref ? (
+          <Link
+            href={historyHref}
+            className="inline-flex h-10 w-fit items-center justify-center rounded-md border border-stone-300 bg-white px-4 text-sm font-medium text-stone-800 transition hover:bg-stone-100 focus:outline-none focus:ring-2 focus:ring-emerald-700"
+          >
+            View AI history
+          </Link>
+        ) : null}
         <p className="text-xs text-stone-500">
           {assignmentType === "STUDY" || assignmentType === "REVISION"
             ? "Teach Me fits study and revision work."

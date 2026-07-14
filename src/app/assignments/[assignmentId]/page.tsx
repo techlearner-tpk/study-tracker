@@ -24,6 +24,7 @@ export default async function AssignmentPage({ params }: { params: Promise<{ ass
           topicName={assignment.topic.name}
           assignmentId={assignment.id}
           assignmentType={assignment.type}
+          historyHref={`/topics/${assignment.topicId}/ai-history`}
           isAdmin
         />
         <AssignmentDetailView assignment={assignment} hrefBase="/assignments" />

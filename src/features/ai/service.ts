@@ -932,3 +932,23 @@ export async function getAiSession(sessionId: string) {
     },
   });
 }
+
+export async function getTopicAiHistory(userId: string, topicId: string) {
+  const topic = await getOwnedTopic(userId, topicId);
+  const sessions = await prisma.aiLearningSession.findMany({
+    where: { topicId },
+    orderBy: { createdAt: "desc" },
+    include: {
+      messages: { orderBy: { sequence: "asc" } },
+      testAttempt: true,
+      assignment: true,
+      child: {
+        include: {
+          kidUser: true,
+        },
+      },
+    },
+  });
+
+  return { topic, sessions };
+}
