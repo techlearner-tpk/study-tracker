@@ -13,12 +13,20 @@ import { minutesLabel } from "@/lib/utils";
 
 export const dynamic = "force-dynamic";
 
-export default async function TopicPage({ params }: { params: Promise<{ topicId: string }> }) {
+export default async function TopicPage({
+  params,
+  searchParams,
+}: {
+  params: Promise<{ topicId: string }>;
+  searchParams?: Promise<{ deleteError?: string }>;
+}) {
   const user = await requireCurrentUser();
   const { topicId } = await params;
+  const query = await searchParams;
   const topic = await getOwnedTopic(user.id, topicId);
   const access = await getTopicAiAccessState(user.id, topicId);
   const isAdmin = user.role === "PARENT";
+  const deleteError = query?.deleteError ? String(query.deleteError) : null;
 
   const totalStudyTime = topic.studySessions.reduce((total, session) => total + session.durationMinutes, 0);
   const timeline = [
@@ -52,6 +60,7 @@ export default async function TopicPage({ params }: { params: Promise<{ topicId:
           topicId={topic.id}
           topicName={topic.name}
           historyHref={`/topics/${topic.id}/ai-history`}
+          deleteError={deleteError}
           isAdmin={isAdmin}
         />
 

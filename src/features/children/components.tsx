@@ -42,11 +42,12 @@ export function ChildForm({
   );
 }
 
-export function DangerDeleteChild({ child }: { child: { id: string; name: string } }) {
+export function DangerDeleteChild({ child, errorMessage }: { child: { id: string; name: string }; errorMessage?: string | null }) {
   return (
     <Card className="border-red-200 bg-red-50">
       <CardTitle className="text-red-900">Delete child</CardTitle>
       <p className="mt-2 text-sm text-red-800">This permanently deletes {child.name}, including all subjects, chapters, topics, goals, and sessions.</p>
+      {errorMessage ? <p className="mt-3 rounded-md border border-red-200 bg-white px-3 py-2 text-sm text-red-800">{errorMessage}</p> : null}
       <form action={deleteChild} className="mt-4 grid gap-4 sm:grid-cols-[minmax(0,1fr)_auto] sm:items-end">
         <input type="hidden" name="childId" value={child.id} />
         <input type="hidden" name="childName" value={child.name} />

@@ -16,12 +16,20 @@ import { minutesLabel } from "@/lib/utils";
 
 export const dynamic = "force-dynamic";
 
-export default async function ChildPage({ params }: { params: Promise<{ childId: string }> }) {
+export default async function ChildPage({
+  params,
+  searchParams,
+}: {
+  params: Promise<{ childId: string }>;
+  searchParams?: Promise<{ deleteError?: string }>;
+}) {
   const user = await requireParentUser();
   const { childId } = await params;
+  const query = await searchParams;
   const dashboard = await getChildDashboard(user.id, childId);
   if (!dashboard) notFound();
   const { child, analytics } = dashboard;
+  const deleteError = query?.deleteError ? String(query.deleteError) : null;
 
   return (
     <AppShell>
@@ -135,7 +143,7 @@ export default async function ChildPage({ params }: { params: Promise<{ childId:
                 )) : <p className="text-sm text-stone-600">No study sessions logged yet.</p>}
               </div>
             </Card>
-            <DangerDeleteChild child={child} />
+            <DangerDeleteChild child={child} errorMessage={deleteError} />
           </aside>
         </section>
       </div>

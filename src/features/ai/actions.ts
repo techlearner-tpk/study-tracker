@@ -104,12 +104,12 @@ export async function deleteTopicAiHistoryAction(formData: FormData) {
   const topicId = String(formData.get("topicId") ?? "").trim();
   const confirmTopicName = String(formData.get("confirmTopicName") ?? "").trim();
   if (!topicId) {
-    throw new Error("Topic is required");
+    redirect("/topics?deleteError=Topic%20is%20required");
   }
 
   const topic = await getOwnedTopic(parent.id, topicId);
   if (!confirmTopicName || confirmTopicName !== topic.name) {
-    throw new Error(`Type the exact topic name (${topic.name}) to confirm deletion.`);
+    redirect(`/topics/${topicId}?deleteError=${encodeURIComponent(`Type the exact topic name (${topic.name}) to confirm deletion.`)}`);
   }
   const childId = topic.chapter.subject.child.id;
 

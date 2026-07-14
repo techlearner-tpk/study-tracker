@@ -163,6 +163,7 @@ export function AiLearningPanel({
   assignmentId,
   assignmentType,
   historyHref,
+  deleteError,
   isAdmin = false,
 }: {
   access: TopicAccessState | AssignmentAccessState;
@@ -171,6 +172,7 @@ export function AiLearningPanel({
   assignmentId?: string | null;
   assignmentType?: string | null;
   historyHref?: string;
+  deleteError?: string | null;
   isAdmin?: boolean;
 }) {
   return (
@@ -214,6 +216,7 @@ export function AiLearningPanel({
         <p>Subscription status: {access.subscriptionStatus}</p>
         {access.hasAccess ? <p>Ask only about the current topic. No general chat memory.</p> : null}
       </div>
+      {deleteError ? <p className="lg:col-span-2 rounded-md border border-red-200 bg-red-50 px-3 py-2 text-sm text-red-800">{deleteError}</p> : null}
       {isAdmin ? (
         <div className="lg:col-span-2">
           <AdminTopicTools topicId={topicId} topicName={topicName} />

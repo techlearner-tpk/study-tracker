@@ -2,6 +2,7 @@
 
 import { revalidatePath } from "next/cache";
 import { redirect } from "next/navigation";
+import { ZodError } from "zod";
 import { prisma } from "@/lib/prisma";
 import { getOwnedChild } from "@/lib/ownership";
 import { requireParentUser } from "@/lib/auth";
@@ -177,7 +178,21 @@ export async function updateChild(formData: FormData) {
 
 export async function deleteChild(formData: FormData) {
   const user = await requireParentUser();
-  const data = deleteChildSchema.parse(formDataToObject(formData));
+  const raw = formDataToObject(formData);
+  const childId = String(raw.childId ?? "").trim();
+  let data: { childId: string; childName: string; confirmation: string };
+  try {
+    data = deleteChildSchema.parse(raw);
+  } catch (error) {
+    const message =
+      error instanceof ZodError
+        ? error.issues[0]?.message ?? "Unable to delete child"
+        : error instanceof Error
+          ? error.message
+          : "Unable to delete child";
+    redirect(childId ? `/children/${childId}?deleteError=${encodeURIComponent(message)}` : `/?deleteError=${encodeURIComponent(message)}`);
+  }
+
   const child = await getOwnedChild(user.id, data.childId);
   const clerkUserId = child.kidUser?.clerkUserId;
 
