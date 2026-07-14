@@ -24,7 +24,11 @@ export const aiTeachResultSchema = z.object({
 });
 
 export const aiQuestionSchema = z.object({
-  id: z.string().min(1),
+  id: z.preprocess((value) => {
+    if (typeof value === "number") return String(value);
+    if (typeof value === "string") return value.trim();
+    return value;
+  }, z.string().min(1)),
   type: z.enum(aiQuestionTypeValues),
   question: z.string().min(1),
   options: z.array(z.string().min(1)).optional(),
