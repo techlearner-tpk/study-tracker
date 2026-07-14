@@ -3,6 +3,7 @@ import { format } from "date-fns";
 import { Badge } from "@/components/ui/badge";
 import { Card, CardTitle } from "@/components/ui/card";
 import { cn } from "@/lib/utils";
+import { AiCautionNote } from "./components";
 import { aiGeneratedTestSchema, aiTeachResultSchema } from "./schema";
 import type { getTopicAiHistory } from "./service";
 
@@ -167,6 +168,7 @@ export function AiTopicHistoryView({ history, backHref }: { history: TopicAiHist
         <p className="text-sm text-stone-600">
           These are the saved Teach Me and Test Me sessions for this topic.
         </p>
+        <AiCautionNote />
       </Card>
 
       {history.sessions.length ? (

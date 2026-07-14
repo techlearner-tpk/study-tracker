@@ -24,6 +24,14 @@ function safeJsonParse(value: string) {
   }
 }
 
+export function AiCautionNote() {
+  return (
+    <div className="rounded-md border border-amber-200 bg-amber-50 px-3 py-2 text-xs leading-5 text-amber-900">
+      AI can make mistakes, so please double-check important answers with a parent, teacher, or the textbook.
+    </div>
+  );
+}
+
 function prettyJson(value: string) {
   const parsed = safeJsonParse(value);
   if (parsed === null) return value;
@@ -182,6 +190,7 @@ export function AiLearningPanel({
             ? `${access.remainingUsage} of ${access.limit} prompts left for this topic.`
             : access.message || "Activate the family subscription to use Teach Me and Test Me."}
         </p>
+        <AiCautionNote />
         <AiActionButtons topicId={topicId} assignmentId={assignmentId} disabled={!access.hasAccess} />
         {historyHref ? (
           <Link
@@ -250,6 +259,8 @@ export function AiTeachSessionView({ session, backHref, isAdmin }: { session: Ai
           </Link>
         </p>
       </header>
+
+      <AiCautionNote />
 
       {lesson ? (
         <Card className="grid gap-4">
@@ -449,6 +460,8 @@ export function AiTestSessionView({ session, backHref, isAdmin }: { session: AiS
           </Link>
         </p>
       </header>
+
+      <AiCautionNote />
 
       {submitted ? (
         <Card>
