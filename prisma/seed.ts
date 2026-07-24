@@ -187,8 +187,11 @@ async function main() {
   await prisma.user.deleteMany();
 
   const parent = await seedParent();
-  for (const child of children) {
-    await seedChild(parent.id, child);
+  const shouldSeedDemoData = process.env.SEED_DEMO_DATA === "true" || process.env.NODE_ENV !== "production";
+  if (shouldSeedDemoData) {
+    for (const child of children) {
+      await seedChild(parent.id, child);
+    }
   }
 }
 

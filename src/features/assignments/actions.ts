@@ -192,6 +192,7 @@ export async function createStudySessionFromAssignment(formData: FormData) {
 
   invalidateAssignmentPaths(currentUser.role === "KID", assignmentId, assignment.childId);
   revalidatePath(`/topics/${topicId}`);
+  redirect(`${assignmentRedirectPath(currentUser.role === "KID", assignmentId)}?studyStatus=logged`);
 }
 
 export async function createPracticeSessionFromAssignment(formData: FormData) {
@@ -229,6 +230,7 @@ export async function createPracticeSessionFromAssignment(formData: FormData) {
 
   invalidateAssignmentPaths(currentUser.role === "KID", assignmentId, assignment.childId);
   revalidatePath(`/topics/${topicId}`);
+  redirect(`${assignmentRedirectPath(currentUser.role === "KID", assignmentId)}?practiceStatus=logged`);
 }
 
 export async function createRevisionSessionFromAssignment(formData: FormData) {
@@ -262,4 +264,5 @@ export async function createRevisionSessionFromAssignment(formData: FormData) {
 
   invalidateAssignmentPaths(currentUser.role === "KID", assignmentId, assignment.childId);
   revalidatePath(`/topics/${topicId}`);
+  redirect(`${assignmentRedirectPath(currentUser.role === "KID", assignmentId)}?revisionStatus=logged`);
 }

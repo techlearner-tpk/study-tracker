@@ -3,6 +3,7 @@ import { beforeEach, describe, expect, it, vi } from "vitest";
 const mocks = vi.hoisted(() => ({
   requireParentUser: vi.fn(),
   transaction: vi.fn(),
+  childFindFirst: vi.fn(),
   childCreate: vi.fn(),
   subjectCreateMany: vi.fn(),
   userUpsert: vi.fn(),
@@ -18,6 +19,9 @@ vi.mock("@/lib/auth", () => ({
 
 vi.mock("@/lib/prisma", () => ({
   prisma: {
+    child: {
+      findFirst: mocks.childFindFirst,
+    },
     $transaction: mocks.transaction,
   },
 }));
@@ -41,6 +45,7 @@ describe("create child curriculum integration", () => {
   beforeEach(() => {
     vi.clearAllMocks();
     mocks.requireParentUser.mockResolvedValue({ id: "parent_1" });
+    mocks.childFindFirst.mockResolvedValue(null);
     mocks.childCreate.mockResolvedValue({ id: "child_1" });
     mocks.subjectCreateMany.mockResolvedValue({ count: 6 });
     mocks.userUpsert.mockResolvedValue({ id: "kid_1" });

@@ -4,7 +4,7 @@ import { revalidatePath } from "next/cache";
 import { redirect } from "next/navigation";
 import { SubscriptionStatus } from "@prisma/client";
 import { prisma } from "@/lib/prisma";
-import { requireCurrentUser, requireParentUser } from "@/lib/auth";
+import { requireCurrentUser, requireAdminUser } from "@/lib/auth";
 import { getOwnedTopic } from "@/lib/ownership";
 import { formDataToObject } from "@/lib/validations";
 import { aiTeachMessageSchema, aiTeachRequestSchema, aiTestRequestSchema, aiTestSubmissionSchema } from "./schema";
@@ -46,27 +46,27 @@ export async function submitTopicTestAction(formData: FormData) {
 }
 
 export async function activateFamilySubscriptionAction() {
-  const parent = await requireParentUser();
+  const parent = await requireAdminUser();
   await prisma.subscription.upsert({
     where: { parentId: parent.id },
     update: { status: SubscriptionStatus.ACTIVE, startsAt: new Date(), expiresAt: null },
     create: { parentId: parent.id, status: SubscriptionStatus.ACTIVE, startsAt: new Date() },
   });
-  redirect("/admin/ai");
+  redirect("/admin/ai?subscription=activated");
 }
 
 export async function deactivateFamilySubscriptionAction() {
-  const parent = await requireParentUser();
+  const parent = await requireAdminUser();
   await prisma.subscription.upsert({
     where: { parentId: parent.id },
     update: { status: SubscriptionStatus.FREE, expiresAt: new Date() },
     create: { parentId: parent.id, status: SubscriptionStatus.FREE },
   });
-  redirect("/admin/ai");
+  redirect("/admin/ai?subscription=deactivated");
 }
 
 export async function saveAiSettingsAction(formData: FormData) {
-  await requireParentUser();
+  await requireAdminUser();
   const topicPromptLimit = Number(formData.get("topicPromptLimit") ?? 5);
   const testQuestionCount = Number(formData.get("testQuestionCount") ?? 5);
   const maxUserPromptLength = Number(formData.get("maxUserPromptLength") ?? 500);
@@ -85,22 +85,22 @@ export async function saveAiSettingsAction(formData: FormData) {
       maxUserPromptLength,
     },
   });
-  redirect("/admin/ai");
+  redirect("/admin/ai?saved=settings");
 }
 
 export async function resetAiUsageAction(formData: FormData) {
-  await requireParentUser();
+  await requireAdminUser();
   const childId = String(formData.get("childId") ?? "").trim();
   const topicId = String(formData.get("topicId") ?? "").trim();
   if (!childId || !topicId) {
     throw new Error("Child and topic are required");
   }
   await resetAiUsage(childId, topicId);
-  redirect("/admin/ai");
+  redirect("/admin/ai?reset=1");
 }
 
 export async function deleteTopicAiHistoryAction(formData: FormData) {
-  const parent = await requireParentUser();
+  const parent = await requireAdminUser();
   const topicId = String(formData.get("topicId") ?? "").trim();
   const confirmTopicName = String(formData.get("confirmTopicName") ?? "").trim();
   if (!topicId) {
@@ -136,5 +136,5 @@ export async function deleteTopicAiHistoryAction(formData: FormData) {
 
   revalidatePath(`/topics/${topicId}`);
   revalidatePath(`/kid/topics/${topicId}`);
-  redirect(`/topics/${topicId}`);
+  redirect(`/topics/${topicId}?deleteStatus=cleared`);
 }

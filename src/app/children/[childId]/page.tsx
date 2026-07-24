@@ -5,12 +5,14 @@ import { AppShell } from "@/components/layout/app-shell";
 import { Badge } from "@/components/ui/badge";
 import { Card, CardTitle } from "@/components/ui/card";
 import { Progress } from "@/components/ui/progress";
+import { Notice } from "@/components/ui/notice";
 import { ChildForm, DangerDeleteChild } from "@/features/children/components";
 import { ChapterForm } from "@/features/chapters/components";
 import { getChildDashboard } from "@/features/dashboard/queries";
 import { SubjectForm } from "@/features/subjects/components";
 import { TopicForm, TopicRow } from "@/features/topics/components";
 import { requireParentUser } from "@/lib/auth";
+import { formatClassLabel } from "@/lib/display";
 import { calculateTopicProgress } from "@/lib/analytics";
 import { minutesLabel } from "@/lib/utils";
 
@@ -21,7 +23,7 @@ export default async function ChildPage({
   searchParams,
 }: {
   params: Promise<{ childId: string }>;
-  searchParams?: Promise<{ deleteError?: string }>;
+  searchParams?: Promise<{ deleteError?: string; created?: string }>;
 }) {
   const user = await requireParentUser();
   const { childId } = await params;
@@ -30,18 +32,27 @@ export default async function ChildPage({
   if (!dashboard) notFound();
   const { child, analytics } = dashboard;
   const deleteError = query?.deleteError ? String(query.deleteError) : null;
+  const created = query?.created ? String(query.created) : null;
 
   return (
     <AppShell>
       <div className="grid gap-6">
         <header className="flex flex-col justify-between gap-3 sm:flex-row sm:items-end">
           <div>
-            <p className="text-sm font-medium text-emerald-800">Class {child.className}</p>
+            <p className="text-sm font-medium text-emerald-800">{formatClassLabel(child.className)}</p>
             <h1 className="text-3xl font-semibold tracking-tight">{child.name}</h1>
             <p className="mt-1 text-sm text-stone-600">{child.school ?? "School not set"}</p>
+            <p className="mt-3 text-sm text-stone-600">
+              <Link href="/" className="text-emerald-800 hover:underline">
+                Back to overview
+              </Link>
+            </p>
           </div>
           <Badge>{analytics.topicProgress.progress}% topics complete</Badge>
         </header>
+
+        {created ? <Notice tone="success">Child created.</Notice> : null}
+        {deleteError ? <Notice tone="error">{deleteError}</Notice> : null}
 
         <section className="grid gap-4 md:grid-cols-4">
           <Metric icon={<Clock size={18} />} label="Today's Study Time" value={minutesLabel(analytics.todayStudyTime)} />

@@ -3,11 +3,16 @@ import { isSameDay, startOfMonth, startOfWeek } from "date-fns";
 import { getOwnedChild } from "@/lib/ownership";
 import { prisma } from "@/lib/prisma";
 import { ActivitySession, calculateTopicProgress, currentStudyStreak, habitGoalProgress, longestStudyStreak } from "@/lib/analytics";
+import { isDemoName } from "@/lib/display";
 
 export type ChildWithStudyTree = Awaited<ReturnType<typeof getOwnedChild>>;
 
 export async function getChildren(userId: string) {
-  return prisma.child.findMany({ where: { userId }, orderBy: { createdAt: "asc" } });
+  const children = await prisma.child.findMany({ where: { userId }, orderBy: { createdAt: "asc" } });
+  if (process.env.NODE_ENV !== "production") {
+    return children;
+  }
+  return children.filter((child) => !isDemoName(child.name));
 }
 
 export async function getChildDashboard(userId: string, childId: string) {

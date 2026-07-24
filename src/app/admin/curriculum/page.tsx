@@ -6,7 +6,7 @@ import { Card, CardTitle } from "@/components/ui/card";
 import { Input } from "@/components/ui/form";
 import { CurriculumImportPanel, CurriculumVersionForm, CurriculumActions } from "@/features/curriculum/components";
 import { loadCurriculumList } from "@/features/curriculum/service";
-import { requireParentUser } from "@/lib/auth";
+import { requireAdminUser } from "@/lib/auth";
 
 export const dynamic = "force-dynamic";
 
@@ -15,7 +15,7 @@ export default async function CurriculumAdminPage({
 }: {
   searchParams: Promise<{ q?: string }>;
 }) {
-  await requireParentUser();
+  await requireAdminUser();
   const { q = "" } = await searchParams;
   const versions = await loadCurriculumList();
   const query = q.trim().toLowerCase();

@@ -4,6 +4,7 @@ import { ArrowLeft } from "lucide-react";
 import { UserButton } from "@clerk/nextjs";
 import { Button } from "@/components/ui/button";
 import { AiLearningPanel } from "@/features/ai/components";
+import { Notice } from "@/components/ui/notice";
 import { getAssignmentAiAccessState } from "@/features/ai/service";
 import { AssignmentDetailView } from "@/features/assignments/components";
 import { getOwnedAssignment } from "@/lib/ownership";
@@ -11,10 +12,17 @@ import { requireKidUser } from "@/lib/auth";
 
 export const dynamic = "force-dynamic";
 
-export default async function KidAssignmentPage({ params }: { params: Promise<{ assignmentId: string }> }) {
+export default async function KidAssignmentPage({
+  params,
+  searchParams,
+}: {
+  params: Promise<{ assignmentId: string }>;
+  searchParams?: Promise<{ studyStatus?: string; practiceStatus?: string; revisionStatus?: string }>;
+}) {
   const user = await requireKidUser();
   if (!user.childId) notFound();
   const { assignmentId } = await params;
+  const query = await searchParams;
   const assignment = await getOwnedAssignment(user.id, assignmentId);
   const access = await getAssignmentAiAccessState(user.id, assignmentId);
   if (!assignment) notFound();
@@ -47,6 +55,9 @@ export default async function KidAssignmentPage({ params }: { params: Promise<{ 
             assignmentType={assignment.type}
             historyHref={`/kid/topics/${assignment.topicId}/ai-history`}
           />
+          {query?.studyStatus ? <Notice tone="success">Study session logged.</Notice> : null}
+          {query?.practiceStatus ? <Notice tone="success">Practice session logged.</Notice> : null}
+          {query?.revisionStatus ? <Notice tone="success">Revision session logged.</Notice> : null}
           <AssignmentDetailView assignment={assignment} hrefBase="/kid/assignments" />
         </div>
       </div>

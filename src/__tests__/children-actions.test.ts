@@ -79,7 +79,9 @@ describe("children actions", () => {
     const formData = new FormData();
     formData.set("kidEmail", "kid@example.com");
 
-    await inviteKid(formData);
+    await expect(inviteKid(formData)).rejects.toMatchObject({
+      digest: expect.stringContaining("NEXT_REDIRECT"),
+    });
 
     expect(mocks.createInvitation).toHaveBeenCalledWith(
       expect.objectContaining({

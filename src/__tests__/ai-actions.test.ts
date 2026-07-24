@@ -3,7 +3,7 @@ import { beforeEach, describe, expect, it, vi } from "vitest";
 const mocks = vi.hoisted(() => ({
   redirect: vi.fn(),
   revalidatePath: vi.fn(),
-  requireParentUser: vi.fn(),
+  requireAdminUser: vi.fn(),
   prismaSubscriptionUpsert: vi.fn(),
   prismaAiSettingUpsert: vi.fn(),
   submitTopicTest: vi.fn(),
@@ -21,7 +21,7 @@ vi.mock("next/navigation", () => ({
 }));
 
 vi.mock("@/lib/auth", () => ({
-  requireParentUser: mocks.requireParentUser,
+  requireAdminUser: mocks.requireAdminUser,
 }));
 
 vi.mock("@/lib/prisma", () => ({
@@ -45,7 +45,7 @@ import { activateFamilySubscriptionAction, saveAiSettingsAction, submitTopicTest
 describe("ai actions", () => {
   beforeEach(() => {
     vi.clearAllMocks();
-    mocks.requireParentUser.mockResolvedValue({ id: "parent_1" });
+    mocks.requireAdminUser.mockResolvedValue({ id: "parent_1" });
   });
 
   it("activates the family subscription for the parent", async () => {
@@ -56,7 +56,7 @@ describe("ai actions", () => {
       update: expect.objectContaining({ status: "ACTIVE" }),
       create: expect.objectContaining({ parentId: "parent_1", status: "ACTIVE" }),
     });
-    expect(mocks.redirect).toHaveBeenCalledWith("/admin/ai");
+    expect(mocks.redirect).toHaveBeenCalledWith("/admin/ai?subscription=activated");
   });
 
   it("saves AI settings", async () => {
@@ -81,7 +81,7 @@ describe("ai actions", () => {
         maxUserPromptLength: 700,
       },
     });
-    expect(mocks.redirect).toHaveBeenCalledWith("/admin/ai");
+    expect(mocks.redirect).toHaveBeenCalledWith("/admin/ai?saved=settings");
   });
 
   it("redirects submitted tests to a fresh URL", async () => {

@@ -11,6 +11,14 @@ export type CurrentUser = {
   childId: string | null;
 };
 
+const adminEmails = new Set(
+  [process.env.ADMIN_EMAIL, process.env.ADMIN_EMAILS]
+    .filter(Boolean)
+    .flatMap((value) => String(value).split(","))
+    .map((email) => email.trim().toLowerCase())
+    .filter(Boolean),
+);
+
 function displayNameFromEmail(email: string) {
   return email.split("@")[0].replace(/[._-]+/g, " ");
 }
@@ -149,6 +157,18 @@ export async function requireParentUser() {
   const user = await requireCurrentUser();
   if (user.role !== "PARENT") {
     redirect("/kid");
+  }
+  return user;
+}
+
+export function isAdminUser(user: Pick<CurrentUser, "email" | "role">) {
+  return user.role === "PARENT" && adminEmails.has(user.email.toLowerCase());
+}
+
+export async function requireAdminUser() {
+  const user = await requireParentUser();
+  if (!isAdminUser(user)) {
+    redirect("/");
   }
   return user;
 }

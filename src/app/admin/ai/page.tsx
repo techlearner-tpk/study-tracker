@@ -3,16 +3,22 @@ import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Card, CardTitle } from "@/components/ui/card";
 import { Input, Label } from "@/components/ui/form";
+import { Notice } from "@/components/ui/notice";
 import { activateFamilySubscriptionAction, deactivateFamilySubscriptionAction, resetAiUsageAction, saveAiSettingsAction } from "@/features/ai/actions";
 import { getAiConfig } from "@/lib/ai/config";
 import { prisma } from "@/lib/prisma";
-import { requireParentUser } from "@/lib/auth";
+import { requireAdminUser } from "@/lib/auth";
 
 export const dynamic = "force-dynamic";
 
-export default async function AiAdminPage() {
-  const parent = await requireParentUser();
+export default async function AiAdminPage({
+  searchParams,
+}: {
+  searchParams?: Promise<{ subscription?: string; saved?: string; reset?: string }>;
+}) {
+  const parent = await requireAdminUser();
   const config = getAiConfig();
+  const query = await searchParams;
   const [subscription, settings, children] = await Promise.all([
     prisma.subscription.findUnique({ where: { parentId: parent.id } }),
     prisma.aiSetting.findUnique({ where: { id: 1 } }),
@@ -45,6 +51,10 @@ export default async function AiAdminPage() {
           <h1 className="text-3xl font-semibold tracking-tight">Parent AI Controls</h1>
           <p className="text-sm text-stone-600">Family-level AI controls, prompt usage, and topic resets.</p>
         </header>
+
+        {query?.subscription ? <Notice tone="success">Subscription updated.</Notice> : null}
+        {query?.saved ? <Notice tone="success">Settings saved.</Notice> : null}
+        {query?.reset ? <Notice tone="success">AI usage reset.</Notice> : null}
 
         <section className="grid gap-4 lg:grid-cols-3">
           <Card>

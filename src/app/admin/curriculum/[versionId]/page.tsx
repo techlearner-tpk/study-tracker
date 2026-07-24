@@ -6,7 +6,7 @@ import { Card, CardTitle } from "@/components/ui/card";
 import { CurriculumActions, CurriculumClassForm, CurriculumChapterForm, CurriculumSubjectForm, CurriculumTopicForm, CurriculumVersionForm, ArchiveButton } from "@/features/curriculum/components";
 import { archiveCurriculumChapter, archiveCurriculumSubject, archiveCurriculumTopic } from "@/features/curriculum/actions";
 import { loadCurriculumVersionTree, summarizeTree } from "@/features/curriculum/service";
-import { requireParentUser } from "@/lib/auth";
+import { requireAdminUser } from "@/lib/auth";
 
 export const dynamic = "force-dynamic";
 
@@ -50,7 +50,7 @@ export default async function CurriculumVersionPage({
   params: Promise<{ versionId: string }>;
   searchParams: Promise<{ q?: string; preview?: string }>;
 }) {
-  await requireParentUser();
+  await requireAdminUser();
   const { versionId } = await params;
   const { q = "", preview } = await searchParams;
   const version = await loadCurriculumVersionTree(versionId);

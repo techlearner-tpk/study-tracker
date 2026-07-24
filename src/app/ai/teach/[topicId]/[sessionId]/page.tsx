@@ -2,7 +2,7 @@ import { notFound } from "next/navigation";
 import { AppShell } from "@/components/layout/app-shell";
 import { AiTeachSessionView } from "@/features/ai/components";
 import { getAiSession, getTopicAiAccessState } from "@/features/ai/service";
-import { requireCurrentUser } from "@/lib/auth";
+import { isAdminUser, requireCurrentUser } from "@/lib/auth";
 
 export const dynamic = "force-dynamic";
 
@@ -21,9 +21,9 @@ export default async function AiTeachSessionPage({
   }
 
   const backHref = user.role === "KID" ? `/kid/topics/${topicId}` : `/topics/${topicId}`;
-  const content = <AiTeachSessionView session={session} backHref={backHref} isAdmin={user.role === "PARENT"} />;
+  const content = <AiTeachSessionView session={session} backHref={backHref} isAdmin={isAdminUser(user)} />;
 
-  if (user.role === "PARENT") {
+  if (isAdminUser(user)) {
     return <AppShell>{content}</AppShell>;
   }
 

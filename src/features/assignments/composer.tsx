@@ -5,6 +5,7 @@ import { usePathname, useRouter, useSearchParams } from "next/navigation";
 import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
 import { Input, Label, Select, Textarea } from "@/components/ui/form";
+import { formatClassLabel } from "@/lib/display";
 import { createAssignment } from "./actions";
 import { getAssignmentSelection, serializeAssignmentSelection, type AssignmentSelectionChild, type AssignmentSelectionState } from "./selection";
 
@@ -89,7 +90,7 @@ export function AssignmentComposer({ mode, tree, fixedChildId }: AssignmentCompo
                   >
                     {tree.map((child) => (
                       <option key={child.id} value={child.id}>
-                        {child.name} - Class {child.className}
+                        {child.name} - {formatClassLabel(child.className)}
                       </option>
                     ))}
                   </Select>

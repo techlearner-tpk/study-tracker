@@ -2,6 +2,7 @@ import { AssignmentPriority, AssignmentSource, AssignmentStatus, AssignmentType,
 import { endOfDay, isSameDay } from "date-fns";
 import { prisma } from "@/lib/prisma";
 import { getOwnedChild } from "@/lib/ownership";
+import { isDemoName } from "@/lib/display";
 
 export type AssignmentTree = Prisma.AssignmentGetPayload<{
   include: {
@@ -153,14 +154,15 @@ export function groupAssignments(assignments: AssignmentTree[], now = new Date()
 export async function loadAssignmentsForParent(userId: string) {
   const children = await prisma.child.findMany({
     where: { userId },
-    select: { id: true },
+    select: { id: true, name: true },
     orderBy: { createdAt: "asc" },
   });
-  if (!children.length) return [];
+  const visibleChildren = process.env.NODE_ENV === "production" ? children.filter((child) => !isDemoName(child.name)) : children;
+  if (!visibleChildren.length) return [];
 
   const assignments = await prisma.assignment.findMany({
     where: {
-      childId: { in: children.map((child) => child.id) },
+      childId: { in: visibleChildren.map((child) => child.id) },
     },
     include: {
       child: true,
@@ -248,8 +250,9 @@ export async function loadAssignmentSelectionChildrenForParent(userId: string): 
     },
     orderBy: { createdAt: "asc" },
   });
+  const visibleChildren = process.env.NODE_ENV === "production" ? children.filter((child) => !isDemoName(child.name)) : children;
 
-  return children.map((child) => ({
+  return visibleChildren.map((child) => ({
     id: child.id,
     name: child.name,
     className: child.className,

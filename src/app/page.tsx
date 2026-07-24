@@ -8,19 +8,30 @@ import { Card, CardTitle } from "@/components/ui/card";
 import { ChildForm, KidInviteForm } from "@/features/children/components";
 import { getChildren, getChildDashboard } from "@/features/dashboard/queries";
 import { loadPublishedCurriculumCatalog } from "@/features/curriculum/service";
+import { formatClassLabel } from "@/lib/display";
 import { requireCurrentUser } from "@/lib/auth";
 import { minutesLabel } from "@/lib/utils";
+import { Notice } from "@/components/ui/notice";
 
 export const dynamic = "force-dynamic";
 
-export default async function Home() {
+export default async function Home({
+  searchParams,
+}: {
+  searchParams?: Promise<{ inviteStatus?: string; inviteError?: string; childError?: string; deleteStatus?: string }>;
+}) {
   const user = await requireCurrentUser();
   if (user.role === "KID") {
     redirect("/kid");
   }
+  const query = await searchParams;
   const children = await getChildren(user.id);
   const curricula = await loadPublishedCurriculumCatalog();
   const firstDashboard = children[0] ? await getChildDashboard(user.id, children[0].id) : null;
+  const inviteStatus = query?.inviteStatus ? String(query.inviteStatus) : null;
+  const inviteError = query?.inviteError ? String(query.inviteError) : null;
+  const childError = query?.childError ? String(query.childError) : null;
+  const deleteStatus = query?.deleteStatus ? String(query.deleteStatus) : null;
 
   return (
     <AppShell>
@@ -49,6 +60,11 @@ export default async function Home() {
           <KidInviteForm />
         </section>
 
+        {inviteStatus === "sent" ? <Notice tone="success">Invite sent. Ask the kid to open the email and complete sign-up.</Notice> : null}
+        {inviteError ? <Notice tone="error">{inviteError}</Notice> : null}
+        {childError ? <Notice tone="error">{childError}</Notice> : null}
+        {deleteStatus ? <Notice tone="success">Child deleted.</Notice> : null}
+
         <section className="grid gap-4 md:grid-cols-3">
           {children.map((child) => (
             <Link key={child.id} href={`/children/${child.id}`}>
@@ -56,7 +72,7 @@ export default async function Home() {
                 <div className="flex items-start justify-between">
                   <div>
                     <CardTitle className="text-lg">{child.name}</CardTitle>
-                    <p className="mt-1 text-sm text-stone-600">Class {child.className}</p>
+                    <p className="mt-1 text-sm text-stone-600">{formatClassLabel(child.className)}</p>
                   </div>
                   <span className="h-4 w-4 rounded-full" style={{ backgroundColor: child.themeColor ?? "#4f766a" }} />
                 </div>

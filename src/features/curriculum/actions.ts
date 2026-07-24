@@ -4,7 +4,7 @@ import { revalidatePath } from "next/cache";
 import { redirect } from "next/navigation";
 import { Prisma, CurriculumStatus } from "@prisma/client";
 import { prisma } from "@/lib/prisma";
-import { requireParentUser } from "@/lib/auth";
+import { requireAdminUser, requireParentUser } from "@/lib/auth";
 import { formDataToObject } from "@/lib/validations";
 import {
   curriculumChapterFormSchema,
@@ -38,7 +38,7 @@ function revalidateCurriculum(versionId: string) {
 }
 
 export async function saveCurriculumVersion(formData: FormData) {
-  await requireParentUser();
+  await requireAdminUser();
   const data = curriculumVersionFormSchema.parse(formDataToObject(formData));
 
   const board = await prisma.curriculumBoard.upsert({
@@ -86,7 +86,7 @@ export async function saveCurriculumVersion(formData: FormData) {
 }
 
 export async function publishCurriculumVersion(formData: FormData) {
-  await requireParentUser();
+  await requireAdminUser();
   const id = String(formData.get("id") ?? "");
   const version = await requireEditableVersion(id);
   await prisma.curriculumVersion.update({
@@ -97,7 +97,7 @@ export async function publishCurriculumVersion(formData: FormData) {
 }
 
 export async function archiveCurriculumVersion(formData: FormData) {
-  await requireParentUser();
+  await requireAdminUser();
   const id = String(formData.get("id") ?? "");
   await prisma.curriculumVersion.update({
     where: { id },
@@ -107,7 +107,7 @@ export async function archiveCurriculumVersion(formData: FormData) {
 }
 
 export async function cloneCurriculumVersion(formData: FormData) {
-  await requireParentUser();
+  await requireAdminUser();
   const sourceVersionId = String(formData.get("id") ?? "");
   const source = await prisma.curriculumVersion.findUnique({
     where: { id: sourceVersionId },
@@ -216,7 +216,7 @@ export async function cloneCurriculumVersion(formData: FormData) {
 }
 
 export async function saveCurriculumClass(formData: FormData) {
-  await requireParentUser();
+  await requireAdminUser();
   const data = curriculumClassFormSchema.parse(formDataToObject(formData));
   const version = await requireEditableVersion(data.versionId);
   const stableKey = data.stableKey ?? `class-${data.level}`;
@@ -246,7 +246,7 @@ export async function saveCurriculumClass(formData: FormData) {
 }
 
 export async function saveCurriculumSubject(formData: FormData) {
-  await requireParentUser();
+  await requireAdminUser();
   const data = curriculumSubjectFormSchema.parse(formDataToObject(formData));
   const chapterParent = await prisma.curriculumClass.findUnique({
     where: { id: data.classId },
@@ -289,7 +289,7 @@ export async function saveCurriculumSubject(formData: FormData) {
 }
 
 export async function saveCurriculumChapter(formData: FormData) {
-  await requireParentUser();
+  await requireAdminUser();
   const data = curriculumChapterFormSchema.parse(formDataToObject(formData));
   const subject = await prisma.curriculumSubject.findUnique({
     where: { id: data.subjectId },
@@ -351,7 +351,7 @@ export async function saveCurriculumChapter(formData: FormData) {
 }
 
 export async function saveCurriculumTopic(formData: FormData) {
-  await requireParentUser();
+  await requireAdminUser();
   const data = curriculumTopicFormSchema.parse(formDataToObject(formData));
   const chapter = await prisma.curriculumChapter.findUnique({
     where: { id: data.chapterId },
@@ -415,7 +415,7 @@ export async function saveCurriculumTopic(formData: FormData) {
 }
 
 export async function archiveCurriculumSubject(formData: FormData) {
-  await requireParentUser();
+  await requireAdminUser();
   const id = String(formData.get("id") ?? "");
   const subject = await prisma.curriculumSubject.findUnique({
     where: { id },
@@ -428,7 +428,7 @@ export async function archiveCurriculumSubject(formData: FormData) {
 }
 
 export async function archiveCurriculumChapter(formData: FormData) {
-  await requireParentUser();
+  await requireAdminUser();
   const id = String(formData.get("id") ?? "");
   const chapter = await prisma.curriculumChapter.findUnique({
     where: { id },
@@ -441,7 +441,7 @@ export async function archiveCurriculumChapter(formData: FormData) {
 }
 
 export async function archiveCurriculumTopic(formData: FormData) {
-  await requireParentUser();
+  await requireAdminUser();
   const id = String(formData.get("id") ?? "");
   const topic = await prisma.curriculumTopic.findUnique({
     where: { id },
@@ -454,7 +454,7 @@ export async function archiveCurriculumTopic(formData: FormData) {
 }
 
 export async function importCurriculumFromForm(formData: FormData) {
-  await requireParentUser();
+  await requireAdminUser();
   const file = formData.get("file");
   const parsed = curriculumImportFormSchema.parse({
     dryRun: formData.get("dryRun") === "on" || formData.get("dryRun") === "true",

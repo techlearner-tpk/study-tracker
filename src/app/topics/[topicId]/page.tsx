@@ -8,8 +8,9 @@ import { PracticeSessionForm } from "@/features/practice-sessions/components";
 import { RevisionSessionForm } from "@/features/revision-sessions/components";
 import { StudySessionForm } from "@/features/study-sessions/components";
 import { getOwnedTopic } from "@/lib/ownership";
-import { requireCurrentUser } from "@/lib/auth";
+import { isAdminUser, requireCurrentUser } from "@/lib/auth";
 import { minutesLabel } from "@/lib/utils";
+import { Notice } from "@/components/ui/notice";
 
 export const dynamic = "force-dynamic";
 
@@ -18,15 +19,19 @@ export default async function TopicPage({
   searchParams,
 }: {
   params: Promise<{ topicId: string }>;
-  searchParams?: Promise<{ deleteError?: string }>;
+  searchParams?: Promise<{ deleteError?: string; deleteStatus?: string; studyStatus?: string; practiceStatus?: string; revisionStatus?: string }>;
 }) {
   const user = await requireCurrentUser();
   const { topicId } = await params;
   const query = await searchParams;
   const topic = await getOwnedTopic(user.id, topicId);
   const access = await getTopicAiAccessState(user.id, topicId);
-  const isAdmin = user.role === "PARENT";
+  const isAdmin = isAdminUser(user);
   const deleteError = query?.deleteError ? String(query.deleteError) : null;
+  const deleteStatus = query?.deleteStatus ? String(query.deleteStatus) : null;
+  const studyStatus = query?.studyStatus ? String(query.studyStatus) : null;
+  const practiceStatus = query?.practiceStatus ? String(query.practiceStatus) : null;
+  const revisionStatus = query?.revisionStatus ? String(query.revisionStatus) : null;
 
   const totalStudyTime = topic.studySessions.reduce((total, session) => total + session.durationMinutes, 0);
   const timeline = [
@@ -54,6 +59,11 @@ export default async function TopicPage({
           <Card><CardTitle>Notes</CardTitle><p className="mt-3 whitespace-pre-wrap text-sm text-stone-600">{topic.notes ?? "No notes yet."}</p></Card>
           <Card><CardTitle>Last studied</CardTitle><p className="mt-3 text-sm text-stone-600">{topic.studySessions[0] ? format(topic.studySessions[0].startTime, "PP p") : "Not studied yet"}</p></Card>
         </section>
+
+        {deleteStatus ? <Notice tone="success">AI history cleared.</Notice> : null}
+        {studyStatus ? <Notice tone="success">Study session logged.</Notice> : null}
+        {practiceStatus ? <Notice tone="success">Practice session logged.</Notice> : null}
+        {revisionStatus ? <Notice tone="success">Revision session logged.</Notice> : null}
 
         <AiLearningPanel
           access={access}

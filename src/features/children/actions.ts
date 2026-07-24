@@ -18,53 +18,59 @@ export async function inviteKid(formData: FormData) {
   const parent = await requireParentUser();
   const email = String(formData.get("kidEmail") ?? "").trim().toLowerCase();
   if (!email) {
-    throw new Error("Kid email is required");
+    redirect("/?inviteError=Kid%20email%20is%20required");
   }
 
-  const child = await prisma.child.create({
-    data: {
-      userId: parent.id,
-      name: displayNameFromEmail(email),
-      className: "Not set",
-      subjects: {
-        create: defaultSubjects.map((name, index) => ({
-          name,
-          order: index + 1,
-        })),
+  try {
+    const child = await prisma.child.create({
+      data: {
+        userId: parent.id,
+        name: displayNameFromEmail(email),
+        className: "Not set",
+        subjects: {
+          create: defaultSubjects.map((name, index) => ({
+            name,
+            order: index + 1,
+          })),
+        },
       },
-    },
-  });
+    });
 
-  await prisma.user.upsert({
-    where: { email },
-    update: {
-      role: "KID",
-      childId: child.id,
-      name: displayNameFromEmail(email),
-    },
-    create: {
-      email,
-      name: displayNameFromEmail(email),
-      role: "KID",
-      childId: child.id,
-      verifiedAt: null,
-      passwordHash: "clerk-pending-kid-account",
-    },
-  });
+    await prisma.user.upsert({
+      where: { email },
+      update: {
+        role: "KID",
+        childId: child.id,
+        name: displayNameFromEmail(email),
+      },
+      create: {
+        email,
+        name: displayNameFromEmail(email),
+        role: "KID",
+        childId: child.id,
+        verifiedAt: null,
+        passwordHash: "clerk-pending-kid-account",
+      },
+    });
 
-  const client = await clerkClient();
-  await client.invitations.createInvitation({
-    emailAddress: email,
-    redirectUrl: `${appUrl()}/sign-up`,
-    ignoreExisting: true,
-    publicMetadata: {
-      role: "KID",
-      childId: child.id,
-      childName: child.name,
-    },
-  });
+    const client = await clerkClient();
+    await client.invitations.createInvitation({
+      emailAddress: email,
+      redirectUrl: `${appUrl()}/sign-up`,
+      ignoreExisting: true,
+      publicMetadata: {
+        role: "KID",
+        childId: child.id,
+        childName: child.name,
+      },
+    });
+  } catch (error) {
+    const message = error instanceof Error ? error.message : "Unable to send invite";
+    redirect(`/?inviteError=${encodeURIComponent(message)}`);
+  }
 
   revalidatePath("/");
+  redirect("/?inviteStatus=sent");
 }
 
 export async function createChild(formData: FormData) {
@@ -82,6 +88,18 @@ export async function createChild(formData: FormData) {
   const curriculumVersion = usingCurriculum ? await loadCurriculumVersionTree(curriculumVersionId) : null;
   if (usingCurriculum && !curriculumVersion) {
     throw new Error("Choose a published curriculum version");
+  }
+
+  const duplicateChild = await prisma.child.findFirst({
+    where: {
+      userId: user.id,
+      name: { equals: data.name.trim(), mode: "insensitive" },
+      className: { equals: data.className.trim(), mode: "insensitive" },
+    },
+    select: { id: true },
+  });
+  if (duplicateChild) {
+    redirect(`/?childError=${encodeURIComponent("That child already exists. Open the existing child instead of adding it again.")}`);
   }
 
   const child = await prisma.$transaction(async (tx) => {
@@ -157,7 +175,7 @@ export async function createChild(formData: FormData) {
   }
 
   revalidatePath("/");
-  redirect(`/children/${child.id}`);
+  redirect(`/children/${child.id}?created=1`);
 }
 
 export async function updateChild(formData: FormData) {
@@ -204,5 +222,5 @@ export async function deleteChild(formData: FormData) {
   }
 
   revalidatePath("/");
-  redirect("/");
+  redirect("/?deleteStatus=deleted");
 }

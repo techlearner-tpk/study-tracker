@@ -1,9 +1,9 @@
 import { NextResponse } from "next/server";
 import { loadCurriculumVersionTree } from "@/features/curriculum/service";
-import { requireParentUser } from "@/lib/auth";
+import { requireAdminUser } from "@/lib/auth";
 
 export async function GET(_: Request, { params }: { params: Promise<{ versionId: string }> }) {
-  await requireParentUser();
+  await requireAdminUser();
   const { versionId } = await params;
   const version = await loadCurriculumVersionTree(versionId);
   if (!version) {
@@ -11,4 +11,3 @@ export async function GET(_: Request, { params }: { params: Promise<{ versionId:
   }
   return NextResponse.json(version);
 }
-
