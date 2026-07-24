@@ -1,4 +1,5 @@
 import { PrismaClient, LearningStatus, HabitGoalMetric, OutcomeGoalType, SubscriptionStatus } from "@prisma/client";
+import { resolveSubjectColor } from "@/lib/subject-colors";
 
 const prisma = new PrismaClient();
 
@@ -79,8 +80,8 @@ async function seedChild(userId: string, child: (typeof children)[number]) {
   for (const subjectName of defaultSubjects) {
     const subject = await prisma.subject.upsert({
       where: { childId_name: { childId: created.id, name: subjectName } },
-      update: {},
-      create: { childId: created.id, name: subjectName },
+      update: { color: resolveSubjectColor(subjectName) },
+      create: { childId: created.id, name: subjectName, color: resolveSubjectColor(subjectName) },
     });
 
     if (subjectName === "Mathematics" && child.name === "Tisha") {

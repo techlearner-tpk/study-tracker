@@ -2,15 +2,15 @@ import { format } from "date-fns";
 import { AppShell } from "@/components/layout/app-shell";
 import { Badge } from "@/components/ui/badge";
 import { Card, CardTitle } from "@/components/ui/card";
+import { Notice } from "@/components/ui/notice";
 import { AiLearningPanel } from "@/features/ai/components";
 import { getTopicAiAccessState } from "@/features/ai/service";
 import { PracticeSessionForm } from "@/features/practice-sessions/components";
 import { RevisionSessionForm } from "@/features/revision-sessions/components";
 import { StudySessionForm } from "@/features/study-sessions/components";
-import { getOwnedTopic } from "@/lib/ownership";
 import { isAdminUser, requireCurrentUser } from "@/lib/auth";
+import { getOwnedTopic } from "@/lib/ownership";
 import { minutesLabel } from "@/lib/utils";
-import { Notice } from "@/components/ui/notice";
 
 export const dynamic = "force-dynamic";
 
@@ -32,6 +32,7 @@ export default async function TopicPage({
   const studyStatus = query?.studyStatus ? String(query.studyStatus) : null;
   const practiceStatus = query?.practiceStatus ? String(query.practiceStatus) : null;
   const revisionStatus = query?.revisionStatus ? String(query.revisionStatus) : null;
+  const subjectColor = topic.chapter.subject.color ?? "#4f766a";
 
   const totalStudyTime = topic.studySessions.reduce((total, session) => total + session.durationMinutes, 0);
   const timeline = [
@@ -44,7 +45,16 @@ export default async function TopicPage({
     <AppShell>
       <div className="grid gap-6">
         <header>
-          <p className="text-sm text-stone-600">{topic.chapter.subject.child.name} · {topic.chapter.subject.name} · {topic.chapter.name}</p>
+          <div className="flex flex-wrap items-center gap-2 text-sm text-stone-600">
+            <span>{topic.chapter.subject.child.name}</span>
+            <span>|</span>
+            <span className="inline-flex items-center gap-2 rounded-full border border-stone-200 px-2.5 py-1">
+              <span className="h-2.5 w-2.5 rounded-full" style={{ backgroundColor: subjectColor }} />
+              {topic.chapter.subject.name}
+            </span>
+            <span>|</span>
+            <span>{topic.chapter.name}</span>
+          </div>
           <h1 className="mt-1 text-3xl font-semibold tracking-tight">{topic.name}</h1>
           <div className="mt-3 flex flex-wrap gap-2">
             <Badge>{topic.status.replace("_", " ").toLowerCase()}</Badge>
@@ -55,9 +65,18 @@ export default async function TopicPage({
         </header>
 
         <section className="grid gap-4 lg:grid-cols-3">
-          <Card><CardTitle>Status</CardTitle><p className="mt-3 text-sm text-stone-600">{topic.description ?? "No description yet."}</p></Card>
-          <Card><CardTitle>Notes</CardTitle><p className="mt-3 whitespace-pre-wrap text-sm text-stone-600">{topic.notes ?? "No notes yet."}</p></Card>
-          <Card><CardTitle>Last studied</CardTitle><p className="mt-3 text-sm text-stone-600">{topic.studySessions[0] ? format(topic.studySessions[0].startTime, "PP p") : "Not studied yet"}</p></Card>
+          <Card>
+            <CardTitle>Status</CardTitle>
+            <p className="mt-3 text-sm text-stone-600">{topic.description ?? "No description yet."}</p>
+          </Card>
+          <Card>
+            <CardTitle>Notes</CardTitle>
+            <p className="mt-3 whitespace-pre-wrap text-sm text-stone-600">{topic.notes ?? "No notes yet."}</p>
+          </Card>
+          <Card>
+            <CardTitle>Last studied</CardTitle>
+            <p className="mt-3 text-sm text-stone-600">{topic.studySessions[0] ? format(topic.studySessions[0].startTime, "PP p") : "Not studied yet"}</p>
+          </Card>
         </section>
 
         {deleteStatus ? <Notice tone="success">AI history cleared.</Notice> : null}
@@ -75,21 +94,43 @@ export default async function TopicPage({
         />
 
         <section className="grid gap-4">
-          <Card><CardTitle>Study Sessions</CardTitle><div className="mt-4"><StudySessionForm topicId={topic.id} /></div></Card>
-          <Card><CardTitle>Practice Sessions</CardTitle><div className="mt-4"><PracticeSessionForm topicId={topic.id} /></div></Card>
-          <Card><CardTitle>Revision Sessions</CardTitle><div className="mt-4"><RevisionSessionForm topicId={topic.id} /></div></Card>
+          <Card>
+            <CardTitle>Study Sessions</CardTitle>
+            <div className="mt-4">
+              <StudySessionForm topicId={topic.id} />
+            </div>
+          </Card>
+          <Card>
+            <CardTitle>Practice Sessions</CardTitle>
+            <div className="mt-4">
+              <PracticeSessionForm topicId={topic.id} />
+            </div>
+          </Card>
+          <Card>
+            <CardTitle>Revision Sessions</CardTitle>
+            <div className="mt-4">
+              <RevisionSessionForm topicId={topic.id} />
+            </div>
+          </Card>
         </section>
 
         <Card>
           <CardTitle>Timeline of activity</CardTitle>
           <div className="mt-4 grid gap-3">
-            {timeline.length ? timeline.map((item, index) => (
-              <div key={`${item.type}-${index}`} className="rounded-md border border-stone-200 p-3">
-                <div className="flex justify-between text-sm"><span className="font-medium">{item.type}</span><span>{minutesLabel(item.minutes)}</span></div>
-                <p className="text-xs text-stone-500">{format(item.date, "PP p")}</p>
-                {item.notes ? <p className="mt-2 text-sm text-stone-600">{item.notes}</p> : null}
-              </div>
-            )) : <p className="text-sm text-stone-600">No activity yet.</p>}
+            {timeline.length ? (
+              timeline.map((item, index) => (
+                <div key={`${item.type}-${index}`} className="rounded-md border border-stone-200 p-3">
+                  <div className="flex justify-between text-sm">
+                    <span className="font-medium">{item.type}</span>
+                    <span>{minutesLabel(item.minutes)}</span>
+                  </div>
+                  <p className="text-xs text-stone-500">{format(item.date, "PP p")}</p>
+                  {item.notes ? <p className="mt-2 text-sm text-stone-600">{item.notes}</p> : null}
+                </div>
+              ))
+            ) : (
+              <p className="text-sm text-stone-600">No activity yet.</p>
+            )}
           </div>
         </Card>
       </div>

@@ -3,6 +3,7 @@ import { randomUUID } from "node:crypto";
 import { access, readFile } from "node:fs/promises";
 import { basename, dirname, extname, join } from "node:path";
 import { prisma } from "@/lib/prisma";
+import { resolveSubjectColor } from "@/lib/subject-colors";
 import { curriculumSeedSchema, type CurriculumSeed, normalizeStableKey } from "./schema";
 
 type ImportCounts = {
@@ -953,6 +954,7 @@ export async function snapshotCurriculumToChild(
     id: randomUUID(),
     childId: input.childId,
     name: subject.name,
+    color: resolveSubjectColor(subject.name),
     order: subject.sequence,
     curriculumAssignmentId: assignmentId,
     curriculumVersionId: version.id,

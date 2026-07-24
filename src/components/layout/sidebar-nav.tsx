@@ -6,12 +6,14 @@ import { cn } from "@/lib/utils";
 
 export function SidebarNav({
   items,
+  collapsed = false,
 }: {
   items: Array<{
     href: string;
     label: string;
     icon: React.ReactNode;
   }>;
+  collapsed?: boolean;
 }) {
   const pathname = usePathname();
 
@@ -24,13 +26,15 @@ export function SidebarNav({
             key={item.href}
             href={item.href}
             aria-current={active ? "page" : undefined}
+            title={collapsed ? item.label : undefined}
             className={cn(
-              "flex items-center gap-2 rounded-md px-3 py-2 transition",
+              "flex items-center rounded-md px-3 py-2 transition",
+              collapsed ? "justify-center" : "gap-2",
               active ? "bg-emerald-50 font-medium text-emerald-900" : "text-stone-700 hover:bg-stone-100",
             )}
           >
             {item.icon}
-            {item.label}
+            {!collapsed ? item.label : null}
           </Link>
         );
       })}

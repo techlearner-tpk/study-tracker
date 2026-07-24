@@ -45,7 +45,10 @@ export default async function KidAssignmentNewPage({
         <header className="flex items-center justify-between gap-3">
           <div>
             <p className="text-sm font-medium text-emerald-800">Kid portal</p>
-            <h1 className="text-3xl font-semibold tracking-tight">Self-assign</h1>
+            <h1 className="text-3xl font-semibold tracking-tight">New assignment</h1>
+            <p className="mt-2 max-w-2xl text-sm text-stone-600">
+              Build your own study plan for one topic. This assignment is saved as self-made, and AI help stays inside the linked topic.
+            </p>
           </div>
           <div className="flex items-center gap-3">
             <Link href="/kid/assignments">

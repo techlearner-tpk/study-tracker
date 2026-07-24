@@ -28,6 +28,10 @@ function dueLabel(assignment: AssignmentTree) {
   return date.toLocaleDateString(undefined, { month: "short", day: "numeric" });
 }
 
+function subjectColorForAssignment(assignment: AssignmentTree) {
+  return assignment.topic.chapter.subject.color ?? "#4f766a";
+}
+
 export function AssignmentCard({
   assignment,
   href,
@@ -38,13 +42,17 @@ export function AssignmentCard({
   const progress = assignmentProgress(assignment);
   const status = assignmentDisplayStatus(assignment);
   const [subjectName, chapterName, topicName] = assignmentTopicPath(assignment);
+  const subjectColor = subjectColorForAssignment(assignment);
 
   return (
-    <Card className="p-4">
+    <Card className="border-l-4 p-4" style={{ borderLeftColor: subjectColor }}>
       <div className="grid gap-3">
         <div className="flex items-start justify-between gap-3">
           <div className="min-w-0">
-            <p className="text-sm font-semibold text-stone-900">{subjectName}</p>
+            <p className="flex items-center gap-2 text-sm font-semibold text-stone-900">
+              <span className="h-2.5 w-2.5 rounded-full" style={{ backgroundColor: subjectColor }} />
+              {subjectName}
+            </p>
             <p className="text-sm text-stone-600">{chapterName}</p>
             <p className="truncate text-base font-medium text-stone-900">{topicName}</p>
           </div>
@@ -56,9 +64,9 @@ export function AssignmentCard({
 
         <div className="flex flex-wrap items-center gap-2 text-xs text-stone-600">
           <span>{dueLabel(assignment)}</span>
-          <span>·</span>
+          <span>|</span>
           <span>{assignmentSourceLabel(assignment.source)}</span>
-          <span>·</span>
+          <span>|</span>
           <span>{assignmentPriorityLabel(assignment.priority)}</span>
         </div>
 
@@ -121,6 +129,7 @@ export function AssignmentDetailView({
 }) {
   const progress = assignmentProgress(assignment);
   const [subjectName, chapterName, topicName] = assignmentTopicPath(assignment);
+  const subjectColor = subjectColorForAssignment(assignment);
   const timeline = [
     ...assignment.studySessions.map((session) => ({ type: "Study", date: session.startTime, minutes: session.durationMinutes, notes: session.notes })),
     ...assignment.practiceSessions.map((session) => ({ type: "Practice", date: session.date, minutes: session.durationMinutes, notes: session.notes })),
@@ -137,12 +146,17 @@ export function AssignmentDetailView({
         </div>
         <div>
           <p className="text-sm text-stone-600">
-            {assignment.child.name} · {assignment.child.className}
+            {assignment.child.name} | {assignment.child.className}
           </p>
           <h1 className="text-3xl font-semibold tracking-tight">{topicName}</h1>
-          <p className="mt-1 text-sm text-stone-600">
-            {subjectName} · {chapterName}
-          </p>
+          <div className="mt-2 flex flex-wrap items-center gap-2 text-sm text-stone-600">
+            <span className="inline-flex items-center gap-2 rounded-full border border-stone-200 px-2.5 py-1">
+              <span className="h-2.5 w-2.5 rounded-full" style={{ backgroundColor: subjectColor }} />
+              {subjectName}
+            </span>
+            <span>|</span>
+            <span>{chapterName}</span>
+          </div>
         </div>
       </header>
 
@@ -186,8 +200,13 @@ export function AssignmentDetailView({
         <Card>
           <CardTitle>Linked topic</CardTitle>
           <div className="mt-4 grid gap-3 text-sm text-stone-600">
-            <p>
-              {assignment.child.name} · {assignment.topic.chapter.subject.name}
+            <p className="flex flex-wrap items-center gap-2">
+              <span>{assignment.child.name}</span>
+              <span>|</span>
+              <span className="inline-flex items-center gap-2">
+                <span className="h-2.5 w-2.5 rounded-full" style={{ backgroundColor: subjectColor }} />
+                {assignment.topic.chapter.subject.name}
+              </span>
             </p>
             <p>{assignment.topic.chapter.name}</p>
             <Link href={`${hrefBase.replace(/\/assignments$/, "")}/topics/${assignment.topic.id}`} className="text-emerald-800 hover:underline">

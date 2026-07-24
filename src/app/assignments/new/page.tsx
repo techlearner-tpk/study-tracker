@@ -40,7 +40,10 @@ export default async function AssignmentNewPage({
         <header className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
           <div>
             <p className="text-sm font-medium text-emerald-800">Assignments</p>
-            <h1 className="text-3xl font-semibold tracking-tight">Create assignment</h1>
+            <h1 className="text-3xl font-semibold tracking-tight">New assignment</h1>
+            <p className="mt-2 max-w-2xl text-sm text-stone-600">
+              Build a study plan for one topic. The assignment is parent-made, and any AI explanation stays in the linked topic after you open it.
+            </p>
           </div>
           <Link href="/assignments">
             <Button type="button" variant="secondary">

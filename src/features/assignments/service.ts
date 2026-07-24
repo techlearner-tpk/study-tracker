@@ -68,7 +68,7 @@ export function assignmentDisplayStatus(assignment: Pick<AssignmentTree, "status
 }
 
 export function assignmentSourceLabel(source: AssignmentSource) {
-  return source === AssignmentSource.PARENT ? "Assigned by parent" : "Self-assigned";
+  return source === AssignmentSource.PARENT ? "Parent-made" : "Self-made";
 }
 
 export function assignmentTypeLabel(type: AssignmentType) {

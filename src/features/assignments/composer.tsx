@@ -217,6 +217,11 @@ export function AssignmentComposer({ mode, tree, fixedChildId }: AssignmentCompo
           </Card>
 
           <Card className="grid gap-4">
+            <div className="rounded-md border border-stone-200 bg-stone-50 p-3 text-sm text-stone-600">
+              {mode === "parent"
+                ? "This saves a parent-made assignment for the selected child. Add school instructions in the notes field when needed."
+                : "This saves a self-made assignment for your own study plan. Add instructions if you want a reminder for later."}
+            </div>
             {selection.type === "STUDY" ? (
               <Label>
                 Study session target
@@ -258,7 +263,7 @@ export function AssignmentComposer({ mode, tree, fixedChildId }: AssignmentCompo
 
             <div className="flex flex-wrap items-center gap-3">
               <Button type="submit" disabled={!selectedTopic}>
-                Create assignment
+                Save assignment
               </Button>
               {!hasTopics && selectedChapter ? <span className="text-sm text-stone-600">Create a topic first, then come back here.</span> : null}
             </div>

@@ -11,6 +11,7 @@ import { defaultSubjects } from "@/features/subjects/constants";
 import { clerkClient } from "@clerk/nextjs/server";
 import { appUrl } from "@/lib/app-url";
 import { loadCurriculumVersionTree, snapshotCurriculumToChild } from "@/features/curriculum/service";
+import { resolveChildThemeColor, resolveSubjectColor } from "@/lib/subject-colors";
 
 const displayNameFromEmail = (email: string) => email.split("@")[0].replace(/[._-]+/g, " ");
 
@@ -30,6 +31,7 @@ export async function inviteKid(formData: FormData) {
         subjects: {
           create: defaultSubjects.map((name, index) => ({
             name,
+            color: resolveSubjectColor(name),
             order: index + 1,
           })),
         },
@@ -109,7 +111,7 @@ export async function createChild(formData: FormData) {
         name: data.name,
         className: data.className,
         school: data.school,
-        themeColor: data.themeColor,
+        themeColor: resolveChildThemeColor(data.themeColor),
       },
     });
 
@@ -138,6 +140,7 @@ export async function createChild(formData: FormData) {
         data: defaultSubjects.map((name, index) => ({
           childId: createdChild.id,
           name,
+          color: resolveSubjectColor(name),
           order: index + 1,
         })),
       });
@@ -188,7 +191,7 @@ export async function updateChild(formData: FormData) {
       name: data.name,
       className: data.className,
       school: data.school,
-      themeColor: data.themeColor,
+      themeColor: resolveChildThemeColor(data.themeColor),
     },
   });
   revalidatePath(`/children/${data.id}`);

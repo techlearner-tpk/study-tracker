@@ -5,18 +5,27 @@ import { prisma } from "@/lib/prisma";
 import { getOwnedChild, getOwnedSubject } from "@/lib/ownership";
 import { requireParentUser } from "@/lib/auth";
 import { formDataToObject, subjectSchema } from "@/lib/validations";
+import { resolveSubjectColor } from "@/lib/subject-colors";
 
 export async function saveSubject(formData: FormData) {
   const user = await requireParentUser();
   const data = subjectSchema.parse(formDataToObject(formData));
+  const color = resolveSubjectColor(data.name, data.color);
   if (data.id) {
     const subject = await getOwnedSubject(user.id, data.id);
-    await prisma.subject.update({ where: { id: data.id }, data: { name: data.name, color: data.color } });
+    await prisma.subject.update({ where: { id: data.id }, data: { name: data.name, color } });
+    await prisma.subject.updateMany({
+      where: {
+        child: { userId: user.id },
+        name: { equals: data.name, mode: "insensitive" },
+      },
+      data: { color },
+    });
     revalidatePath(`/children/${subject.childId}`);
     return;
   } else {
     await getOwnedChild(user.id, data.childId);
-    await prisma.subject.create({ data: { childId: data.childId, name: data.name, color: data.color } });
+    await prisma.subject.create({ data: { childId: data.childId, name: data.name, color } });
   }
   revalidatePath(`/children/${data.childId}`);
 }

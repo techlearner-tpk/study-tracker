@@ -3,9 +3,11 @@
 import { useState } from "react";
 import { Button } from "@/components/ui/button";
 import { Card, CardTitle } from "@/components/ui/card";
+import { ColorSwatchField } from "@/components/ui/color-swatch-field";
 import { Input, Label } from "@/components/ui/form";
 import { CurriculumPicker } from "@/features/curriculum/picker";
 import type { CurriculumTreeVersion } from "@/features/curriculum/service";
+import { childThemeChoices, resolveChildThemeColor } from "@/lib/subject-colors";
 import { createChild, deleteChild, inviteKid, updateChild } from "./actions";
 
 export function ChildForm({
@@ -18,6 +20,7 @@ export function ChildForm({
   curricula?: CurriculumTreeVersion[];
 }) {
   const [className, setClassName] = useState(child?.className ?? curricula[0]?.classes[0]?.name ?? "");
+  const [themeColor, setThemeColor] = useState(resolveChildThemeColor(child?.themeColor));
 
   return (
     <form action={child ? updateChild : createChild} className="grid gap-4 sm:grid-cols-2">
@@ -31,7 +34,14 @@ export function ChildForm({
         <Label>Class<Input name="className" value={className} onChange={(event) => setClassName(event.target.value)} required /></Label>
       )}
       <Label>School<Input name="school" defaultValue={child?.school ?? ""} /></Label>
-      <Label>Theme color<Input name="themeColor" type="color" defaultValue={child?.themeColor ?? "#4f766a"} className="w-16 px-1" /></Label>
+      <ColorSwatchField
+        label="Theme color"
+        name="themeColor"
+        value={themeColor}
+        options={childThemeChoices}
+        helperText="Child colors stay separate from subject colors so the two cues do not collide."
+        onChange={setThemeColor}
+      />
       {showKidEmail ? (
         <Label className="sm:col-span-2">Kid email<Input name="kidEmail" type="email" placeholder="kid@example.com" /></Label>
       ) : null}
