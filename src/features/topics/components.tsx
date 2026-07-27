@@ -35,9 +35,9 @@ export function TopicForm({ chapterId, returnTo }: { chapterId: string; returnTo
 
 export function TopicRow({ topic }: { topic: { id: string; name: string; status: string; confidenceRating: number | null } }) {
   return (
-    <Link href={`/topics/${topic.id}`} className="flex items-center justify-between rounded-md border border-stone-200 bg-white px-3 py-2 hover:bg-stone-50">
-      <span className="font-medium">{topic.name}</span>
-      <span className="flex items-center gap-2">
+    <Link href={`/topics/${topic.id}`} className="flex min-w-0 flex-col gap-2 rounded-md border border-stone-200 bg-white px-3 py-2 hover:bg-stone-50 sm:flex-row sm:items-center sm:justify-between">
+      <span className="min-w-0 break-words font-medium leading-snug">{topic.name}</span>
+      <span className="flex shrink-0 items-center gap-2">
         <Badge>{topic.status.replace("_", " ").toLowerCase()}</Badge>
         {topic.confidenceRating ? <span className="flex text-amber-600">{Array.from({ length: topic.confidenceRating }).map((_, i) => <Star key={i} size={14} fill="currentColor" />)}</span> : null}
       </span>

@@ -228,7 +228,7 @@ export default async function ChildPage({
                   </div>
 
                   <div className="mt-6 grid gap-4 lg:grid-cols-[260px_minmax(0,1fr)]">
-                    <div className="rounded-lg border border-slate-200 bg-slate-50/50 p-4">
+                    <div className="min-w-0 rounded-lg border border-slate-200 bg-slate-50/50 p-4">
                       <p className="text-sm font-semibold text-slate-700">Chapters</p>
                       <div className="mt-3 grid gap-2">
                         {subject.chapters.map((chapter, index) => {
@@ -237,14 +237,14 @@ export default async function ChildPage({
                             <Link
                               key={chapter.id}
                               href={`#chapter-${chapter.id}`}
-                              className="flex items-center justify-between gap-3 rounded-md border px-3 py-3 text-sm transition hover:bg-white"
+                              className="flex min-w-0 items-center justify-between gap-3 rounded-md border px-3 py-3 text-sm transition hover:bg-white"
                               style={{
                                 backgroundColor: index === 0 ? withAlpha(subjectColor, "10") : "#ffffff",
                                 borderColor: index === 0 ? withAlpha(subjectColor, "40") : "#e2e8f0",
                               }}
                             >
                               <span className="min-w-0">
-                                <span className="block truncate font-medium text-slate-800">{chapter.name}</span>
+                                <span className="block min-w-0 break-words font-medium leading-snug text-slate-800">{chapter.name}</span>
                                 <span className="block text-xs text-slate-500">
                                   {chapter.topics.length} topics | {chapterProgress.progress}%
                                 </span>
@@ -260,14 +260,14 @@ export default async function ChildPage({
                       </details>
                     </div>
 
-                    <div className="grid gap-4">
+                    <div className="grid min-w-0 gap-4">
                       {subject.chapters.map((chapter) => {
                         const chapterProgress = calculateTopicProgress(chapter.topics.map((topic) => ({ status: topic.status })));
                         return (
-                          <div key={chapter.id} id={`chapter-${chapter.id}`} className="rounded-lg border border-slate-200 bg-white p-4">
+                          <div key={chapter.id} id={`chapter-${chapter.id}`} className="min-w-0 rounded-lg border border-slate-200 bg-white p-4">
                             <div className="flex flex-col justify-between gap-3 sm:flex-row sm:items-center">
-                              <div>
-                                <p className="text-sm font-semibold text-slate-950">Topics in {chapter.name}</p>
+                              <div className="min-w-0">
+                                <p className="break-words text-sm font-semibold leading-snug text-slate-950">Topics in {chapter.name}</p>
                                 <p className="mt-1 text-sm text-slate-500">Chapter progress {chapterProgress.progress}%</p>
                               </div>
                               <div className="w-full sm:w-56"><Progress value={chapterProgress.progress} /></div>
