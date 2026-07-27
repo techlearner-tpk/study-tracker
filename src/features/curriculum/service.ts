@@ -2,6 +2,8 @@ import { Prisma, PrismaClient, CurriculumStatus, CurriculumVerificationStatus } 
 import { randomUUID } from "node:crypto";
 import { access, readFile } from "node:fs/promises";
 import { basename, dirname, extname, join } from "node:path";
+import { unstable_cache } from "next/cache";
+import { curriculumCatalogTag } from "@/lib/cache-tags";
 import { prisma } from "@/lib/prisma";
 import { resolveSubjectColor } from "@/lib/subject-colors";
 import { curriculumSeedSchema, type CurriculumSeed, normalizeStableKey } from "./schema";
@@ -1099,7 +1101,7 @@ export async function loadCurriculumVersionTree(versionId: string): Promise<Curr
   });
 }
 
-export async function loadPublishedCurriculumCatalog(): Promise<CurriculumTreeVersion[]> {
+async function loadPublishedCurriculumCatalogFromDb(): Promise<CurriculumTreeVersion[]> {
   const versions = await prisma.curriculumVersion.findMany({
     where: { status: "PUBLISHED" },
     select: {
@@ -1185,6 +1187,18 @@ export async function loadPublishedCurriculumCatalog(): Promise<CurriculumTreeVe
       left.version.localeCompare(right.version),
     )
     .map((version) => buildVersionTree(version));
+}
+
+export async function loadPublishedCurriculumCatalog(): Promise<CurriculumTreeVersion[]> {
+  if (process.env.NODE_ENV === "test") return loadPublishedCurriculumCatalogFromDb();
+  return unstable_cache(
+    loadPublishedCurriculumCatalogFromDb,
+    ["published-curriculum-catalog"],
+    {
+      tags: [curriculumCatalogTag],
+      revalidate: 3600,
+    },
+  )();
 }
 
 export async function loadCurriculumList(): Promise<CurriculumVersionSummary[]> {

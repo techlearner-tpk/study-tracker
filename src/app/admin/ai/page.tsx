@@ -5,8 +5,8 @@ import { Card, CardTitle } from "@/components/ui/card";
 import { Input, Label } from "@/components/ui/form";
 import { Notice } from "@/components/ui/notice";
 import { activateFamilySubscriptionAction, deactivateFamilySubscriptionAction, resetAiUsageAction, saveAiSettingsAction } from "@/features/ai/actions";
+import { getCachedAiSettings, getCachedAiUsageChildren, getCachedFamilySubscription } from "@/features/ai/admin-queries";
 import { getAiConfig } from "@/lib/ai/config";
-import { prisma } from "@/lib/prisma";
 import { isAdminUser, requireParentUser } from "@/lib/auth";
 
 export const dynamic = "force-dynamic";
@@ -21,27 +21,9 @@ export default async function AiAdminPage({
   const config = getAiConfig();
   const query = await searchParams;
   const [subscription, settings, children] = await Promise.all([
-    prisma.subscription.findUnique({ where: { parentId: parent.id } }),
-    prisma.aiSetting.findUnique({ where: { id: 1 } }),
-    prisma.child.findMany({
-      where: { userId: parent.id },
-      include: {
-        aiTopicUsages: {
-          include: {
-            topic: {
-              include: {
-                chapter: {
-                  include: {
-                    subject: true,
-                  },
-                },
-              },
-            },
-          },
-        },
-      },
-      orderBy: { createdAt: "asc" },
-    }),
+    getCachedFamilySubscription(parent.id),
+    getCachedAiSettings(),
+    getCachedAiUsageChildren(parent.id),
   ]);
 
   return (

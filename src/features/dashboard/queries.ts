@@ -1,24 +1,49 @@
 import { LearningStatus } from "@prisma/client";
 import { isSameDay, startOfMonth, startOfWeek } from "date-fns";
 import { cache } from "react";
+import { unstable_cache } from "next/cache";
 import { getOwnedChild } from "@/lib/ownership";
 import { prisma } from "@/lib/prisma";
 import { ActivitySession, calculateTopicProgress, currentStudyStreak, habitGoalProgress, longestStudyStreak } from "@/lib/analytics";
 import { isDemoName } from "@/lib/display";
+import { childDashboardTag, childrenTag, parentCalendarTag, parentReportsTag } from "@/lib/cache-tags";
 
 export type ChildWithStudyTree = Awaited<ReturnType<typeof getOwnedChild>>;
 
-export const getChildren = cache(async function getChildren(userId: string) {
+async function loadChildren(userId: string) {
   const children = await prisma.child.findMany({ where: { userId }, orderBy: { createdAt: "asc" } });
   if (process.env.NODE_ENV !== "production") {
     return children;
   }
   return children.filter((child) => !isDemoName(child.name));
+}
+
+export const getChildren = cache(async function getChildren(userId: string) {
+  if (process.env.NODE_ENV === "test") return loadChildren(userId);
+  return unstable_cache(
+    () => loadChildren(userId),
+    ["children", userId],
+    {
+      tags: [childrenTag(userId)],
+      revalidate: 30,
+    },
+  )();
 });
 
 export const getChildDashboard = cache(async function getChildDashboard(userId: string, childId: string) {
-  const child = await getOwnedChild(userId, childId);
-  return { child, analytics: buildChildAnalytics(child) };
+  const load = async () => {
+    const child = await getOwnedChild(userId, childId);
+    return { child, analytics: buildChildAnalytics(child) };
+  };
+  if (process.env.NODE_ENV === "test") return load();
+  return unstable_cache(
+    load,
+    ["child-dashboard", userId, childId],
+    {
+      tags: [childDashboardTag(childId), parentReportsTag(userId), parentCalendarTag(userId)],
+      revalidate: 30,
+    },
+  )();
 });
 
 export function flattenTopics(child: ChildWithStudyTree) {

@@ -5,6 +5,7 @@ import { redirect } from "next/navigation";
 import { Prisma, CurriculumStatus } from "@prisma/client";
 import { prisma } from "@/lib/prisma";
 import { requireAdminUser, requireParentUser } from "@/lib/auth";
+import { invalidateChildDashboardCaches, invalidateCurriculumCatalogCache } from "@/lib/cache-tags";
 import { formDataToObject } from "@/lib/validations";
 import {
   curriculumChapterFormSchema,
@@ -33,6 +34,7 @@ async function requireEditableVersion(versionId: string) {
 }
 
 function revalidateCurriculum(versionId: string) {
+  invalidateCurriculumCatalogCache();
   revalidatePath("/admin/curriculum");
   revalidatePath(`/admin/curriculum/${versionId}`);
 }
@@ -82,6 +84,7 @@ export async function saveCurriculumVersion(formData: FormData) {
   });
 
   revalidatePath("/admin/curriculum");
+  invalidateCurriculumCatalogCache();
   redirect(`/admin/curriculum/${version.id}`);
 }
 
@@ -212,6 +215,7 @@ export async function cloneCurriculumVersion(formData: FormData) {
   });
 
   revalidatePath("/admin/curriculum");
+  invalidateCurriculumCatalogCache();
   redirect(`/admin/curriculum/${clone.id}`);
 }
 
@@ -463,7 +467,11 @@ export async function importCurriculumFromForm(formData: FormData) {
     throw new Error("Choose a JSON or CSV file");
   }
   const seed = parseCurriculumSeedText(await file.text(), file.name);
-  return importCurriculumSeed(prisma, seed, { dryRun: parsed.dryRun });
+  const result = await importCurriculumSeed(prisma, seed, { dryRun: parsed.dryRun });
+  if (!parsed.dryRun) {
+    invalidateCurriculumCatalogCache();
+  }
+  return result;
 }
 
 export async function importCurriculumAction(
@@ -474,7 +482,7 @@ export async function importCurriculumAction(
 }
 
 export async function applyCurriculumToChild(formData: FormData) {
-  await requireParentUser();
+  const parent = await requireParentUser();
   const data = curriculumSelectionSchema.parse({
     curriculumVersionId: String(formData.get("curriculumVersionId") ?? ""),
     curriculumClassId: String(formData.get("curriculumClassId") ?? ""),
@@ -494,6 +502,7 @@ export async function applyCurriculumToChild(formData: FormData) {
   }, curriculumVersion);
 
   revalidatePath("/");
+  invalidateChildDashboardCaches(childId, parent.id);
   if (formData.get("redirectToChild") === "true") {
     redirect(`/children/${formData.get("childId")}`);
   }

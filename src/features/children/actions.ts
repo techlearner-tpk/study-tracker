@@ -7,6 +7,7 @@ import { prisma } from "@/lib/prisma";
 import { getOwnedChild } from "@/lib/ownership";
 import { requireParentUser } from "@/lib/auth";
 import { childSchema, deleteChildSchema, formDataToObject } from "@/lib/validations";
+import { invalidateChildDashboardCaches, invalidateParentDashboardCaches } from "@/lib/cache-tags";
 import { defaultSubjects } from "@/features/subjects/constants";
 import { clerkClient } from "@clerk/nextjs/server";
 import { appUrl } from "@/lib/app-url";
@@ -72,6 +73,7 @@ export async function inviteKid(formData: FormData) {
   }
 
   revalidatePath("/");
+  invalidateParentDashboardCaches(parent.id);
   redirect("/?inviteStatus=sent");
 }
 
@@ -178,6 +180,8 @@ export async function createChild(formData: FormData) {
   }
 
   revalidatePath("/");
+  invalidateParentDashboardCaches(user.id);
+  invalidateChildDashboardCaches(child.id, user.id);
   redirect(`/children/${child.id}?created=1`);
 }
 
@@ -195,6 +199,7 @@ export async function updateChild(formData: FormData) {
     },
   });
   revalidatePath(`/children/${data.id}`);
+  invalidateChildDashboardCaches(data.id, user.id);
 }
 
 export async function deleteChild(formData: FormData) {
@@ -225,5 +230,7 @@ export async function deleteChild(formData: FormData) {
   }
 
   revalidatePath("/");
+  invalidateParentDashboardCaches(user.id);
+  invalidateChildDashboardCaches(data.childId, user.id);
   redirect("/?deleteStatus=deleted");
 }

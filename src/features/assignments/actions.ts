@@ -6,6 +6,7 @@ import { redirect } from "next/navigation";
 import { prisma } from "@/lib/prisma";
 import { requireCurrentUser } from "@/lib/auth";
 import { getOwnedAssignment, getOwnedChild, getOwnedTopic } from "@/lib/ownership";
+import { invalidateChildDashboardCaches } from "@/lib/cache-tags";
 import { formDataToObject } from "@/lib/validations";
 import {
   assignmentFormSchema,
@@ -17,7 +18,7 @@ function assignmentRedirectPath(isKid: boolean, assignmentId: string) {
   return isKid ? `/kid/assignments/${assignmentId}` : `/assignments/${assignmentId}`;
 }
 
-function invalidateAssignmentPaths(isKid: boolean, assignmentId?: string, childId?: string) {
+function invalidateAssignmentPaths(isKid: boolean, assignmentId?: string, childId?: string, parentId?: string | null) {
   revalidatePath("/");
   revalidatePath(isKid ? "/kid/assignments" : "/assignments");
   if (assignmentId) {
@@ -25,6 +26,7 @@ function invalidateAssignmentPaths(isKid: boolean, assignmentId?: string, childI
   }
   if (childId) {
     revalidatePath(`/children/${childId}`);
+    invalidateChildDashboardCaches(childId, parentId);
   }
 }
 
@@ -83,7 +85,7 @@ export async function createAssignment(formData: FormData) {
     },
   });
 
-  invalidateAssignmentPaths(currentUser.role === "KID", assignment.id, childId);
+  invalidateAssignmentPaths(currentUser.role === "KID", assignment.id, childId, topic.chapter.subject.child.userId);
   redirect(assignmentRedirectPath(currentUser.role === "KID", assignment.id));
 }
 
@@ -100,7 +102,7 @@ export async function startAssignment(formData: FormData) {
     },
   });
 
-  invalidateAssignmentPaths(currentUser.role === "KID", assignment.id, assignment.childId);
+  invalidateAssignmentPaths(currentUser.role === "KID", assignment.id, assignment.childId, assignment.child.userId);
   redirect(assignmentRedirectPath(currentUser.role === "KID", assignment.id));
 }
 
@@ -118,7 +120,7 @@ export async function completeAssignment(formData: FormData) {
     },
   });
 
-  invalidateAssignmentPaths(currentUser.role === "KID", assignment.id, assignment.childId);
+  invalidateAssignmentPaths(currentUser.role === "KID", assignment.id, assignment.childId, assignment.child.userId);
   redirect(assignmentRedirectPath(currentUser.role === "KID", assignment.id));
 }
 
@@ -135,7 +137,7 @@ export async function skipAssignment(formData: FormData) {
     },
   });
 
-  invalidateAssignmentPaths(currentUser.role === "KID", assignment.id, assignment.childId);
+  invalidateAssignmentPaths(currentUser.role === "KID", assignment.id, assignment.childId, assignment.child.userId);
   redirect(assignmentRedirectPath(currentUser.role === "KID", assignment.id));
 }
 
@@ -155,7 +157,7 @@ export async function saveAssignmentScore(formData: FormData) {
     },
   });
 
-  invalidateAssignmentPaths(currentUser.role === "KID", assignment.id, assignment.childId);
+  invalidateAssignmentPaths(currentUser.role === "KID", assignment.id, assignment.childId, assignment.child.userId);
   redirect(assignmentRedirectPath(currentUser.role === "KID", assignment.id));
 }
 
@@ -190,7 +192,7 @@ export async function createStudySessionFromAssignment(formData: FormData) {
     data: { status: AssignmentStatus.IN_PROGRESS, isActive: true },
   });
 
-  invalidateAssignmentPaths(currentUser.role === "KID", assignmentId, assignment.childId);
+  invalidateAssignmentPaths(currentUser.role === "KID", assignmentId, assignment.childId, assignment.child.userId);
   revalidatePath(`/topics/${topicId}`);
   redirect(`${assignmentRedirectPath(currentUser.role === "KID", assignmentId)}?studyStatus=logged`);
 }
@@ -228,7 +230,7 @@ export async function createPracticeSessionFromAssignment(formData: FormData) {
     data: { status: AssignmentStatus.IN_PROGRESS, isActive: true },
   });
 
-  invalidateAssignmentPaths(currentUser.role === "KID", assignmentId, assignment.childId);
+  invalidateAssignmentPaths(currentUser.role === "KID", assignmentId, assignment.childId, assignment.child.userId);
   revalidatePath(`/topics/${topicId}`);
   redirect(`${assignmentRedirectPath(currentUser.role === "KID", assignmentId)}?practiceStatus=logged`);
 }
@@ -262,7 +264,7 @@ export async function createRevisionSessionFromAssignment(formData: FormData) {
     data: { status: AssignmentStatus.IN_PROGRESS, isActive: true },
   });
 
-  invalidateAssignmentPaths(currentUser.role === "KID", assignmentId, assignment.childId);
+  invalidateAssignmentPaths(currentUser.role === "KID", assignmentId, assignment.childId, assignment.child.userId);
   revalidatePath(`/topics/${topicId}`);
   redirect(`${assignmentRedirectPath(currentUser.role === "KID", assignmentId)}?revisionStatus=logged`);
 }

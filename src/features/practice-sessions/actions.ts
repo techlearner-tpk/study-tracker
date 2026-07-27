@@ -6,6 +6,7 @@ import { AssignmentStatus } from "@prisma/client";
 import { prisma } from "@/lib/prisma";
 import { getOwnedAssignment, getOwnedTopic } from "@/lib/ownership";
 import { requireCurrentUser } from "@/lib/auth";
+import { invalidateChildDashboardCaches } from "@/lib/cache-tags";
 import { formDataToObject, practiceSessionSchema } from "@/lib/validations";
 
 function topicRedirectPath(isKid: boolean, topicId: string) {
@@ -15,7 +16,8 @@ function topicRedirectPath(isKid: boolean, topicId: string) {
 export async function createPracticeSession(formData: FormData) {
   const user = await requireCurrentUser();
   const data = practiceSessionSchema.parse(formDataToObject(formData));
-  await getOwnedTopic(user.id, data.topicId);
+  const topic = await getOwnedTopic(user.id, data.topicId);
+  const child = topic.chapter.subject.child;
   await prisma.practiceSession.create({ data });
   if (data.assignmentId) {
     const assignment = await getOwnedAssignment(user.id, data.assignmentId);
@@ -25,9 +27,11 @@ export async function createPracticeSession(formData: FormData) {
     await prisma.assignment.update({ where: { id: assignment.id }, data: { status: AssignmentStatus.IN_PROGRESS, isActive: true } });
     revalidatePath(`/assignments/${assignment.id}`);
     revalidatePath(`/kid/assignments/${assignment.id}`);
+    invalidateChildDashboardCaches(assignment.childId, child.userId);
     redirect(`${user.role === "KID" ? `/kid/assignments/${assignment.id}` : `/assignments/${assignment.id}`}?practiceStatus=logged`);
   }
   revalidatePath(`/topics/${data.topicId}`);
   revalidatePath("/");
+  invalidateChildDashboardCaches(child.id, child.userId);
   redirect(`${topicRedirectPath(user.role === "KID", data.topicId)}?practiceStatus=logged`);
 }

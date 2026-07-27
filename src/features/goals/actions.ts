@@ -5,6 +5,7 @@ import { prisma } from "@/lib/prisma";
 import { getOwnedChild, getOwnedChapter, getOwnedTopic } from "@/lib/ownership";
 import { requireParentUser } from "@/lib/auth";
 import { formDataToObject, habitGoalSchema, outcomeGoalSchema } from "@/lib/validations";
+import { invalidateChildDashboardCaches } from "@/lib/cache-tags";
 
 export async function createHabitGoal(formData: FormData) {
   const user = await requireParentUser();
@@ -12,6 +13,7 @@ export async function createHabitGoal(formData: FormData) {
   await getOwnedChild(user.id, data.childId);
   await prisma.habitGoal.create({ data });
   revalidatePath(`/children/${data.childId}`);
+  invalidateChildDashboardCaches(data.childId, user.id);
 }
 
 export async function createOutcomeGoal(formData: FormData) {
@@ -26,4 +28,5 @@ export async function createOutcomeGoal(formData: FormData) {
   }
   await prisma.outcomeGoal.create({ data });
   revalidatePath(`/children/${data.childId}`);
+  invalidateChildDashboardCaches(data.childId, user.id);
 }

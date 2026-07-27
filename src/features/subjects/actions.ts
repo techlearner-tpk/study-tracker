@@ -4,6 +4,7 @@ import { revalidatePath } from "next/cache";
 import { prisma } from "@/lib/prisma";
 import { getOwnedChild, getOwnedSubject } from "@/lib/ownership";
 import { requireParentUser } from "@/lib/auth";
+import { invalidateChildDashboardCaches } from "@/lib/cache-tags";
 import { formDataToObject, subjectSchema } from "@/lib/validations";
 import { resolveSubjectColor } from "@/lib/subject-colors";
 
@@ -22,12 +23,14 @@ export async function saveSubject(formData: FormData) {
       data: { color },
     });
     revalidatePath(`/children/${subject.childId}`);
+    invalidateChildDashboardCaches(subject.childId, user.id);
     return;
   } else {
     await getOwnedChild(user.id, data.childId);
     await prisma.subject.create({ data: { childId: data.childId, name: data.name, color } });
   }
   revalidatePath(`/children/${data.childId}`);
+  invalidateChildDashboardCaches(data.childId, user.id);
 }
 
 export async function deleteSubject(formData: FormData) {
@@ -36,4 +39,5 @@ export async function deleteSubject(formData: FormData) {
   const subject = await getOwnedSubject(user.id, id);
   await prisma.subject.delete({ where: { id } });
   revalidatePath(`/children/${subject.childId}`);
+  invalidateChildDashboardCaches(subject.childId, user.id);
 }

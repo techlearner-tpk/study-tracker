@@ -7,6 +7,7 @@ import { prisma } from "@/lib/prisma";
 import { getOwnedChapter, getOwnedTopic } from "@/lib/ownership";
 import { requireParentUser } from "@/lib/auth";
 import { formDataToObject, topicSchema } from "@/lib/validations";
+import { invalidateChildDashboardCaches } from "@/lib/cache-tags";
 
 export async function saveTopic(formData: FormData) {
   const user = await requireParentUser();
@@ -31,6 +32,7 @@ export async function saveTopic(formData: FormData) {
 
   revalidatePath(`/children/${chapter.subject.childId}`);
   revalidatePath(`/topics/${topic.id}`);
+  invalidateChildDashboardCaches(chapter.subject.childId, user.id);
   if (returnTo && !data.id) {
     const separator = returnTo.includes("?") ? "&" : "?";
     redirect(`${returnTo}${separator}topicId=${topic.id}`);
@@ -43,5 +45,6 @@ export async function deleteTopic(formData: FormData) {
   const topic = await getOwnedTopic(user.id, id);
   await prisma.topic.delete({ where: { id } });
   revalidatePath(`/children/${topic.chapter.subject.childId}`);
+  invalidateChildDashboardCaches(topic.chapter.subject.childId, user.id);
   redirect(`/children/${topic.chapter.subject.childId}`);
 }

@@ -6,6 +6,7 @@ import { SubscriptionStatus } from "@prisma/client";
 import { prisma } from "@/lib/prisma";
 import { requireCurrentUser, requireAdminUser, requireParentUser } from "@/lib/auth";
 import { getOwnedTopic } from "@/lib/ownership";
+import { invalidateAiSettingsCache, invalidateAiSubscriptionCache } from "@/lib/cache-tags";
 import { formDataToObject } from "@/lib/validations";
 import { aiTeachMessageSchema, aiTeachRequestSchema, aiTestRequestSchema, aiTestSubmissionSchema } from "./schema";
 import { getAiSession, generateTopicTest, resetAiUsage, sendTeachMessage, startTeachSession, submitTopicTest } from "./service";
@@ -52,6 +53,7 @@ export async function activateFamilySubscriptionAction() {
     update: { status: SubscriptionStatus.ACTIVE, startsAt: new Date(), expiresAt: null },
     create: { parentId: parent.id, status: SubscriptionStatus.ACTIVE, startsAt: new Date() },
   });
+  invalidateAiSubscriptionCache(parent.id);
   redirect("/admin/ai?subscription=activated");
 }
 
@@ -62,6 +64,7 @@ export async function deactivateFamilySubscriptionAction() {
     update: { status: SubscriptionStatus.FREE, expiresAt: new Date() },
     create: { parentId: parent.id, status: SubscriptionStatus.FREE },
   });
+  invalidateAiSubscriptionCache(parent.id);
   redirect("/admin/ai?subscription=deactivated");
 }
 
@@ -85,6 +88,7 @@ export async function saveAiSettingsAction(formData: FormData) {
       maxUserPromptLength,
     },
   });
+  invalidateAiSettingsCache();
   redirect("/admin/ai?saved=settings");
 }
 
@@ -116,6 +120,7 @@ export async function resetAiUsageAction(formData: FormData) {
     select: { id: true },
   });
   await resetAiUsage(childId, topicId);
+  invalidateAiSubscriptionCache(parent.id);
   redirect("/admin/ai?reset=1");
 }
 

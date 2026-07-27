@@ -17,6 +17,8 @@ import { buildGenerateTestPrompt, generateTestPromptVersion } from "@/lib/ai/pro
 import { buildTeachTopicPrompt, teachTopicPromptVersion } from "@/lib/ai/prompts/teach-topic";
 import { aiGeneratedTestSchema, aiTeachMessageSchema, aiTeachResultSchema, aiTestSubmissionSchema } from "./schema";
 import type { GeneratedTest, TeachTopicInput, TeachTopicResult } from "@/lib/ai/provider";
+import { getCachedAiSettings, getCachedFamilySubscription } from "./admin-queries";
+import { invalidateAiUsageCache } from "@/lib/cache-tags";
 
 export type AiAccessState = {
   enabled: boolean;
@@ -61,7 +63,7 @@ async function resolveFamilyParentId(userId: string) {
 
 async function resolveRuntimeAiSettings(): Promise<RuntimeAiSettings> {
   const env = getAiConfig();
-  const settings = await prisma.aiSetting.findUnique({ where: { id: 1 } });
+  const settings = await getCachedAiSettings();
   return {
     topicPromptLimit: settings?.topicPromptLimit ?? env.topicPromptLimit,
     testQuestionCount: settings?.testQuestionCount ?? env.testQuestionCount,
@@ -73,10 +75,7 @@ export async function canUseAiFeatures(parentId: string) {
   const config = getAiConfig();
   if (!config.enabled) return false;
 
-  const subscription = await prisma.subscription.findUnique({
-    where: { parentId },
-    select: { status: true, startsAt: true, expiresAt: true },
-  });
+  const subscription = await getCachedFamilySubscription(parentId);
   if (!subscription) return false;
   if (subscription.status !== SubscriptionStatus.TRIAL && subscription.status !== SubscriptionStatus.ACTIVE) return false;
   const now = new Date();
@@ -637,10 +636,7 @@ async function getTopicAccessState(userId: string, topicId: string): Promise<AiA
     };
   }
 
-  const subscription = await prisma.subscription.findUnique({
-    where: { parentId },
-    select: { status: true },
-  });
+  const subscription = await getCachedFamilySubscription(parentId);
   const hasAccess = await canUseAiFeatures(parentId);
   const usage = await getAiUsage(topic.chapter.subject.child.id, topic.id);
 
@@ -742,6 +738,9 @@ export async function startTeachSession(userId: string, topicId: string, assignm
         include: { messages: { orderBy: { sequence: "asc" } } },
       });
     }, { timeout: 15000 });
+    if (access.topic.chapter.subject.child.userId) {
+      invalidateAiUsageCache(access.topic.chapter.subject.child.userId);
+    }
 
     return {
       ...access,
@@ -806,6 +805,9 @@ export async function sendTeachMessage(formData: FormData) {
         ],
       });
     }, { timeout: 15000 });
+    if (access.topic.chapter.subject.child.userId) {
+      invalidateAiUsageCache(access.topic.chapter.subject.child.userId);
+    }
 
     return { sessionId: session.id };
   });
@@ -898,6 +900,9 @@ export async function generateTopicTest(userId: string, topicId: string, assignm
         include: { testAttempt: true },
       });
     }, { timeout: 15000 });
+    if (access.topic.chapter.subject.child.userId) {
+      invalidateAiUsageCache(access.topic.chapter.subject.child.userId);
+    }
 
     return {
       ...access,

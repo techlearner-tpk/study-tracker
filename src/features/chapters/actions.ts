@@ -5,6 +5,7 @@ import { prisma } from "@/lib/prisma";
 import { getOwnedChapter, getOwnedSubject } from "@/lib/ownership";
 import { requireParentUser } from "@/lib/auth";
 import { chapterSchema, formDataToObject } from "@/lib/validations";
+import { invalidateChildDashboardCaches } from "@/lib/cache-tags";
 
 export async function saveChapter(formData: FormData) {
   const user = await requireParentUser();
@@ -17,6 +18,7 @@ export async function saveChapter(formData: FormData) {
     await prisma.chapter.create({ data: { subjectId: data.subjectId, name: data.name, order: data.order } });
   }
   revalidatePath(`/children/${subject.childId}`);
+  invalidateChildDashboardCaches(subject.childId, user.id);
 }
 
 export async function deleteChapter(formData: FormData) {
@@ -25,4 +27,5 @@ export async function deleteChapter(formData: FormData) {
   const chapter = await getOwnedChapter(user.id, id);
   await prisma.chapter.delete({ where: { id } });
   revalidatePath(`/children/${chapter.subject.childId}`);
+  invalidateChildDashboardCaches(chapter.subject.childId, user.id);
 }
