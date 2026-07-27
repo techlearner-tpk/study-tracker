@@ -1,6 +1,6 @@
 import Link from "next/link";
 import { notFound } from "next/navigation";
-import { Clock, RotateCcw, Sparkles, Target, Trophy } from "lucide-react";
+import { Clock, RotateCcw, Target, Trophy } from "lucide-react";
 import { AppShell } from "@/components/layout/app-shell";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
@@ -15,6 +15,7 @@ import { resolveSubjectColor } from "@/lib/subject-colors";
 import { minutesLabel } from "@/lib/utils";
 import { ChapterForm } from "@/features/chapters/components";
 import { ChildForm, DangerDeleteChild } from "@/features/children/components";
+import { DynamicGreeting } from "@/features/dashboard/greeting";
 import { getChildDashboard } from "@/features/dashboard/queries";
 import { DeleteSubjectButton, SubjectForm } from "@/features/subjects/components";
 import { TopicForm, TopicRow } from "@/features/topics/components";
@@ -96,10 +97,7 @@ export default async function ChildPage({
         <Card className="overflow-hidden border-emerald-100 bg-gradient-to-r from-emerald-50 via-white to-emerald-50">
           <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
             <div>
-              <p className="flex items-center gap-2 text-xl font-semibold text-slate-950">
-                Good morning, {child.name.split(" ")[0]}
-                <Sparkles size={20} className="text-amber-500" />
-              </p>
+              <DynamicGreeting name={child.name} />
               <p className="mt-2 text-sm text-slate-500">Let's make today a steady learning day.</p>
             </div>
             <div className="hidden rounded-full bg-white px-5 py-3 text-sm font-medium text-emerald-700 shadow-sm sm:block">
