@@ -561,19 +561,21 @@ export function AiTestSessionView({ session, backHref, isAdmin }: { session: AiS
         </Card>
       ) : null}
 
-      <Card>
-        <CardTitle>Questions</CardTitle>
-        <div className="mt-4 grid gap-3">
-          {test.questions.map((question, index) => (
-            <div key={question.id} className="rounded-md border border-stone-200 p-3">
-              <p className="text-sm font-medium text-stone-900">
-                {index + 1}. {question.question}
-              </p>
-              <p className="mt-1 text-sm text-stone-600">{question.explanation}</p>
-            </div>
-          ))}
-        </div>
-      </Card>
+      {submitted ? (
+        <Card>
+          <CardTitle>Explanations</CardTitle>
+          <div className="mt-4 grid gap-3">
+            {test.questions.map((question, index) => (
+              <div key={question.id} className="rounded-md border border-stone-200 p-3">
+                <p className="text-sm font-medium text-stone-900">
+                  {index + 1}. {question.question}
+                </p>
+                <p className="mt-1 text-sm text-stone-600">{question.explanation}</p>
+              </div>
+            ))}
+          </div>
+        </Card>
+      ) : null}
     </div>
   );
 }
