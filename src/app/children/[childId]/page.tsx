@@ -95,6 +95,8 @@ export default async function ChildPage({
         {created ? <Notice tone="success">Child created.</Notice> : null}
         {deleteError ? <Notice tone="error">{deleteError}</Notice> : null}
 
+        <section className="grid gap-4 xl:grid-cols-[minmax(0,1fr)_360px] xl:items-start">
+          <div className="grid min-w-0 gap-6">
         <Card className="overflow-hidden border-emerald-100 bg-gradient-to-r from-emerald-50 via-white to-emerald-50 py-6">
           <div className="flex min-h-24 flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
             <div>
@@ -180,7 +182,7 @@ export default async function ChildPage({
           {!visibleSubjects.length ? <p className="mt-4 text-sm text-stone-600">No subjects match that search yet.</p> : null}
         </Card>
 
-        <section className="grid gap-4 lg:grid-cols-[minmax(0,1fr)_360px] lg:items-start">
+        <section className="grid gap-4">
           <div id="subject-details" className="grid min-w-0 gap-4 scroll-mt-6">
             {activeSubject ? [activeSubject].map((subject) => {
               const subjectTopics = subject.chapters.flatMap((chapter) => chapter.topics);
@@ -294,6 +296,8 @@ export default async function ChildPage({
                 <p className="mt-2 text-sm text-stone-600">Try a broader search or clear the filter to bring every subject back.</p>
               </Card>
             ) : null}
+          </div>
+        </section>
           </div>
 
           <aside className="grid min-w-0 content-start gap-4 text-left">
