@@ -363,7 +363,7 @@ function StudyGreetingArt() {
       src="/assets/study-greeting.png"
       alt=""
       aria-hidden="true"
-      className="h-24 w-44 rounded-xl object-cover object-center opacity-90 mix-blend-multiply"
+      className="h-[8.4rem] w-[15.4rem] rounded-xl object-cover object-center opacity-90 mix-blend-multiply"
     />
   );
 }
@@ -425,7 +425,7 @@ function GoalArt({ accent }: { accent: "emerald" | "violet" }) {
       src={src}
       alt=""
       aria-hidden="true"
-      className="h-20 w-20 shrink-0 rounded-xl object-cover object-center opacity-85 mix-blend-multiply"
+      className="h-28 w-28 shrink-0 rounded-xl object-cover object-center opacity-85 mix-blend-multiply"
     />
   );
 }
