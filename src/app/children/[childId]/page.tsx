@@ -172,7 +172,7 @@ export default async function ChildPage({
               const subjectColor = resolveSubjectColor(subject.name, subject.color);
               const isActive = activeSubject?.id === subject.id;
               return (
-                <Link
+                <a
                   key={subject.id}
                   href={subjectDetailHref(child.id, subject.id, subjectQuery)}
                   className="rounded-lg border p-4 shadow-sm transition hover:-translate-y-0.5 hover:shadow-md"
@@ -198,7 +198,7 @@ export default async function ChildPage({
                   <div className="mt-2 h-2 overflow-hidden rounded-full bg-white/70">
                     <div className="h-full rounded-full" style={{ width: `${subjectProgress.progress}%`, backgroundColor: subjectColor }} />
                   </div>
-                </Link>
+                </a>
               );
             })}
           </div>
