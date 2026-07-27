@@ -37,12 +37,19 @@ function withAlpha(hexColor: string, alphaHex: string) {
   return `${hexColor}${alphaHex}`;
 }
 
+function subjectDetailHref(childId: string, subjectId: string, subjectQuery: string) {
+  const params = new URLSearchParams();
+  if (subjectQuery) params.set("subject", subjectQuery);
+  params.set("subjectId", subjectId);
+  return `/children/${childId}?${params.toString()}#subject-details`;
+}
+
 export default async function ChildPage({
   params,
   searchParams,
 }: {
   params: Promise<{ childId: string }>;
-  searchParams?: Promise<{ deleteError?: string; created?: string; subject?: string }>;
+  searchParams?: Promise<{ deleteError?: string; created?: string; subject?: string; subjectId?: string }>;
 }) {
   const user = await requireParentUser();
   const { childId } = await params;
@@ -55,6 +62,8 @@ export default async function ChildPage({
   const created = query?.created ? String(query.created) : null;
   const subjectQuery = String(query?.subject ?? "").trim().toLowerCase();
   const visibleSubjects = child.subjects.filter((subject) => matchesSubjectQuery(subject, subjectQuery));
+  const selectedSubjectId = String(query?.subjectId ?? "");
+  const activeSubject = visibleSubjects.find((subject) => subject.id === selectedSubjectId) ?? visibleSubjects[0] ?? null;
   const childColor = child.themeColor ?? "#0f766e";
 
   return (
@@ -161,14 +170,16 @@ export default async function ChildPage({
               const subjectTopics = subject.chapters.flatMap((chapter) => chapter.topics);
               const subjectProgress = calculateTopicProgress(subjectTopics.map((topic) => ({ status: topic.status })));
               const subjectColor = resolveSubjectColor(subject.name, subject.color);
+              const isActive = activeSubject?.id === subject.id;
               return (
                 <Link
                   key={subject.id}
-                  href={`#subject-${subject.id}`}
+                  href={subjectDetailHref(child.id, subject.id, subjectQuery)}
                   className="rounded-lg border p-4 shadow-sm transition hover:-translate-y-0.5 hover:shadow-md"
                   style={{
                     background: `linear-gradient(135deg, ${withAlpha(subjectColor, "14")}, #ffffff 82%)`,
-                    borderColor: withAlpha(subjectColor, "33"),
+                    borderColor: isActive ? subjectColor : withAlpha(subjectColor, "33"),
+                    boxShadow: isActive ? `inset 0 -3px 0 ${subjectColor}` : undefined,
                   }}
                 >
                   <div className="flex items-start justify-between gap-3">
@@ -195,8 +206,8 @@ export default async function ChildPage({
         </Card>
 
         <section className="grid gap-4 lg:grid-cols-[minmax(0,1fr)_360px] lg:items-start">
-          <div className="grid min-w-0 gap-4">
-            {visibleSubjects.map((subject) => {
+          <div id="subject-details" className="grid min-w-0 gap-4 scroll-mt-6">
+            {activeSubject ? [activeSubject].map((subject) => {
               const subjectTopics = subject.chapters.flatMap((chapter) => chapter.topics);
               const subjectProgress = calculateTopicProgress(subjectTopics.map((topic) => ({ status: topic.status })));
               const subjectColor = resolveSubjectColor(subject.name, subject.color);
@@ -300,7 +311,7 @@ export default async function ChildPage({
                   </details>
                 </Card>
               );
-            })}
+            }) : null}
 
             {!visibleSubjects.length ? (
               <Card>
