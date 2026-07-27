@@ -45,7 +45,7 @@ export function AppShellFrame({
     <div className="min-h-screen bg-[#fbfdfb] text-slate-950">
       <aside
         className={cn(
-          "fixed inset-y-0 left-0 hidden border-r border-slate-200/80 bg-white/95 px-4 py-5 shadow-[8px_0_30px_rgba(15,23,42,0.03)] backdrop-blur transition-[width,padding] duration-200 lg:block",
+          "fixed inset-y-0 left-0 hidden border-r border-slate-200/80 bg-white/95 px-4 py-4 shadow-[8px_0_30px_rgba(15,23,42,0.03)] backdrop-blur transition-[width,padding] duration-200 lg:block",
           collapsed ? "w-24" : "w-72",
         )}
       >
@@ -59,7 +59,7 @@ export function AppShellFrame({
           {!collapsed ? <UserButton /> : null}
         </div>
 
-        <div className={cn("mt-5 flex items-center", collapsed ? "justify-center" : "justify-between gap-3")}>
+        <div className={cn("mt-4 flex items-center", collapsed ? "justify-center" : "justify-between gap-3")}>
           {collapsed ? <UserButton /> : <p className="text-[11px] font-semibold uppercase tracking-wide text-slate-400">Navigation</p>}
           <Button
             type="button"
@@ -74,9 +74,9 @@ export function AppShellFrame({
 
         <SidebarNav items={items} collapsed={collapsed} />
 
-        <div className="mt-8">
+        <div className="mt-5">
           {!collapsed ? <p className="text-[11px] font-semibold uppercase tracking-wide text-slate-400">Children</p> : null}
-          <div className={cn("mt-3 grid gap-2", collapsed ? "justify-items-center" : "")}>
+          <div className={cn("mt-2 grid gap-2", collapsed ? "justify-items-center" : "")}>
             {childrenList.map((child) => (
               <Link
                 key={child.id}

@@ -18,7 +18,7 @@ export function SidebarNav({
   const pathname = usePathname();
 
   return (
-    <nav className="mt-8 grid gap-1.5 text-sm">
+    <nav className="mt-3 grid gap-1.5 text-sm">
       {items.map((item) => {
         const active = pathname === item.href || (item.href !== "/" && pathname.startsWith(`${item.href}/`));
         return (
