@@ -4,16 +4,50 @@ import { prisma } from "@/lib/prisma";
 
 export type OwnedChild = Prisma.ChildGetPayload<{
   include: {
-    kidUser: true;
+    kidUser: {
+      select: {
+        id: true;
+        clerkUserId: true;
+      };
+    };
     subjects: {
       include: {
         chapters: {
           include: {
             topics: {
-              include: {
-                studySessions: true;
-                practiceSessions: true;
-                revisionSessions: true;
+              select: {
+                id: true;
+                chapterId: true;
+                name: true;
+                description: true;
+                status: true;
+                confidenceRating: true;
+                notes: true;
+                order: true;
+                createdAt: true;
+                updatedAt: true;
+                completedAt: true;
+                studySessions: {
+                  select: {
+                    id: true;
+                    startTime: true;
+                    durationMinutes: true;
+                  };
+                };
+                practiceSessions: {
+                  select: {
+                    id: true;
+                    date: true;
+                    durationMinutes: true;
+                  };
+                };
+                revisionSessions: {
+                  select: {
+                    id: true;
+                    date: true;
+                    durationMinutes: true;
+                  };
+                };
               };
             };
           };
@@ -22,29 +56,6 @@ export type OwnedChild = Prisma.ChildGetPayload<{
     };
     habitGoals: true;
     outcomeGoals: true;
-    curriculumAssignments: {
-      include: {
-        curriculumVersion: {
-          include: {
-            board: true;
-          };
-        };
-        curriculumClass: true;
-      };
-    };
-    assignments: {
-      include: {
-        topic: {
-          include: {
-            chapter: {
-              include: {
-                subject: true;
-              };
-            };
-          };
-        };
-      };
-    };
   };
 }>;
 
@@ -80,7 +91,7 @@ export async function getOwnedChild(userId: string, childId: string): Promise<Ow
   const child = await prisma.child.findUnique({
     where: { id: childId },
     include: {
-      kidUser: true,
+      kidUser: { select: { id: true, clerkUserId: true } },
       subjects: {
         orderBy: [{ order: "asc" }, { createdAt: "asc" }],
         include: {
@@ -89,10 +100,40 @@ export async function getOwnedChild(userId: string, childId: string): Promise<Ow
             include: {
               topics: {
                 orderBy: [{ order: "asc" }, { createdAt: "asc" }],
-                include: {
-                  studySessions: true,
-                  practiceSessions: true,
-                  revisionSessions: true,
+                select: {
+                  id: true,
+                  chapterId: true,
+                  name: true,
+                  description: true,
+                  status: true,
+                  confidenceRating: true,
+                  notes: true,
+                  order: true,
+                  createdAt: true,
+                  updatedAt: true,
+                  completedAt: true,
+                  studySessions: {
+                    orderBy: { startTime: "desc" },
+                    select: {
+                      id: true,
+                      startTime: true,
+                      durationMinutes: true,
+                    },
+                  },
+                  practiceSessions: {
+                    select: {
+                      id: true,
+                      date: true,
+                      durationMinutes: true,
+                    },
+                  },
+                  revisionSessions: {
+                    select: {
+                      id: true,
+                      date: true,
+                      durationMinutes: true,
+                    },
+                  },
                 },
               },
             },
@@ -101,29 +142,6 @@ export async function getOwnedChild(userId: string, childId: string): Promise<Ow
       },
       habitGoals: { where: { isActive: true }, orderBy: { createdAt: "asc" } },
       outcomeGoals: { where: { isActive: true }, orderBy: { createdAt: "asc" } },
-      curriculumAssignments: {
-        include: {
-          curriculumVersion: {
-            include: {
-              board: true,
-            },
-          },
-          curriculumClass: true,
-        },
-      },
-      assignments: {
-        include: {
-          topic: {
-            include: {
-              chapter: {
-                include: {
-                  subject: true,
-                },
-              },
-            },
-          },
-        },
-      },
     },
   });
 

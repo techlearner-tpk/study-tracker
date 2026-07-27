@@ -9,8 +9,16 @@ describe("normalizePrismaDatabaseUrl", () => {
     );
 
     expect(url).toContain("pgbouncer=true");
-    expect(url).toContain("connection_limit=1");
+    expect(url).toContain("connection_limit=3");
     expect(url).toContain("sslmode=require");
+  });
+
+  it("keeps explicit pooler connection settings", () => {
+    const url = normalizePrismaDatabaseUrl(
+      "postgresql://user:pass@example-pooler.neon.tech/db?sslmode=require&connection_limit=5",
+    );
+
+    expect(url).toContain("connection_limit=5");
   });
 
   it("leaves non-pooler urls unchanged", () => {

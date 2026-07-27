@@ -9,8 +9,8 @@ export function normalizePrismaDatabaseUrl(url: string) {
     const hostname = parsed.hostname.toLowerCase();
     const isNeonPooler = hostname.includes("-pooler.") || hostname.includes("pooler");
     if (isNeonPooler) {
-      parsed.searchParams.set("pgbouncer", "true");
-      parsed.searchParams.set("connection_limit", "1");
+      parsed.searchParams.set("pgbouncer", parsed.searchParams.get("pgbouncer") ?? "true");
+      parsed.searchParams.set("connection_limit", parsed.searchParams.get("connection_limit") ?? process.env.PRISMA_CONNECTION_LIMIT ?? "3");
     }
     return parsed.toString();
   } catch {

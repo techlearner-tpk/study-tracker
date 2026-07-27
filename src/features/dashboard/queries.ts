@@ -1,5 +1,6 @@
 import { LearningStatus } from "@prisma/client";
 import { isSameDay, startOfMonth, startOfWeek } from "date-fns";
+import { cache } from "react";
 import { getOwnedChild } from "@/lib/ownership";
 import { prisma } from "@/lib/prisma";
 import { ActivitySession, calculateTopicProgress, currentStudyStreak, habitGoalProgress, longestStudyStreak } from "@/lib/analytics";
@@ -7,18 +8,18 @@ import { isDemoName } from "@/lib/display";
 
 export type ChildWithStudyTree = Awaited<ReturnType<typeof getOwnedChild>>;
 
-export async function getChildren(userId: string) {
+export const getChildren = cache(async function getChildren(userId: string) {
   const children = await prisma.child.findMany({ where: { userId }, orderBy: { createdAt: "asc" } });
   if (process.env.NODE_ENV !== "production") {
     return children;
   }
   return children.filter((child) => !isDemoName(child.name));
-}
+});
 
-export async function getChildDashboard(userId: string, childId: string) {
+export const getChildDashboard = cache(async function getChildDashboard(userId: string, childId: string) {
   const child = await getOwnedChild(userId, childId);
   return { child, analytics: buildChildAnalytics(child) };
-}
+});
 
 export function flattenTopics(child: ChildWithStudyTree) {
   return child.subjects.flatMap((subject) =>

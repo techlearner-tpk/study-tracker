@@ -1,4 +1,5 @@
 import { redirect } from "next/navigation";
+import { cache } from "react";
 import { auth, currentUser } from "@clerk/nextjs/server";
 import { prisma } from "@/lib/prisma";
 import type { UserRole } from "@prisma/client";
@@ -24,6 +25,16 @@ function displayNameFromEmail(email: string) {
 }
 
 const placeholderPasswordHash = "clerk-managed-account";
+
+const currentUserSelect = {
+  id: true,
+  email: true,
+  name: true,
+  role: true,
+  childId: true,
+  clerkUserId: true,
+  verifiedAt: true,
+} as const;
 
 function displayNameFromClerkUser(user: Awaited<ReturnType<typeof currentUser>>) {
   return [user?.firstName, user?.lastName].filter(Boolean).join(" ").trim();
@@ -57,26 +68,16 @@ async function upsertCurrentUser() {
   const profile = await getVerifiedClerkProfile();
   if (!profile) return null;
 
-  const select = {
-    id: true,
-    email: true,
-    name: true,
-    role: true,
-    childId: true,
-    clerkUserId: true,
-    verifiedAt: true,
-  } as const;
-
   const existingByClerkId = await prisma.user.findUnique({
     where: { clerkUserId: profile.clerkUserId },
-    select,
+    select: currentUserSelect,
   });
 
   const existingByEmail =
     existingByClerkId ??
     (await prisma.user.findUnique({
       where: { email: profile.email },
-      select,
+      select: currentUserSelect,
     }));
 
   const mergedRole: UserRole =
@@ -102,7 +103,7 @@ async function upsertCurrentUser() {
         passwordHash: placeholderPasswordHash,
         childId: verifiedChildId,
       },
-      select,
+      select: currentUserSelect,
     });
   }
 
@@ -128,12 +129,20 @@ async function upsertCurrentUser() {
       verifiedAt: existingByEmail.verifiedAt ?? new Date(),
       childId: verifiedChildId,
     },
-    select,
+    select: currentUserSelect,
   });
 }
 
-export async function getCurrentUser(): Promise<CurrentUser | null> {
-  const user = await upsertCurrentUser();
+export const getCurrentUser = cache(async function getCurrentUser(): Promise<CurrentUser | null> {
+  const { userId } = await auth();
+  if (!userId) return null;
+
+  const localUser = await prisma.user.findUnique({
+    where: { clerkUserId: userId },
+    select: currentUserSelect,
+  });
+
+  const user = localUser?.verifiedAt ? localUser : await upsertCurrentUser();
   if (!user || !user.verifiedAt) return null;
 
   return {
@@ -143,7 +152,7 @@ export async function getCurrentUser(): Promise<CurrentUser | null> {
     role: user.role,
     childId: user.childId,
   };
-}
+});
 
 export async function requireCurrentUser() {
   const user = await getCurrentUser();

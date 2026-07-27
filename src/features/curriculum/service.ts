@@ -1102,15 +1102,73 @@ export async function loadCurriculumVersionTree(versionId: string): Promise<Curr
 export async function loadPublishedCurriculumCatalog(): Promise<CurriculumTreeVersion[]> {
   const versions = await prisma.curriculumVersion.findMany({
     where: { status: "PUBLISHED" },
-    include: {
+    select: {
+      id: true,
+      boardId: true,
+      academicYear: true,
+      version: true,
+      name: true,
+      status: true,
+      verificationStatus: true,
+      sourceUrl: true,
+      notes: true,
+      sourceReferences: true,
+      publishedAt: true,
+      archivedAt: true,
+      createdAt: true,
+      updatedAt: true,
       board: true,
       classes: {
-        include: {
+        select: {
+          id: true,
+          versionId: true,
+          level: true,
+          name: true,
+          stableKey: true,
+          sequence: true,
+          createdAt: true,
+          updatedAt: true,
           subjects: {
-            include: {
+            select: {
+              id: true,
+              classId: true,
+              stableKey: true,
+              name: true,
+              sequence: true,
+              isDefaultSelected: true,
+              isOptional: true,
+              isLanguageSubject: true,
+              sourceUrl: true,
+              verificationStatus: true,
+              archivedAt: true,
+              createdAt: true,
+              updatedAt: true,
               chapters: {
-                include: {
-                  topics: true,
+                select: {
+                  id: true,
+                  subjectId: true,
+                  stableKey: true,
+                  name: true,
+                  sequence: true,
+                  sourceUrl: true,
+                  verificationStatus: true,
+                  archivedAt: true,
+                  createdAt: true,
+                  updatedAt: true,
+                  topics: {
+                    select: {
+                      id: true,
+                      chapterId: true,
+                      stableKey: true,
+                      name: true,
+                      sequence: true,
+                      sourceUrl: true,
+                      verificationStatus: true,
+                      archivedAt: true,
+                      createdAt: true,
+                      updatedAt: true,
+                    },
+                  },
                 },
               },
             },
