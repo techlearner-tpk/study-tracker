@@ -359,19 +359,12 @@ function Metric({ icon, label, value }: { icon: React.ReactNode; label: string; 
 
 function StudyGreetingArt() {
   return (
-    <div className="relative h-24 w-44" aria-hidden="true">
-      <div className="absolute bottom-1 left-8 h-14 w-14 rounded-full bg-emerald-100" />
-      <div className="absolute bottom-3 left-14 h-11 w-16 rounded-t-full bg-teal-500" />
-      <div className="absolute bottom-12 left-[5.5rem] h-9 w-9 rounded-full bg-amber-200 ring-4 ring-slate-800" />
-      <div className="absolute bottom-[3.75rem] left-[6.25rem] h-3 w-3 rounded-full bg-slate-800" />
-      <div className="absolute bottom-7 left-20 h-8 w-14 -rotate-6 rounded-md bg-blue-500 shadow-sm" />
-      <div className="absolute bottom-1 left-1 h-11 w-1.5 rounded-full bg-emerald-600" />
-      <div className="absolute bottom-8 left-0 h-5 w-8 -rotate-12 rounded-full bg-emerald-300" />
-      <div className="absolute bottom-9 left-3 h-5 w-8 rotate-12 rounded-full bg-emerald-400" />
-      <div className="absolute bottom-0 left-28 h-2 w-24 rounded-full bg-amber-200" />
-      <div className="absolute bottom-3 left-[7.5rem] h-3 w-16 rounded-sm bg-amber-400" />
-      <div className="absolute bottom-7 left-[8.5rem] h-3 w-14 rounded-sm bg-blue-400" />
-    </div>
+    <img
+      src="/assets/study-greeting.png"
+      alt=""
+      aria-hidden="true"
+      className="h-24 w-44 rounded-xl object-cover object-center opacity-90 mix-blend-multiply"
+    />
   );
 }
 
@@ -426,25 +419,14 @@ function GoalPanel({
 }
 
 function GoalArt({ accent }: { accent: "emerald" | "violet" }) {
-  if (accent === "violet") {
-    return (
-      <div className="relative h-20 w-20 shrink-0" aria-hidden="true">
-        <div className="absolute bottom-0 left-2 h-0 w-0 border-x-[24px] border-b-[42px] border-x-transparent border-b-violet-200" />
-        <div className="absolute bottom-0 left-8 h-0 w-0 border-x-[22px] border-b-[58px] border-x-transparent border-b-violet-400" />
-        <div className="absolute bottom-10 left-14 h-8 w-1 rounded-full bg-violet-600" />
-        <div className="absolute bottom-16 left-[3.75rem] h-4 w-6 rounded-r-sm bg-violet-500" />
-      </div>
-    );
-  }
-
+  const src = accent === "violet" ? "/assets/outcome-goal.png" : "/assets/habit-goal.png";
   return (
-    <div className="relative h-20 w-20 shrink-0" aria-hidden="true">
-      <div className="absolute bottom-0 left-7 h-7 w-9 rounded-b-lg bg-amber-100" />
-      <div className="absolute bottom-6 left-11 h-11 w-1.5 rounded-full bg-emerald-600" />
-      <div className="absolute bottom-10 left-5 h-6 w-10 -rotate-12 rounded-full bg-emerald-200" />
-      <div className="absolute bottom-13 left-10 h-6 w-10 rotate-12 rounded-full bg-emerald-300" />
-      <div className="absolute bottom-3 left-9 h-2 w-6 rounded-full bg-amber-300" />
-    </div>
+    <img
+      src={src}
+      alt=""
+      aria-hidden="true"
+      className="h-20 w-20 shrink-0 rounded-xl object-cover object-center opacity-85 mix-blend-multiply"
+    />
   );
 }
 
