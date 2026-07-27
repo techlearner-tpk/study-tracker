@@ -1,11 +1,19 @@
+"use client";
+
 import { ButtonHTMLAttributes } from "react";
+import { useFormStatus } from "react-dom";
 import { cn } from "@/lib/utils";
 
 type ButtonProps = ButtonHTMLAttributes<HTMLButtonElement> & {
   variant?: "primary" | "secondary" | "ghost" | "danger";
+  pendingText?: string;
 };
 
-export function Button({ className, variant = "primary", ...props }: ButtonProps) {
+export function Button({ children, className, disabled, pendingText, type, variant = "primary", ...props }: ButtonProps) {
+  const { pending } = useFormStatus();
+  const isSubmit = type === "submit" || !type;
+  const isPending = isSubmit && pending;
+
   return (
     <button
       className={cn(
@@ -16,8 +24,12 @@ export function Button({ className, variant = "primary", ...props }: ButtonProps
         variant === "danger" && "bg-red-700 text-white hover:bg-red-800",
         className,
       )}
+      disabled={disabled || isPending}
+      type={type}
       {...props}
-    />
+    >
+      {isPending ? <span className="h-4 w-4 animate-spin rounded-full border-2 border-current border-t-transparent" aria-hidden="true" /> : null}
+      {isPending && pendingText ? pendingText : children}
+    </button>
   );
 }
-
