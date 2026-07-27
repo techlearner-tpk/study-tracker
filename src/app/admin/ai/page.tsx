@@ -7,7 +7,7 @@ import { Notice } from "@/components/ui/notice";
 import { activateFamilySubscriptionAction, deactivateFamilySubscriptionAction, resetAiUsageAction, saveAiSettingsAction } from "@/features/ai/actions";
 import { getAiConfig } from "@/lib/ai/config";
 import { prisma } from "@/lib/prisma";
-import { requireAdminUser } from "@/lib/auth";
+import { isAdminUser, requireParentUser } from "@/lib/auth";
 
 export const dynamic = "force-dynamic";
 
@@ -16,7 +16,8 @@ export default async function AiAdminPage({
 }: {
   searchParams?: Promise<{ subscription?: string; saved?: string; reset?: string }>;
 }) {
-  const parent = await requireAdminUser();
+  const parent = await requireParentUser();
+  const isAdmin = isAdminUser(parent);
   const config = getAiConfig();
   const query = await searchParams;
   const [subscription, settings, children] = await Promise.all([
@@ -85,21 +86,29 @@ export default async function AiAdminPage({
 
           <Card>
             <CardTitle>Shared usage limit</CardTitle>
-            <form action={saveAiSettingsAction} className="mt-3 grid gap-3">
-              <Label>
-                Topic prompt limit
-                <Input name="topicPromptLimit" type="number" min="1" defaultValue={settings?.topicPromptLimit ?? config.topicPromptLimit} />
-              </Label>
-              <Label>
-                Test questions
-                <Input name="testQuestionCount" type="number" min="1" defaultValue={settings?.testQuestionCount ?? config.testQuestionCount} />
-              </Label>
-              <Label>
-                Max user prompt length
-                <Input name="maxUserPromptLength" type="number" min="1" defaultValue={settings?.maxUserPromptLength ?? config.maxUserPromptLength} />
-              </Label>
-              <Button type="submit">Save settings</Button>
-            </form>
+            {isAdmin ? (
+              <form action={saveAiSettingsAction} className="mt-3 grid gap-3">
+                <Label>
+                  Topic prompt limit
+                  <Input name="topicPromptLimit" type="number" min="1" defaultValue={settings?.topicPromptLimit ?? config.topicPromptLimit} />
+                </Label>
+                <Label>
+                  Test questions
+                  <Input name="testQuestionCount" type="number" min="1" defaultValue={settings?.testQuestionCount ?? config.testQuestionCount} />
+                </Label>
+                <Label>
+                  Max user prompt length
+                  <Input name="maxUserPromptLength" type="number" min="1" defaultValue={settings?.maxUserPromptLength ?? config.maxUserPromptLength} />
+                </Label>
+                <Button type="submit">Save settings</Button>
+              </form>
+            ) : (
+              <div className="mt-3 grid gap-2 text-sm text-stone-600">
+                <p>Topic prompt limit: {settings?.topicPromptLimit ?? config.topicPromptLimit}</p>
+                <p>Test questions: {settings?.testQuestionCount ?? config.testQuestionCount}</p>
+                <p>Max user prompt length: {settings?.maxUserPromptLength ?? config.maxUserPromptLength}</p>
+              </div>
+            )}
           </Card>
         </section>
 

@@ -4,10 +4,13 @@ const mocks = vi.hoisted(() => ({
   redirect: vi.fn(),
   revalidatePath: vi.fn(),
   requireAdminUser: vi.fn(),
+  requireParentUser: vi.fn(),
   prismaSubscriptionUpsert: vi.fn(),
   prismaAiSettingUpsert: vi.fn(),
+  prismaChildFindFirstOrThrow: vi.fn(),
   submitTopicTest: vi.fn(),
   getAiSession: vi.fn(),
+  resetAiUsage: vi.fn(),
 }));
 
 vi.mock("server-only", () => ({}));
@@ -22,6 +25,7 @@ vi.mock("next/navigation", () => ({
 
 vi.mock("@/lib/auth", () => ({
   requireAdminUser: mocks.requireAdminUser,
+  requireParentUser: mocks.requireParentUser,
 }));
 
 vi.mock("@/lib/prisma", () => ({
@@ -32,20 +36,25 @@ vi.mock("@/lib/prisma", () => ({
     aiSetting: {
       upsert: mocks.prismaAiSettingUpsert,
     },
+    child: {
+      findFirstOrThrow: mocks.prismaChildFindFirstOrThrow,
+    },
   },
 }));
 
 vi.mock("@/features/ai/service", () => ({
   submitTopicTest: mocks.submitTopicTest,
   getAiSession: mocks.getAiSession,
+  resetAiUsage: mocks.resetAiUsage,
 }));
 
-import { activateFamilySubscriptionAction, saveAiSettingsAction, submitTopicTestAction } from "@/features/ai/actions";
+import { activateFamilySubscriptionAction, resetAiUsageAction, saveAiSettingsAction, submitTopicTestAction } from "@/features/ai/actions";
 
 describe("ai actions", () => {
   beforeEach(() => {
     vi.clearAllMocks();
     mocks.requireAdminUser.mockResolvedValue({ id: "parent_1" });
+    mocks.requireParentUser.mockResolvedValue({ id: "parent_1" });
   });
 
   it("activates the family subscription for the parent", async () => {
@@ -82,6 +91,39 @@ describe("ai actions", () => {
       },
     });
     expect(mocks.redirect).toHaveBeenCalledWith("/admin/ai?saved=settings");
+  });
+
+  it("lets a parent reset AI usage for their own child topic", async () => {
+    const formData = new FormData();
+    formData.set("childId", "child_1");
+    formData.set("topicId", "topic_1");
+    mocks.prismaChildFindFirstOrThrow.mockResolvedValue({ id: "child_1" });
+    mocks.resetAiUsage.mockResolvedValue(undefined);
+
+    await resetAiUsageAction(formData);
+
+    expect(mocks.prismaChildFindFirstOrThrow).toHaveBeenCalledWith({
+      where: {
+        id: "child_1",
+        userId: "parent_1",
+        subjects: {
+          some: {
+            chapters: {
+              some: {
+                topics: {
+                  some: {
+                    id: "topic_1",
+                  },
+                },
+              },
+            },
+          },
+        },
+      },
+      select: { id: true },
+    });
+    expect(mocks.resetAiUsage).toHaveBeenCalledWith("child_1", "topic_1");
+    expect(mocks.redirect).toHaveBeenCalledWith("/admin/ai?reset=1");
   });
 
   it("redirects submitted tests to a fresh URL", async () => {
