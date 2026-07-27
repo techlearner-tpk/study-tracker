@@ -363,7 +363,7 @@ function StudyGreetingArt() {
       <img
         src="/assets/study-greeting.png"
         alt=""
-        className="absolute bottom-1 right-0 h-[8.4rem] w-[15.4rem] max-w-none rounded-xl object-cover object-center opacity-90 mix-blend-multiply"
+        className="absolute right-0 top-1/2 h-[8.4rem] w-[15.4rem] max-w-none -translate-y-1/2 rounded-xl object-cover object-center opacity-90 mix-blend-multiply"
       />
     </div>
   );
