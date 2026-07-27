@@ -18,7 +18,7 @@ export function SidebarNav({
   const pathname = usePathname();
 
   return (
-    <nav className="mt-8 grid gap-2 text-sm">
+    <nav className="mt-8 grid gap-1.5 text-sm">
       {items.map((item) => {
         const active = pathname === item.href || (item.href !== "/" && pathname.startsWith(`${item.href}/`));
         return (
@@ -30,7 +30,7 @@ export function SidebarNav({
             className={cn(
               "flex items-center rounded-md px-3 py-2 transition",
               collapsed ? "justify-center" : "gap-2",
-              active ? "bg-emerald-50 font-medium text-emerald-900" : "text-stone-700 hover:bg-stone-100",
+              active ? "bg-emerald-50 font-semibold text-emerald-800 shadow-sm" : "text-slate-600 hover:bg-emerald-50 hover:text-emerald-800",
             )}
           >
             {item.icon}

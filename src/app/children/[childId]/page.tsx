@@ -1,6 +1,6 @@
 import Link from "next/link";
 import { notFound } from "next/navigation";
-import { Clock, RotateCcw, Target, Trophy } from "lucide-react";
+import { Clock, RotateCcw, Sparkles, Target, Trophy } from "lucide-react";
 import { AppShell } from "@/components/layout/app-shell";
 import { Badge } from "@/components/ui/badge";
 import { Card, CardTitle } from "@/components/ui/card";
@@ -49,26 +49,49 @@ export default async function ChildPage({
   const created = query?.created ? String(query.created) : null;
   const subjectQuery = String(query?.subject ?? "").trim().toLowerCase();
   const visibleSubjects = child.subjects.filter((subject) => matchesSubjectQuery(subject, subjectQuery));
+  const childColor = child.themeColor ?? "#0f766e";
 
   return (
     <AppShell>
       <div className="grid gap-6">
-        <header className="flex flex-col justify-between gap-3 sm:flex-row sm:items-end">
-          <div>
-            <p className="text-sm font-medium text-emerald-800">{formatClassLabel(child.className)}</p>
-            <h1 className="text-3xl font-semibold tracking-tight">{child.name}</h1>
-            <p className="mt-1 text-sm text-stone-600">{child.school ?? "School not set"}</p>
-            <p className="mt-3 text-sm text-stone-600">
+        <header className="flex flex-col justify-between gap-4 sm:flex-row sm:items-center">
+          <div className="flex min-w-0 items-center gap-4">
+            <div className="flex h-16 w-16 shrink-0 items-center justify-center rounded-full text-xl font-semibold text-white shadow-sm" style={{ backgroundColor: childColor }}>
+              {child.name.slice(0, 1).toUpperCase()}
+            </div>
+            <div className="min-w-0">
+              <p className="text-sm font-medium text-emerald-700">{formatClassLabel(child.className)}</p>
+              <h1 className="truncate text-3xl font-semibold tracking-tight text-slate-950">{child.name}</h1>
+              <p className="mt-1 text-sm text-slate-500">{child.school ?? "School not set"}</p>
+            </div>
+          </div>
+          <div className="flex flex-wrap items-center gap-3">
+            <Badge className="border-emerald-100 bg-emerald-50 text-emerald-800">{analytics.topicProgress.progress}% topics complete</Badge>
+            <p className="text-sm text-slate-500">
               <Link href="/" className="text-emerald-800 hover:underline">
                 Back to overview
               </Link>
             </p>
           </div>
-          <Badge>{analytics.topicProgress.progress}% topics complete</Badge>
         </header>
 
         {created ? <Notice tone="success">Child created.</Notice> : null}
         {deleteError ? <Notice tone="error">{deleteError}</Notice> : null}
+
+        <Card className="overflow-hidden border-emerald-100 bg-gradient-to-r from-emerald-50 via-white to-emerald-50">
+          <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
+            <div>
+              <p className="flex items-center gap-2 text-xl font-semibold text-slate-950">
+                Good morning, {child.name.split(" ")[0]}
+                <Sparkles size={20} className="text-amber-500" />
+              </p>
+              <p className="mt-2 text-sm text-slate-500">Let's make today a steady learning day.</p>
+            </div>
+            <div className="hidden rounded-full bg-white px-5 py-3 text-sm font-medium text-emerald-700 shadow-sm sm:block">
+              {analytics.topicProgress.pending} topics waiting
+            </div>
+          </div>
+        </Card>
 
         <section className="grid gap-4 md:grid-cols-4">
           <Metric icon={<Clock size={18} />} label="Today's Study Time" value={minutesLabel(analytics.todayStudyTime)} />
@@ -261,8 +284,8 @@ export default async function ChildPage({
 function Metric({ icon, label, value }: { icon: React.ReactNode; label: string; value: string }) {
   return (
     <Card>
-      <div className="flex items-center gap-2 text-emerald-800">{icon}<span className="text-sm font-medium">{label}</span></div>
-      <p className="mt-3 text-2xl font-semibold">{value}</p>
+      <div className="flex items-center gap-2 text-emerald-700">{icon}<span className="text-sm font-medium text-slate-500">{label}</span></div>
+      <p className="mt-3 text-2xl font-semibold text-slate-950">{value}</p>
     </Card>
   );
 }

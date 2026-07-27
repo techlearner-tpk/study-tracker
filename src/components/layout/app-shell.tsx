@@ -11,7 +11,7 @@ export async function AppShell({ children }: { children: React.ReactNode }) {
   return (
     <AppShellFrame
       items={[
-        { href: "/", label: "Children", icon: <UsersRound size={17} /> },
+        { href: "/", label: "Overview", icon: <UsersRound size={17} /> },
         { href: "/assignments", label: "Assignments", icon: <ClipboardList size={17} /> },
         { href: "/admin/ai", label: "AI", icon: <Brain size={17} /> },
         { href: "/calendar", label: "Calendar", icon: <CalendarDays size={17} /> },

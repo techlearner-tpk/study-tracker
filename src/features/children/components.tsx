@@ -68,10 +68,10 @@ export function DangerDeleteChild({ child, errorMessage }: { child: { id: string
   );
 }
 
-export function KidInviteForm() {
+export function KidInviteForm({ compact = false }: { compact?: boolean }) {
   return (
-    <Card>
-      <CardTitle>Invite kid by email</CardTitle>
+    <Card className={compact ? "border-0 bg-transparent p-0 shadow-none" : ""}>
+      {!compact ? <CardTitle>Invite kid by email</CardTitle> : null}
       <form action={inviteKid} className="mt-4 grid gap-4 sm:grid-cols-[minmax(0,1fr)_auto] sm:items-end">
         <Label className="sm:col-span-1">
           Kid email
