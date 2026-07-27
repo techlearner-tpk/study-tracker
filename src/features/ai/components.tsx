@@ -444,6 +444,17 @@ export function AiTestSessionView({ session, backHref, isAdmin }: { session: AiS
       </Card>
     );
   }
+  const submittedEvaluation = attempt.evaluationJson as
+    | Array<{
+        questionId: string;
+        questionType?: string;
+        submittedAnswer: string;
+        correctAnswer?: string;
+        scorePercentage?: number;
+        isCorrect: boolean;
+        explanation: string;
+      }>
+    | null;
 
   return (
     <div className="grid gap-6">
@@ -473,18 +484,22 @@ export function AiTestSessionView({ session, backHref, isAdmin }: { session: AiS
             Score {attempt.scorePercentage}% · {attempt.correctCount} of {attempt.questionCount} correct
           </p>
           <div className="mt-4 grid gap-3">
-            {(attempt.evaluationJson as Array<{ questionId: string; submittedAnswer: string; isCorrect: boolean; explanation: string }> | null)?.map((item) => (
+            {submittedEvaluation?.map((item) => {
+              const itemScore = item.scorePercentage ?? (item.isCorrect ? 100 : 0);
+              return (
               <div key={item.questionId} className="rounded-md border border-stone-200 p-3">
                 <div className="flex items-center justify-between gap-2">
                   <p className="text-sm font-medium text-stone-900">{item.questionId}</p>
-                  <Badge className={item.isCorrect ? "bg-emerald-100 text-emerald-900" : "bg-red-100 text-red-900"}>
-                    {item.isCorrect ? "Correct" : "Review"}
+                  <Badge className={itemScore === 100 ? "bg-emerald-100 text-emerald-900" : itemScore > 0 ? "bg-amber-100 text-amber-900" : "bg-red-100 text-red-900"}>
+                    {itemScore}% correct
                   </Badge>
                 </div>
                 <p className="mt-2 text-sm text-stone-600">{item.explanation}</p>
                 <p className="mt-2 text-xs text-stone-500">Your answer: {item.submittedAnswer || "No answer"}</p>
+                {item.correctAnswer ? <p className="mt-1 text-xs text-stone-500">Expected answer: {item.correctAnswer}</p> : null}
               </div>
-            ))}
+              );
+            })}
           </div>
         </Card>
       ) : null}

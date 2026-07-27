@@ -129,6 +129,13 @@ function SessionDetails({ session, topicName }: { session: TopicAiSession; topic
                           {String((session.testAttempt.evaluationJson as Array<{ questionId: string; submittedAnswer: string }> | null)?.find((item) => item.questionId === question.id)?.submittedAnswer ?? "No answer")}
                         </p>
                       ) : null}
+                      {submitted && session.testAttempt?.evaluationJson ? (
+                        <p className="mt-1 text-xs text-stone-500">
+                          Score:{" "}
+                          {String((session.testAttempt.evaluationJson as Array<{ questionId: string; scorePercentage?: number; isCorrect?: boolean }> | null)?.find((item) => item.questionId === question.id)?.scorePercentage ?? 0)}
+                          % correct
+                        </p>
+                      ) : null}
                     </div>
                   ))}
                 </div>

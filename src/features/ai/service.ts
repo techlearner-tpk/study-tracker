@@ -16,7 +16,7 @@ import { createAiLearningProvider } from "@/lib/ai/gemini-provider";
 import { buildGenerateTestPrompt, generateTestPromptVersion } from "@/lib/ai/prompts/generate-test";
 import { buildTeachTopicPrompt, teachTopicPromptVersion } from "@/lib/ai/prompts/teach-topic";
 import { aiGeneratedTestSchema, aiTeachMessageSchema, aiTeachResultSchema, aiTestSubmissionSchema } from "./schema";
-import type { TeachTopicInput, TeachTopicResult } from "@/lib/ai/provider";
+import type { GeneratedTest, TeachTopicInput, TeachTopicResult } from "@/lib/ai/provider";
 
 export type AiAccessState = {
   enabled: boolean;
@@ -162,6 +162,97 @@ function teachPromptPayload(input: TeachTopicInput) {
 
 function testPromptPayload(input: TeachTopicInput, questionCount: number) {
   return buildGenerateTestPrompt({ ...input, questionCount });
+}
+
+type TestQuestion = GeneratedTest["questions"][number];
+
+type TestQuestionEvaluation = {
+  questionId: string;
+  questionType: TestQuestion["type"];
+  submittedAnswer: string;
+  correctAnswer: string;
+  scorePercentage: number;
+  isCorrect: boolean;
+  explanation: string;
+};
+
+function normalizeSubmittedAnswer(answer: string) {
+  return answer.trim().replace(/\s+/g, " ").toLowerCase();
+}
+
+function objectiveQuestionEvaluation(question: TestQuestion, submittedAnswer: string): TestQuestionEvaluation {
+  const isCorrect = normalizeSubmittedAnswer(submittedAnswer) === normalizeSubmittedAnswer(question.correctAnswer);
+  return {
+    questionId: question.id,
+    questionType: question.type,
+    submittedAnswer,
+    correctAnswer: question.correctAnswer,
+    scorePercentage: isCorrect ? 100 : 0,
+    isCorrect,
+    explanation: isCorrect ? "Correct. " + question.explanation : question.explanation,
+  };
+}
+
+export async function evaluateSubmittedTestAnswers({
+  test,
+  answers,
+  context,
+  provider = createAiLearningProvider(),
+}: {
+  test: GeneratedTest;
+  answers: Record<string, string>;
+  context: TeachTopicInput;
+  provider?: Pick<ReturnType<typeof createAiLearningProvider>, "evaluateTest">;
+}) {
+  const evaluation = await Promise.all(
+    test.questions.map(async (question): Promise<TestQuestionEvaluation> => {
+      const submittedAnswer = answers[question.id] ?? "";
+      if (question.type !== "SHORT_ANSWER") {
+        return objectiveQuestionEvaluation(question, submittedAnswer);
+      }
+      if (!submittedAnswer.trim()) {
+        return {
+          questionId: question.id,
+          questionType: question.type,
+          submittedAnswer,
+          correctAnswer: question.correctAnswer,
+          scorePercentage: 0,
+          isCorrect: false,
+          explanation: `No answer was submitted. A strong answer should include: ${question.correctAnswer}`,
+        };
+      }
+
+      const aiEvaluation = await provider.evaluateTest({
+        className: context.className,
+        boardName: context.boardName,
+        subjectName: context.subjectName,
+        chapterName: context.chapterName,
+        topicName: context.topicName,
+        topicDescription: context.topicDescription,
+        questionType: question.type,
+        question: question.question,
+        expectedAnswer: question.correctAnswer,
+        questionExplanation: question.explanation,
+        submittedAnswer,
+      });
+
+      return {
+        questionId: question.id,
+        questionType: question.type,
+        submittedAnswer,
+        correctAnswer: question.correctAnswer,
+        scorePercentage: aiEvaluation.scorePercentage,
+        isCorrect: aiEvaluation.isCorrect,
+        explanation: aiEvaluation.explanation,
+      };
+    }),
+  );
+
+  const scorePercentage = test.questions.length
+    ? Math.round(evaluation.reduce((total, item) => total + item.scorePercentage, 0) / test.questions.length)
+    : 0;
+  const correctCount = evaluation.filter((item) => item.scorePercentage === 100).length;
+  return { evaluation, scorePercentage, correctCount };
 }
 
 function isMathTopicName(topicName: string) {
@@ -828,7 +919,33 @@ export async function submitTopicTest(formData: FormData) {
     where: { id: data.attemptId },
     include: {
       session: true,
-      topic: { include: { chapter: { include: { subject: { include: { child: { include: { kidUser: true } } } } } } } },
+      topic: {
+        include: {
+          chapter: {
+            include: {
+              subject: {
+                include: {
+                  child: {
+                    include: {
+                      kidUser: true,
+                      curriculumAssignments: {
+                        include: {
+                          curriculumVersion: {
+                            include: {
+                              board: true,
+                            },
+                          },
+                          curriculumClass: true,
+                        },
+                      },
+                    },
+                  },
+                },
+              },
+            },
+          },
+        },
+      },
       assignment: true,
     },
   });
@@ -845,22 +962,21 @@ export async function submitTopicTest(formData: FormData) {
     answers[question.id] = String(formData.get(`answer_${question.id}`) ?? "").trim();
   }
 
-  let correctCount = 0;
-  const evaluation = test.questions.map((question) => {
-    const submittedAnswer = answers[question.id] ?? "";
-    const normalized = submittedAnswer.trim().toLowerCase();
-    const expected = question.correctAnswer.trim().toLowerCase();
-    const isCorrect = normalized === expected;
-    if (isCorrect) correctCount += 1;
-    return {
-      questionId: question.id,
-      submittedAnswer,
-      isCorrect,
-      explanation: question.explanation,
-    };
+  const child = attempt.topic.chapter.subject.child;
+  const boardName = child.curriculumAssignments[0]?.curriculumVersion.board.name ?? null;
+  const { evaluation, scorePercentage, correctCount } = await evaluateSubmittedTestAnswers({
+    test,
+    answers,
+    context: {
+      className: child.className,
+      boardName,
+      subjectName: attempt.topic.chapter.subject.name,
+      chapterName: attempt.topic.chapter.name,
+      topicName: attempt.topic.name,
+      topicDescription: attempt.topic.description ?? null,
+    },
   });
 
-  const scorePercentage = test.questions.length ? Math.round((correctCount / test.questions.length) * 100) : 0;
   await prisma.aiTestAttempt.update({
     where: { id: attempt.id },
     data: {

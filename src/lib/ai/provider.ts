@@ -20,9 +20,15 @@ export type GeneratedTest = z.infer<typeof aiGeneratedTestSchema>;
 
 export type EvaluateTestInput = {
   className: string;
+  boardName?: string | null;
+  subjectName: string;
+  chapterName: string;
   topicName: string;
+  topicDescription?: string | null;
+  questionType: string;
   question: string;
   expectedAnswer: string;
+  questionExplanation: string;
   submittedAnswer: string;
 };
 

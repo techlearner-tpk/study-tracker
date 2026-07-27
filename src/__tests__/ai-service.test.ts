@@ -31,9 +31,10 @@ vi.mock("@/lib/ai/config", () => ({
   getAiConfig: mocks.getAiConfig,
 }));
 
-import { canUseAiFeatures, getAiUsage, getTopicAiAccessState } from "@/features/ai/service";
+import { canUseAiFeatures, evaluateSubmittedTestAnswers, getAiUsage, getTopicAiAccessState } from "@/features/ai/service";
 import { buildTeachTopicPrompt } from "@/lib/ai/prompts/teach-topic";
 import { buildGenerateTestPrompt } from "@/lib/ai/prompts/generate-test";
+import { buildEvaluateAnswerPrompt } from "@/lib/ai/prompts/evaluate-answer";
 
 describe("ai service", () => {
   beforeEach(() => {
@@ -162,6 +163,92 @@ describe("ai service", () => {
     expect(prompt.system).toContain("Do not use vague placeholders");
     expect(prompt.user).toContain("Do not use generic questions like");
     expect(prompt.user).toContain("Make the set feel like a proper challenge");
+  });
+
+  it("builds a teacher-style evaluation prompt with percentage scoring", () => {
+    const prompt = buildEvaluateAnswerPrompt({
+      className: "8",
+      boardName: "CBSE",
+      subjectName: "Mathematics",
+      chapterName: "Geometry",
+      topicName: "Polygons",
+      topicDescription: "Interior angle sums",
+      questionType: "SHORT_ANSWER",
+      question: "Why is a triangle used in the polygon angle-sum formula?",
+      expectedAnswer: "A polygon can be split into triangles and each triangle has 180 degrees.",
+      questionExplanation: "Checks whether the student understands triangulation.",
+      submittedAnswer: "Because shapes can be divided into triangles.",
+    });
+
+    expect(prompt.system).toContain("scorePercentage");
+    expect(prompt.system).toContain("integer from 0 to 100");
+    expect(prompt.user).toContain("Subject: Mathematics");
+    expect(prompt.user).toContain("Submitted answer: Because shapes can be divided into triangles.");
+  });
+
+  it("uses deterministic scoring for objective answers and AI percentage scoring for short answers", async () => {
+    const provider = {
+      evaluateTest: vi.fn().mockResolvedValue({
+        scorePercentage: 70,
+        isCorrect: false,
+        explanation: "Good start. Mention that each triangle has 180 degrees.",
+      }),
+    };
+
+    const result = await evaluateSubmittedTestAnswers({
+      test: {
+        title: "Polygons test",
+        questions: [
+          {
+            id: "q1",
+            type: "MULTIPLE_CHOICE",
+            question: "How many sides does a hexagon have?",
+            options: ["5", "6", "7", "8"],
+            correctAnswer: "6",
+            explanation: "A hexagon has six sides.",
+          },
+          {
+            id: "q2",
+            type: "TRUE_FALSE",
+            question: "A triangle has 3 sides.",
+            options: ["True", "False"],
+            correctAnswer: "True",
+            explanation: "Triangles have three sides.",
+          },
+          {
+            id: "q3",
+            type: "SHORT_ANSWER",
+            question: "Why can we use triangles for polygon angle sums?",
+            correctAnswer: "A polygon can be split into triangles and each triangle has 180 degrees.",
+            explanation: "Checks triangulation.",
+          },
+        ],
+      },
+      answers: {
+        q1: "6",
+        q2: "False",
+        q3: "Because polygons can be divided into triangles.",
+      },
+      context: {
+        className: "8",
+        boardName: "CBSE",
+        subjectName: "Mathematics",
+        chapterName: "Geometry",
+        topicName: "Polygons",
+        topicDescription: "Interior angle sums",
+      },
+      provider,
+    });
+
+    expect(provider.evaluateTest).toHaveBeenCalledTimes(1);
+    expect(provider.evaluateTest).toHaveBeenCalledWith(expect.objectContaining({
+      subjectName: "Mathematics",
+      chapterName: "Geometry",
+      submittedAnswer: "Because polygons can be divided into triangles.",
+    }));
+    expect(result.evaluation.map((item) => item.scorePercentage)).toEqual([100, 0, 70]);
+    expect(result.scorePercentage).toBe(57);
+    expect(result.correctCount).toBe(1);
   });
 
 });

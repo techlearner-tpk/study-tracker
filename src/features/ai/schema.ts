@@ -42,6 +42,7 @@ export const aiGeneratedTestSchema = z.object({
 });
 
 export const aiEvaluateAnswerSchema = z.object({
+  scorePercentage: z.number().int().min(0).max(100),
   isCorrect: z.boolean(),
   explanation: z.string().min(1),
 });
