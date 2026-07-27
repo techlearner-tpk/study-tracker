@@ -3,7 +3,9 @@ import { notFound } from "next/navigation";
 import { Clock, RotateCcw, Sparkles, Target, Trophy } from "lucide-react";
 import { AppShell } from "@/components/layout/app-shell";
 import { Badge } from "@/components/ui/badge";
+import { Button } from "@/components/ui/button";
 import { Card, CardTitle } from "@/components/ui/card";
+import { Input } from "@/components/ui/form";
 import { Notice } from "@/components/ui/notice";
 import { Progress } from "@/components/ui/progress";
 import { calculateTopicProgress } from "@/lib/analytics";
@@ -29,6 +31,10 @@ function matchesSubjectQuery(subject: Awaited<ReturnType<typeof getChildDashboar
     .join(" ")
     .toLowerCase();
   return haystack.includes(query);
+}
+
+function withAlpha(hexColor: string, alphaHex: string) {
+  return `${hexColor}${alphaHex}`;
 }
 
 export default async function ChildPage({
@@ -134,17 +140,17 @@ export default async function ChildPage({
               <p className="mt-2 text-sm text-stone-600">Each subject keeps one familiar color, so it is easy to scan and jump around quickly.</p>
             </div>
             <form className="flex flex-col gap-2 sm:flex-row">
-              <input
+              <Input
                 name="subject"
                 defaultValue={subjectQuery}
                 placeholder="Search subjects, chapters, or topics"
-                className="h-10 rounded-md border border-stone-300 bg-white px-3 text-sm"
+                className="sm:w-72"
               />
-              <button type="submit" className="inline-flex h-10 items-center justify-center rounded-md border border-stone-300 bg-white px-4 text-sm font-medium text-stone-800 hover:bg-stone-100">
+              <Button type="submit" variant="secondary">
                 Search
-              </button>
+              </Button>
               {subjectQuery ? (
-                <Link href={`/children/${child.id}`} className="inline-flex h-10 items-center justify-center rounded-md border border-stone-300 bg-white px-4 text-sm font-medium text-stone-800 hover:bg-stone-100">
+                <Link href={`/children/${child.id}`} className="inline-flex h-10 items-center justify-center rounded-md border border-slate-200 bg-white px-4 text-sm font-medium text-slate-700 shadow-sm hover:bg-emerald-50">
                   Clear
                 </Link>
               ) : null}
@@ -159,21 +165,26 @@ export default async function ChildPage({
                 <Link
                   key={subject.id}
                   href={`#subject-${subject.id}`}
-                  className="rounded-lg border bg-white p-4 shadow-sm transition hover:-translate-y-0.5 hover:shadow-md"
-                  style={{ borderColor: subjectColor }}
+                  className="rounded-lg border p-4 shadow-sm transition hover:-translate-y-0.5 hover:shadow-md"
+                  style={{
+                    background: `linear-gradient(135deg, ${withAlpha(subjectColor, "14")}, #ffffff 82%)`,
+                    borderColor: withAlpha(subjectColor, "33"),
+                  }}
                 >
                   <div className="flex items-start justify-between gap-3">
                     <div>
-                      <p className="text-base font-semibold text-stone-900">{subject.name}</p>
-                      <p className="mt-1 text-sm text-stone-600">{subject.chapters.length} chapters · {subjectTopics.length} topics</p>
+                      <p className="text-base font-semibold text-slate-950">{subject.name}</p>
+                      <p className="mt-1 text-sm text-slate-600">
+                        {subject.chapters.length} chapters | {subjectTopics.length} topics
+                      </p>
                     </div>
                     <span className="h-3 w-3 rounded-full" style={{ backgroundColor: subjectColor }} />
                   </div>
-                  <div className="mt-3 flex items-center justify-between text-sm text-stone-600">
+                  <div className="mt-3 flex items-center justify-between text-sm text-slate-600">
                     <span>{subjectProgress.completed} completed</span>
                     <span>{subjectProgress.progress}%</span>
                   </div>
-                  <div className="mt-2 h-2 overflow-hidden rounded-full bg-stone-100">
+                  <div className="mt-2 h-2 overflow-hidden rounded-full bg-white/70">
                     <div className="h-full rounded-full" style={{ width: `${subjectProgress.progress}%`, backgroundColor: subjectColor }} />
                   </div>
                 </Link>
@@ -184,69 +195,115 @@ export default async function ChildPage({
         </Card>
 
         <section className="grid gap-4 lg:grid-cols-[minmax(0,1fr)_360px] lg:items-start">
-          <div className="grid gap-4 min-w-0 xl:grid-cols-2">
+          <div className="grid min-w-0 gap-4">
             {visibleSubjects.map((subject) => {
               const subjectTopics = subject.chapters.flatMap((chapter) => chapter.topics);
               const subjectProgress = calculateTopicProgress(subjectTopics.map((topic) => ({ status: topic.status })));
               const subjectColor = resolveSubjectColor(subject.name, subject.color);
 
               return (
-                <Card key={subject.id} id={`subject-${subject.id}`} className="border-l-4" style={{ borderLeftColor: subjectColor }}>
-                  <div className="flex flex-col justify-between gap-2 sm:flex-row sm:items-center">
+                <Card
+                  key={subject.id}
+                  id={`subject-${subject.id}`}
+                  className="overflow-hidden border"
+                  style={{ borderColor: withAlpha(subjectColor, "33") }}
+                >
+                  <div className="flex flex-col justify-between gap-4 sm:flex-row sm:items-start">
                     <div>
                       <div className="flex items-center gap-3">
                         <span className="h-3 w-3 rounded-full" style={{ backgroundColor: subjectColor }} />
-                        <CardTitle className="text-lg">{subject.name}</CardTitle>
+                        <CardTitle className="text-xl">{subject.name}</CardTitle>
                       </div>
-                      <p className="text-sm text-stone-600">{subject.chapters.length} chapters Â· {subjectProgress.completed} completed Â· {subjectProgress.pending} pending</p>
+                      <p className="mt-2 text-sm text-slate-600">
+                        {subject.chapters.length} chapters | {subjectTopics.length} topics
+                      </p>
                     </div>
-                    <div className="w-full sm:w-48"><Progress value={subjectProgress.progress} /></div>
-                  </div>
-
-                  <div className="mt-4 grid gap-3">
-                    <SubjectForm
-                      childId={child.id}
-                      childThemeColor={child.themeColor}
-                      subject={{ id: subject.id, name: subject.name, color: subject.color }}
-                    />
-                    <div className="flex justify-end">
-                      <DeleteSubjectButton id={subject.id} childId={child.id} />
+                    <div className="w-full sm:w-56">
+                      <div className="mb-2 flex justify-between text-sm text-slate-600">
+                        <span>{subjectProgress.progress}% complete</span>
+                        <span>{subjectProgress.completed}/{subjectTopics.length}</span>
+                      </div>
+                      <Progress value={subjectProgress.progress} />
                     </div>
                   </div>
 
-                  <div className="mt-4 grid gap-4">
-                    {subject.chapters.map((chapter) => {
-                      const chapterProgress = calculateTopicProgress(chapter.topics.map((topic) => ({ status: topic.status })));
-                      return (
-                        <div key={chapter.id} className="rounded-md border border-stone-200 p-3">
-                          <div className="flex items-center justify-between gap-3">
-                            <div>
-                              <p className="font-medium">{chapter.name}</p>
-                              <p className="text-xs text-stone-500">Chapter progress {chapterProgress.progress}%</p>
+                  <div className="mt-6 grid gap-4 lg:grid-cols-[260px_minmax(0,1fr)]">
+                    <div className="rounded-lg border border-slate-200 bg-slate-50/50 p-4">
+                      <p className="text-sm font-semibold text-slate-700">Chapters</p>
+                      <div className="mt-3 grid gap-2">
+                        {subject.chapters.map((chapter, index) => {
+                          const chapterProgress = calculateTopicProgress(chapter.topics.map((topic) => ({ status: topic.status })));
+                          return (
+                            <Link
+                              key={chapter.id}
+                              href={`#chapter-${chapter.id}`}
+                              className="flex items-center justify-between gap-3 rounded-md border px-3 py-3 text-sm transition hover:bg-white"
+                              style={{
+                                backgroundColor: index === 0 ? withAlpha(subjectColor, "10") : "#ffffff",
+                                borderColor: index === 0 ? withAlpha(subjectColor, "40") : "#e2e8f0",
+                              }}
+                            >
+                              <span className="min-w-0">
+                                <span className="block truncate font-medium text-slate-800">{chapter.name}</span>
+                                <span className="block text-xs text-slate-500">
+                                  {chapter.topics.length} topics | {chapterProgress.progress}%
+                                </span>
+                              </span>
+                              <span className="h-2.5 w-2.5 shrink-0 rounded-full border" style={{ borderColor: subjectColor }} />
+                            </Link>
+                          );
+                        })}
+                      </div>
+                      <details className="mt-4">
+                        <summary className="cursor-pointer text-sm font-medium text-emerald-800">Add chapter</summary>
+                        <div className="mt-3"><ChapterForm subjectId={subject.id} /></div>
+                      </details>
+                    </div>
+
+                    <div className="grid gap-4">
+                      {subject.chapters.map((chapter) => {
+                        const chapterProgress = calculateTopicProgress(chapter.topics.map((topic) => ({ status: topic.status })));
+                        return (
+                          <div key={chapter.id} id={`chapter-${chapter.id}`} className="rounded-lg border border-slate-200 bg-white p-4">
+                            <div className="flex flex-col justify-between gap-3 sm:flex-row sm:items-center">
+                              <div>
+                                <p className="text-sm font-semibold text-slate-950">Topics in {chapter.name}</p>
+                                <p className="mt-1 text-sm text-slate-500">Chapter progress {chapterProgress.progress}%</p>
+                              </div>
+                              <div className="w-full sm:w-56"><Progress value={chapterProgress.progress} /></div>
                             </div>
-                            <Badge>{chapter.topics.length} topics</Badge>
+                            <div className="mt-4 grid gap-2">
+                              {chapter.topics.length ? chapter.topics.map((topic) => <TopicRow key={topic.id} topic={topic} />) : <p className="text-sm text-slate-500">No topics yet.</p>}
+                            </div>
+                            <details className="mt-4">
+                              <summary className="cursor-pointer text-sm font-medium text-emerald-800">Add topic</summary>
+                              <div className="mt-3"><TopicForm chapterId={chapter.id} /></div>
+                            </details>
                           </div>
-                          <div className="mt-3 grid gap-2">
-                            {chapter.topics.length ? chapter.topics.map((topic) => <TopicRow key={topic.id} topic={topic} />) : <p className="text-sm text-stone-500">No topics yet.</p>}
-                          </div>
-                          <details className="mt-3">
-                            <summary className="cursor-pointer text-sm font-medium text-emerald-800">Add topic</summary>
-                            <div className="mt-3"><TopicForm chapterId={chapter.id} /></div>
-                          </details>
-                        </div>
-                      );
-                    })}
-                    <details>
-                      <summary className="cursor-pointer text-sm font-medium text-emerald-800">Add chapter to {subject.name}</summary>
-                      <div className="mt-3"><ChapterForm subjectId={subject.id} /></div>
-                    </details>
+                        );
+                      })}
+                    </div>
                   </div>
+
+                  <details className="mt-4 rounded-lg border border-slate-200 bg-slate-50/70 p-4">
+                    <summary className="cursor-pointer text-sm font-medium text-slate-700">Edit subject</summary>
+                    <div className="mt-4 grid gap-3">
+                      <SubjectForm
+                        childId={child.id}
+                        childThemeColor={child.themeColor}
+                        subject={{ id: subject.id, name: subject.name, color: subject.color }}
+                      />
+                      <div className="flex justify-end">
+                        <DeleteSubjectButton id={subject.id} childId={child.id} />
+                      </div>
+                    </div>
+                  </details>
                 </Card>
               );
             })}
 
             {!visibleSubjects.length ? (
-              <Card className="xl:col-span-2">
+              <Card>
                 <CardTitle>No matching subjects</CardTitle>
                 <p className="mt-2 text-sm text-stone-600">Try a broader search or clear the filter to bring every subject back.</p>
               </Card>
