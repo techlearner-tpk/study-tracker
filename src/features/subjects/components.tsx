@@ -28,7 +28,7 @@ export function SubjectForm({
   return (
     <form
       action={saveSubject}
-      className={subject ? "grid gap-4 rounded-md border border-stone-200 bg-stone-50 p-4" : "grid gap-4 lg:grid-cols-[minmax(0,220px)_minmax(0,1fr)_auto] lg:items-end"}
+      className={subject ? "grid gap-4 rounded-md border border-stone-200 bg-stone-50 p-4" : "grid gap-4"}
     >
       {subject ? <input type="hidden" name="id" value={subject.id} /> : null}
       <input type="hidden" name="childId" value={childId} />
@@ -43,9 +43,10 @@ export function SubjectForm({
         options={colorChoices}
         helperText="The same subject name keeps the same color across this family."
         onChange={setColor}
+        compact={!subject}
       />
-      <div className={subject ? "" : "pb-0.5"}>
-        <Button type="submit">{subject ? "Save subject" : "Add subject"}</Button>
+      <div>
+        <Button type="submit" className={subject ? "" : "w-full"}>{subject ? "Save subject" : "Add subject"}</Button>
       </div>
     </form>
   );

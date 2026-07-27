@@ -10,6 +10,7 @@ export function ColorSwatchField({
   options,
   className,
   helperText,
+  compact = false,
   onChange,
 }: {
   label: string;
@@ -17,17 +18,20 @@ export function ColorSwatchField({
   value: string;
   options: ColorChoice[];
   className?: string;
+  compact?: boolean;
   helperText?: string;
   onChange: (value: string) => void;
 }) {
   return (
     <div className={cn("grid gap-2", className)}>
-      <div>
-        <p className="text-sm font-medium text-stone-900">{label}</p>
-        {helperText ? <p className="mt-1 text-xs text-stone-500">{helperText}</p> : null}
+      <div className={cn(compact ? "flex flex-wrap items-end justify-between gap-3" : "")}>
+        <div className="min-w-0">
+          <p className="text-sm font-medium text-stone-900">{label}</p>
+          {helperText ? <p className={cn("mt-1 text-xs text-stone-500", compact ? "max-w-64" : "")}>{helperText}</p> : null}
+        </div>
       </div>
       <input type="hidden" name={name} value={value} />
-      <div className="flex flex-wrap gap-2">
+      <div className={cn("flex flex-wrap gap-2", compact ? "max-w-full" : "")}>
         {options.map((option) => {
           const selected = option.value === value;
           return (
