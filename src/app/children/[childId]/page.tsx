@@ -95,14 +95,17 @@ export default async function ChildPage({
         {created ? <Notice tone="success">Child created.</Notice> : null}
         {deleteError ? <Notice tone="error">{deleteError}</Notice> : null}
 
-        <Card className="overflow-hidden border-emerald-100 bg-gradient-to-r from-emerald-50 via-white to-emerald-50">
-          <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
+        <Card className="overflow-hidden border-emerald-100 bg-gradient-to-r from-emerald-50 via-white to-emerald-50 py-6">
+          <div className="flex min-h-24 flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
             <div>
               <DynamicGreeting name={child.name} />
               <p className="mt-2 text-sm text-slate-500">Let's make today a steady learning day.</p>
             </div>
-            <div className="hidden rounded-full bg-white px-5 py-3 text-sm font-medium text-emerald-700 shadow-sm sm:block">
-              {analytics.topicProgress.pending} topics waiting
+            <div className="hidden items-center gap-8 sm:flex">
+              <StudyGreetingArt />
+              <div className="rounded-full bg-white px-5 py-3 text-sm font-semibold text-emerald-700 shadow-sm">
+                {analytics.topicProgress.pending} topics waiting
+              </div>
             </div>
           </div>
         </Card>
@@ -300,8 +303,8 @@ export default async function ChildPage({
               icon={<Target size={20} />}
               title="Habit goals"
             >
-              <HabitGoalList goals={analytics.habitGoals} currentStreak={analytics.currentStreak} longestStreak={analytics.longestStreak} />
               <AddHabitGoal childId={child.id} />
+              <HabitGoalList goals={analytics.habitGoals} currentStreak={analytics.currentStreak} longestStreak={analytics.longestStreak} />
             </GoalPanel>
 
             <GoalPanel
@@ -310,8 +313,8 @@ export default async function ChildPage({
               icon={<Flag size={20} />}
               title="Outcome goals"
             >
-              <OutcomeGoalList goals={analytics.outcomeGoals} />
               <AddOutcomeGoal child={child} />
+              <OutcomeGoalList goals={analytics.outcomeGoals} />
             </GoalPanel>
 
             <Card>
@@ -350,6 +353,24 @@ function Metric({ icon, label, value }: { icon: React.ReactNode; label: string; 
   );
 }
 
+function StudyGreetingArt() {
+  return (
+    <div className="relative h-24 w-44" aria-hidden="true">
+      <div className="absolute bottom-1 left-8 h-14 w-14 rounded-full bg-emerald-100" />
+      <div className="absolute bottom-3 left-14 h-11 w-16 rounded-t-full bg-teal-500" />
+      <div className="absolute bottom-12 left-[5.5rem] h-9 w-9 rounded-full bg-amber-200 ring-4 ring-slate-800" />
+      <div className="absolute bottom-[3.75rem] left-[6.25rem] h-3 w-3 rounded-full bg-slate-800" />
+      <div className="absolute bottom-7 left-20 h-8 w-14 -rotate-6 rounded-md bg-blue-500 shadow-sm" />
+      <div className="absolute bottom-1 left-1 h-11 w-1.5 rounded-full bg-emerald-600" />
+      <div className="absolute bottom-8 left-0 h-5 w-8 -rotate-12 rounded-full bg-emerald-300" />
+      <div className="absolute bottom-9 left-3 h-5 w-8 rotate-12 rounded-full bg-emerald-400" />
+      <div className="absolute bottom-0 left-28 h-2 w-24 rounded-full bg-amber-200" />
+      <div className="absolute bottom-3 left-[7.5rem] h-3 w-16 rounded-sm bg-amber-400" />
+      <div className="absolute bottom-7 left-[8.5rem] h-3 w-14 rounded-sm bg-blue-400" />
+    </div>
+  );
+}
+
 function IconTitle({ icon, title }: { icon: React.ReactNode; title: string }) {
   return (
     <div className="flex items-center gap-2 text-emerald-700">
@@ -384,14 +405,42 @@ function GoalPanel({
         };
 
   return (
-    <Card className={accentClasses.card}>
-      <div className={`flex items-center gap-2 ${accentClasses.title}`}>
-        {icon}
-        <CardTitle>{title}</CardTitle>
+    <Card className={`${accentClasses.card} overflow-hidden`}>
+      <div className="flex items-start justify-between gap-4">
+        <div className="min-w-0">
+          <div className={`flex items-center gap-2 ${accentClasses.title}`}>
+            {icon}
+            <CardTitle>{title}</CardTitle>
+          </div>
+          <p className="mt-3 text-sm text-slate-600">{description}</p>
+        </div>
+        <GoalArt accent={accent} />
       </div>
-      <p className="mt-3 text-sm text-slate-600">{description}</p>
       <div className="mt-4 grid gap-4">{children}</div>
     </Card>
+  );
+}
+
+function GoalArt({ accent }: { accent: "emerald" | "violet" }) {
+  if (accent === "violet") {
+    return (
+      <div className="relative h-20 w-20 shrink-0" aria-hidden="true">
+        <div className="absolute bottom-0 left-2 h-0 w-0 border-x-[24px] border-b-[42px] border-x-transparent border-b-violet-200" />
+        <div className="absolute bottom-0 left-8 h-0 w-0 border-x-[22px] border-b-[58px] border-x-transparent border-b-violet-400" />
+        <div className="absolute bottom-10 left-14 h-8 w-1 rounded-full bg-violet-600" />
+        <div className="absolute bottom-16 left-[3.75rem] h-4 w-6 rounded-r-sm bg-violet-500" />
+      </div>
+    );
+  }
+
+  return (
+    <div className="relative h-20 w-20 shrink-0" aria-hidden="true">
+      <div className="absolute bottom-0 left-7 h-7 w-9 rounded-b-lg bg-amber-100" />
+      <div className="absolute bottom-6 left-11 h-11 w-1.5 rounded-full bg-emerald-600" />
+      <div className="absolute bottom-10 left-5 h-6 w-10 -rotate-12 rounded-full bg-emerald-200" />
+      <div className="absolute bottom-13 left-10 h-6 w-10 rotate-12 rounded-full bg-emerald-300" />
+      <div className="absolute bottom-3 left-9 h-2 w-6 rounded-full bg-amber-300" />
+    </div>
   );
 }
 
@@ -447,11 +496,11 @@ function OutcomeGoalList({ goals }: { goals: Awaited<ReturnType<typeof getChildD
 
 function AddHabitGoal({ childId }: { childId: string }) {
   return (
-    <details className="rounded-md border border-emerald-100 bg-white/80 p-3">
-      <summary className="flex cursor-pointer list-none items-center gap-2 text-sm font-semibold text-emerald-800">
+    <details>
+      <summary className="inline-flex h-10 cursor-pointer list-none items-center gap-2 rounded-md border border-emerald-100 bg-white px-4 text-sm font-semibold text-emerald-800 shadow-sm transition hover:bg-emerald-50">
         <PlusCircle size={16} /> Add habit goal
       </summary>
-      <form action={createHabitGoal} className="mt-3 grid gap-3">
+      <form action={createHabitGoal} className="mt-3 grid gap-3 rounded-md border border-emerald-100 bg-white/80 p-3">
         <input type="hidden" name="childId" value={childId} />
         <Label>
           Title
@@ -494,11 +543,11 @@ function AddOutcomeGoal({ child }: { child: Awaited<ReturnType<typeof getChildDa
   );
 
   return (
-    <details className="rounded-md border border-violet-100 bg-white/80 p-3">
-      <summary className="flex cursor-pointer list-none items-center gap-2 text-sm font-semibold text-violet-800">
+    <details>
+      <summary className="inline-flex h-10 cursor-pointer list-none items-center gap-2 rounded-md border border-violet-100 bg-white px-4 text-sm font-semibold text-violet-800 shadow-sm transition hover:bg-violet-50">
         <PlusCircle size={16} /> Add outcome goal
       </summary>
-      <div className="mt-3 grid gap-4">
+      <div className="mt-3 grid gap-4 rounded-md border border-violet-100 bg-white/80 p-3">
         <form action={createOutcomeGoal} className="grid gap-3">
           <input type="hidden" name="childId" value={child.id} />
           <input type="hidden" name="type" value="COMPLETE_CHAPTER" />

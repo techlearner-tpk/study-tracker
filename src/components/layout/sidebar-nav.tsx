@@ -5,9 +5,11 @@ import { usePathname } from "next/navigation";
 import { cn } from "@/lib/utils";
 
 export function SidebarNav({
+  className,
   items,
   collapsed = false,
 }: {
+  className?: string;
   items: Array<{
     href: string;
     label: string;
@@ -18,7 +20,7 @@ export function SidebarNav({
   const pathname = usePathname();
 
   return (
-    <nav className="mt-3 grid gap-1.5 text-sm">
+    <nav className={cn("grid gap-1.5 text-sm", className)}>
       {items.map((item) => {
         const active = pathname === item.href || (item.href !== "/" && pathname.startsWith(`${item.href}/`));
         return (
