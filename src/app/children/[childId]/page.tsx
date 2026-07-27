@@ -359,12 +359,13 @@ function Metric({ icon, label, value }: { icon: React.ReactNode; label: string; 
 
 function StudyGreetingArt() {
   return (
-    <img
-      src="/assets/study-greeting.png"
-      alt=""
-      aria-hidden="true"
-      className="h-[8.4rem] w-[15.4rem] rounded-xl object-cover object-center opacity-90 mix-blend-multiply"
-    />
+    <div className="relative h-24 w-44 shrink-0 overflow-visible" aria-hidden="true">
+      <img
+        src="/assets/study-greeting.png"
+        alt=""
+        className="absolute bottom-1 right-0 h-[8.4rem] w-[15.4rem] max-w-none rounded-xl object-cover object-center opacity-90 mix-blend-multiply"
+      />
+    </div>
   );
 }
 
@@ -421,12 +422,13 @@ function GoalPanel({
 function GoalArt({ accent }: { accent: "emerald" | "violet" }) {
   const src = accent === "violet" ? "/assets/outcome-goal.png" : "/assets/habit-goal.png";
   return (
-    <img
-      src={src}
-      alt=""
-      aria-hidden="true"
-      className="h-28 w-28 shrink-0 rounded-xl object-cover object-center opacity-85 mix-blend-multiply"
-    />
+    <div className="relative h-20 w-20 shrink-0 overflow-visible" aria-hidden="true">
+      <img
+        src={src}
+        alt=""
+        className="absolute right-0 top-1/2 h-28 w-28 max-w-none -translate-y-1/2 rounded-xl object-cover object-center opacity-85 mix-blend-multiply"
+      />
+    </div>
   );
 }
 
