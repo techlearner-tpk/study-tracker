@@ -1,11 +1,11 @@
 import Link from "next/link";
 import { notFound } from "next/navigation";
-import { Clock, RotateCcw, Target, Trophy } from "lucide-react";
+import { CheckCircle2, Clock, Flag, PenLine, PlusCircle, RotateCcw, Target, Trophy } from "lucide-react";
 import { AppShell } from "@/components/layout/app-shell";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Card, CardTitle } from "@/components/ui/card";
-import { Input } from "@/components/ui/form";
+import { Input, Label, Select } from "@/components/ui/form";
 import { Notice } from "@/components/ui/notice";
 import { Progress } from "@/components/ui/progress";
 import { calculateTopicProgress } from "@/lib/analytics";
@@ -17,6 +17,7 @@ import { ChapterForm } from "@/features/chapters/components";
 import { ChildForm, DangerDeleteChild } from "@/features/children/components";
 import { DynamicGreeting } from "@/features/dashboard/greeting";
 import { getChildDashboard } from "@/features/dashboard/queries";
+import { createHabitGoal, createOutcomeGoal } from "@/features/goals/actions";
 import { DeleteSubjectButton, SubjectForm } from "@/features/subjects/components";
 import { TopicForm, TopicRow } from "@/features/topics/components";
 
@@ -111,33 +112,6 @@ export default async function ChildPage({
           <Metric icon={<Target size={18} />} label="Current Streak" value={`${analytics.currentStreak} days`} />
           <Metric icon={<Trophy size={18} />} label="Completed Topics" value={`${analytics.topicProgress.completed}`} />
           <Metric icon={<RotateCcw size={18} />} label="Practice / Revision" value={`${analytics.practiceCount} / ${analytics.revisionCount}`} />
-        </section>
-
-        <section className="grid gap-4 lg:grid-cols-2">
-          <Card>
-            <CardTitle>Habit goals</CardTitle>
-            <div className="mt-4 grid gap-4">
-              {analytics.habitGoals.length ? analytics.habitGoals.map((goal) => (
-                <div key={goal.id} className="grid gap-2">
-                  <div className="flex justify-between text-sm"><span>{goal.title}</span><span>{goal.progress.current}/{goal.progress.target}</span></div>
-                  <Progress value={goal.progress.successPercentage} />
-                  <p className="text-xs text-stone-500">Current streak {analytics.currentStreak} days. Longest streak {analytics.longestStreak} days.</p>
-                </div>
-              )) : <p className="text-sm text-stone-600">No active habit goals.</p>}
-            </div>
-          </Card>
-          <Card>
-            <CardTitle>Outcome goals</CardTitle>
-            <div className="mt-4 grid gap-4">
-              {analytics.outcomeGoals.length ? analytics.outcomeGoals.map((goal) => (
-                <div key={goal.id} className="grid gap-2">
-                  <div className="flex justify-between text-sm"><span>{goal.title}</span><span>{goal.progress}%</span></div>
-                  <Progress value={goal.progress} />
-                  <p className="text-xs text-stone-500">{goal.remainingWork}</p>
-                </div>
-              )) : <p className="text-sm text-stone-600">No active outcome goals.</p>}
-            </div>
-          </Card>
         </section>
 
         <Card>
@@ -319,25 +293,45 @@ export default async function ChildPage({
             ) : null}
           </div>
 
-          <aside className="grid content-start gap-4 min-w-0">
+          <aside className="grid min-w-0 content-start gap-4 text-left">
+            <GoalPanel
+              accent="emerald"
+              description="Build daily habits for consistent learning."
+              icon={<Target size={20} />}
+              title="Habit goals"
+            >
+              <HabitGoalList goals={analytics.habitGoals} currentStreak={analytics.currentStreak} longestStreak={analytics.longestStreak} />
+              <AddHabitGoal childId={child.id} />
+            </GoalPanel>
+
+            <GoalPanel
+              accent="violet"
+              description="Set learning outcomes and track progress."
+              icon={<Flag size={20} />}
+              title="Outcome goals"
+            >
+              <OutcomeGoalList goals={analytics.outcomeGoals} />
+              <AddOutcomeGoal child={child} />
+            </GoalPanel>
+
             <Card>
-              <CardTitle>Edit child</CardTitle>
+              <IconTitle icon={<CheckCircle2 size={18} />} title="Recently studied" />
+              <div className="mt-4 grid gap-2">
+                {analytics.recentlyStudied.length ? analytics.recentlyStudied.map((topic) => (
+                  <Link key={topic.id} href={`/topics/${topic.id}`} className="rounded-md border border-slate-200 bg-white px-3 py-2 text-sm shadow-sm hover:bg-emerald-50">
+                    <span className="font-medium">{topic.name}</span>
+                    <span className="block text-xs text-slate-500">{topic.subjectName}</span>
+                  </Link>
+                )) : <p className="text-sm text-slate-600">No study sessions logged yet.</p>}
+              </div>
+            </Card>
+            <Card>
+              <IconTitle icon={<PenLine size={18} />} title="Edit child" />
               <div className="mt-4"><ChildForm child={child} /></div>
             </Card>
             <Card>
-              <CardTitle>Add subject</CardTitle>
+              <IconTitle icon={<PlusCircle size={18} />} title="Add subject" />
               <div className="mt-4"><SubjectForm childId={child.id} childThemeColor={child.themeColor} /></div>
-            </Card>
-            <Card>
-              <CardTitle>Recently studied</CardTitle>
-              <div className="mt-4 grid gap-2">
-                {analytics.recentlyStudied.length ? analytics.recentlyStudied.map((topic) => (
-                  <Link key={topic.id} href={`/topics/${topic.id}`} className="rounded-md border border-stone-200 px-3 py-2 text-sm hover:bg-stone-50">
-                    <span className="font-medium">{topic.name}</span>
-                    <span className="block text-xs text-stone-500">{topic.subjectName}</span>
-                  </Link>
-                )) : <p className="text-sm text-stone-600">No study sessions logged yet.</p>}
-              </div>
             </Card>
             <DangerDeleteChild child={child} errorMessage={deleteError} />
           </aside>
@@ -353,5 +347,212 @@ function Metric({ icon, label, value }: { icon: React.ReactNode; label: string; 
       <div className="flex items-center gap-2 text-emerald-700">{icon}<span className="text-sm font-medium text-slate-500">{label}</span></div>
       <p className="mt-3 text-2xl font-semibold text-slate-950">{value}</p>
     </Card>
+  );
+}
+
+function IconTitle({ icon, title }: { icon: React.ReactNode; title: string }) {
+  return (
+    <div className="flex items-center gap-2 text-emerald-700">
+      {icon}
+      <CardTitle>{title}</CardTitle>
+    </div>
+  );
+}
+
+function GoalPanel({
+  accent,
+  children,
+  description,
+  icon,
+  title,
+}: {
+  accent: "emerald" | "violet";
+  children: React.ReactNode;
+  description: string;
+  icon: React.ReactNode;
+  title: string;
+}) {
+  const accentClasses =
+    accent === "violet"
+      ? {
+          card: "border-violet-100 bg-violet-50/25",
+          title: "text-violet-700",
+        }
+      : {
+          card: "border-emerald-100 bg-emerald-50/25",
+          title: "text-emerald-700",
+        };
+
+  return (
+    <Card className={accentClasses.card}>
+      <div className={`flex items-center gap-2 ${accentClasses.title}`}>
+        {icon}
+        <CardTitle>{title}</CardTitle>
+      </div>
+      <p className="mt-3 text-sm text-slate-600">{description}</p>
+      <div className="mt-4 grid gap-4">{children}</div>
+    </Card>
+  );
+}
+
+function HabitGoalList({
+  currentStreak,
+  goals,
+  longestStreak,
+}: {
+  currentStreak: number;
+  goals: Awaited<ReturnType<typeof getChildDashboard>>["analytics"]["habitGoals"];
+  longestStreak: number;
+}) {
+  if (!goals.length) {
+    return <p className="text-sm text-slate-600">No active habit goals.</p>;
+  }
+
+  return (
+    <div className="grid gap-3">
+      {goals.map((goal) => (
+        <div key={goal.id} className="grid gap-2 rounded-md border border-white/70 bg-white/80 p-3">
+          <div className="flex items-start justify-between gap-3 text-sm">
+            <span className="font-medium text-slate-900">{goal.title}</span>
+            <span className="shrink-0 text-slate-600">{goal.progress.current}/{goal.progress.target}</span>
+          </div>
+          <Progress value={goal.progress.successPercentage} />
+          <p className="text-xs text-slate-500">Current streak {currentStreak} days. Best {longestStreak} days.</p>
+        </div>
+      ))}
+    </div>
+  );
+}
+
+function OutcomeGoalList({ goals }: { goals: Awaited<ReturnType<typeof getChildDashboard>>["analytics"]["outcomeGoals"] }) {
+  if (!goals.length) {
+    return <p className="text-sm text-slate-600">No active outcome goals.</p>;
+  }
+
+  return (
+    <div className="grid gap-3">
+      {goals.map((goal) => (
+        <div key={goal.id} className="grid gap-2 rounded-md border border-white/70 bg-white/80 p-3">
+          <div className="flex items-start justify-between gap-3 text-sm">
+            <span className="font-medium text-slate-900">{goal.title}</span>
+            <span className="shrink-0 text-slate-600">{goal.progress}%</span>
+          </div>
+          <Progress value={goal.progress} />
+          <p className="text-xs text-slate-500">{goal.remainingWork}</p>
+        </div>
+      ))}
+    </div>
+  );
+}
+
+function AddHabitGoal({ childId }: { childId: string }) {
+  return (
+    <details className="rounded-md border border-emerald-100 bg-white/80 p-3">
+      <summary className="flex cursor-pointer list-none items-center gap-2 text-sm font-semibold text-emerald-800">
+        <PlusCircle size={16} /> Add habit goal
+      </summary>
+      <form action={createHabitGoal} className="mt-3 grid gap-3">
+        <input type="hidden" name="childId" value={childId} />
+        <Label>
+          Title
+          <Input name="title" placeholder="Study 60 minutes daily" required />
+        </Label>
+        <Label>
+          Metric
+          <Select name="metric" defaultValue="STUDY_MINUTES_DAILY">
+            <option value="STUDY_MINUTES_DAILY">Daily study minutes</option>
+            <option value="STUDY_DAYS_WEEKLY">Weekly study days</option>
+            <option value="STUDY_SESSION_DAILY">Daily study sessions</option>
+          </Select>
+        </Label>
+        <Label>
+          Target
+          <Input name="targetValue" type="number" min="1" defaultValue="60" required />
+        </Label>
+        <Button type="submit" className="justify-self-start" pendingText="Saving...">
+          Save goal
+        </Button>
+      </form>
+    </details>
+  );
+}
+
+function AddOutcomeGoal({ child }: { child: Awaited<ReturnType<typeof getChildDashboard>>["child"] }) {
+  const chapters = child.subjects.flatMap((subject) =>
+    subject.chapters.map((chapter) => ({
+      id: chapter.id,
+      label: `${subject.name} - ${chapter.name}`,
+    })),
+  );
+  const topics = child.subjects.flatMap((subject) =>
+    subject.chapters.flatMap((chapter) =>
+      chapter.topics.map((topic) => ({
+        id: topic.id,
+        label: `${subject.name} - ${chapter.name} - ${topic.name}`,
+      })),
+    ),
+  );
+
+  return (
+    <details className="rounded-md border border-violet-100 bg-white/80 p-3">
+      <summary className="flex cursor-pointer list-none items-center gap-2 text-sm font-semibold text-violet-800">
+        <PlusCircle size={16} /> Add outcome goal
+      </summary>
+      <div className="mt-3 grid gap-4">
+        <form action={createOutcomeGoal} className="grid gap-3">
+          <input type="hidden" name="childId" value={child.id} />
+          <input type="hidden" name="type" value="COMPLETE_CHAPTER" />
+          <Label>
+            Title
+            <Input name="title" placeholder="Complete Geometry chapter" required />
+          </Label>
+          <Label>
+            Chapter target
+            <Select name="targetChapterId" defaultValue={chapters[0]?.id ?? ""} required>
+              <option value="">Choose chapter</option>
+              {chapters.map((chapter) => (
+                <option key={chapter.id} value={chapter.id}>
+                  {chapter.label}
+                </option>
+              ))}
+            </Select>
+          </Label>
+          <Label>
+            Due date
+            <Input name="dueDate" type="date" />
+          </Label>
+          <Button type="submit" className="justify-self-start" pendingText="Saving...">
+            Save chapter goal
+          </Button>
+        </form>
+
+        <form action={createOutcomeGoal} className="grid gap-3 border-t border-violet-100 pt-4">
+          <input type="hidden" name="childId" value={child.id} />
+          <input type="hidden" name="type" value="COMPLETE_TOPIC" />
+          <Label>
+            Title
+            <Input name="title" placeholder="Complete Polygons topic" required />
+          </Label>
+          <Label>
+            Topic target
+            <Select name="targetTopicId" defaultValue={topics[0]?.id ?? ""} required>
+              <option value="">Choose topic</option>
+              {topics.map((topic) => (
+                <option key={topic.id} value={topic.id}>
+                  {topic.label}
+                </option>
+              ))}
+            </Select>
+          </Label>
+          <Label>
+            Due date
+            <Input name="dueDate" type="date" />
+          </Label>
+          <Button type="submit" className="justify-self-start" pendingText="Saving...">
+            Save topic goal
+          </Button>
+        </form>
+      </div>
+    </details>
   );
 }
