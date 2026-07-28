@@ -10,6 +10,7 @@ export async function AppShell({ children }: { children: React.ReactNode }) {
 
   return (
     <AppShellFrame
+      userName={user.name}
       items={[
         { href: "/", label: "Overview", icon: <Home size={17} /> },
         { href: "/assignments", label: "Assignments", icon: <ClipboardList size={17} /> },
