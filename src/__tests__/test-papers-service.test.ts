@@ -1,8 +1,9 @@
 import { describe, expect, it } from "vitest";
 import { OnlineTestDifficulty, OnlineTestQuestionType, TestTemplateStatus } from "@prisma/client";
-import { onlineTestSectionGenerationSchema } from "@/features/ai/schema";
+import { onlineTestPaperReviewSchema, onlineTestSectionGenerationSchema } from "@/features/ai/schema";
 import { allowedQuestionTypesForSubject, validateTemplateTotals } from "@/features/test-papers/rules";
 import { buildGenerateTestPaperSectionPrompt } from "@/lib/ai/prompts/generate-test-paper-section";
+import { buildReviewTestPaperPrompt } from "@/lib/ai/prompts/review-test-paper";
 
 function templateFixture(overrides: Partial<Parameters<typeof validateTemplateTotals>[0]> = {}) {
   return {
@@ -121,5 +122,29 @@ describe("online test papers", () => {
     expect(prompt.system).toContain("Never return markingScheme as a string");
     expect(prompt.user).toContain("[{\"criterion\"");
     expect(prompt.user).toContain("Do not wrap markingScheme in quotes");
+  });
+
+  it("instructs AI paper review to use exact issue codes only for rejected questions", () => {
+    const prompt = buildReviewTestPaperPrompt({
+      className: "Class 8",
+      boardName: "CBSE",
+      subjectName: "Mathematics",
+      totalMarks: 10,
+      questions: [],
+    });
+
+    expect(prompt.system).toContain("issueCode must be exactly one of");
+    expect(prompt.system).toContain("Never use issueCode values such as NONE");
+    expect(prompt.user).toContain("For approved questionReviews");
+  });
+
+  it("rejects unknown AI review issue codes", () => {
+    expect(() => onlineTestPaperReviewSchema.parse({
+      approved: true,
+      paperIssues: [],
+      questionReviews: [
+        { clientQuestionId: "q1", approved: true, issueCode: "NONE" },
+      ],
+    })).toThrow(/invalid option/i);
   });
 });
