@@ -23,7 +23,7 @@ import {
   generateOnlineTestPaperAction,
   startOnlineTestAttemptAction,
 } from "./actions";
-import { supportedTestPaperSubjects, type OnlineTestPaperTree } from "./service";
+import { allowedQuestionTypesForSubject, supportedTestPaperSubjects, type OnlineTestPaperTree } from "./service";
 import { OnlineTestTakeForm } from "./take-form";
 
 type Template = Awaited<ReturnType<typeof import("./queries").loadTestTemplatesForAdmin>>[number];
@@ -40,9 +40,37 @@ function questionTypeLabel(value: string) {
   return value.replaceAll("_", " ").toLowerCase();
 }
 
+function templateValidationMessages(template: Template | null) {
+  if (!template) return ["Create a template first."];
+
+  const messages: string[] = [];
+  const allowedTypes = allowedQuestionTypesForSubject(template.subjectName);
+  const ruleTotal = template.sections.reduce((sum, section) => sum + section.rules.reduce((ruleSum, rule) => ruleSum + rule.questionCount * rule.marksPerQuestion, 0), 0);
+  const ruleCount = template.sections.reduce((sum, section) => sum + section.rules.length, 0);
+
+  if (!template.sections.length) messages.push("Add at least one section.");
+  if (!ruleCount) messages.push("Add at least one question rule.");
+  if (ruleTotal !== template.totalMarks) messages.push(`Rules total must equal ${template.totalMarks} marks. Current total is ${ruleTotal}.`);
+
+  for (const section of template.sections) {
+    for (const rule of section.rules) {
+      if (!allowedTypes.has(rule.questionType)) {
+        messages.push(`${questionTypeLabel(rule.questionType)} is not valid for ${template.subjectName}.`);
+      }
+      if (rule.questionCount <= 0 || rule.marksPerQuestion <= 0) {
+        messages.push("Every rule needs positive question count and marks.");
+      }
+    }
+  }
+
+  return [...new Set(messages)];
+}
+
 export function TestTemplateAdminView({ templates, selectedTemplate }: { templates: Template[]; selectedTemplate?: Template | null }) {
   const active = selectedTemplate ?? templates[0] ?? null;
   const ruleTotal = active?.sections.reduce((sum, section) => sum + section.rules.reduce((ruleSum, rule) => ruleSum + rule.questionCount * rule.marksPerQuestion, 0), 0) ?? 0;
+  const validationMessages = templateValidationMessages(active);
+  const canActivate = active ? validationMessages.length === 0 && active.status !== TestTemplateStatus.ACTIVE : false;
 
   return (
     <div className="grid gap-6">
@@ -112,11 +140,23 @@ export function TestTemplateAdminView({ templates, selectedTemplate }: { templat
               <p className="mt-1 text-sm text-slate-600">
                 {active.subjectName} | rules total {ruleTotal}/{active.totalMarks} marks
               </p>
+              {validationMessages.length ? (
+                <div className="mt-3 rounded-md border border-amber-200 bg-amber-50 px-3 py-2 text-sm text-amber-900">
+                  <p className="font-semibold">Complete these before activation</p>
+                  <ul className="mt-1 list-disc space-y-1 pl-5">
+                    {validationMessages.map((message) => <li key={message}>{message}</li>)}
+                  </ul>
+                </div>
+              ) : (
+                <p className="mt-3 rounded-md border border-emerald-200 bg-emerald-50 px-3 py-2 text-sm font-medium text-emerald-800">
+                  Template is ready to activate.
+                </p>
+              )}
             </div>
             <div className="flex flex-wrap gap-2">
               <form action={activateTestTemplateAction}>
                 <input type="hidden" name="templateId" value={active.id} />
-                <Button type="submit" pendingText="Activating...">Activate</Button>
+                <Button type="submit" pendingText="Activating..." disabled={!canActivate}>Activate</Button>
               </form>
               <form action={cloneTestTemplateAction}>
                 <input type="hidden" name="templateId" value={active.id} />
@@ -146,7 +186,9 @@ export function TestTemplateAdminView({ templates, selectedTemplate }: { templat
                   <form action={addTestTemplateRuleAction} className="mt-3 grid gap-2 sm:grid-cols-4">
                     <input type="hidden" name="sectionId" value={section.id} />
                     <Select name="questionType" required>
-                      {Object.values(OnlineTestQuestionType).map((type) => <option key={type}>{type}</option>)}
+                      {Object.values(OnlineTestQuestionType)
+                        .filter((type) => allowedQuestionTypesForSubject(active.subjectName).has(type))
+                        .map((type) => <option key={type}>{type}</option>)}
                     </Select>
                     <Input name="questionCount" type="number" min="1" placeholder="Count" required />
                     <Input name="marksPerQuestion" type="number" min="1" placeholder="Marks" required />
