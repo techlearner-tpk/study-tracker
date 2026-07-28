@@ -1,11 +1,12 @@
 "use client";
 
 import { useMemo, useState } from "react";
-import { OnlineTestPaperSource, TestTemplateStatus } from "@prisma/client";
 import { Button } from "@/components/ui/button";
 import { CardTitle } from "@/components/ui/card";
 import { Input, Label, Select } from "@/components/ui/form";
 import { generateOnlineTestPaperAction } from "./actions";
+
+const activeTemplateStatus = "ACTIVE";
 
 type ChildOption = {
   id: string;
@@ -29,7 +30,7 @@ type TemplateOption = {
   id: string;
   name: string;
   subjectName: string;
-  status: TestTemplateStatus;
+  status: "DRAFT" | "ACTIVE" | "ARCHIVED";
 };
 
 export function TestPaperCreatePicker({
@@ -46,8 +47,9 @@ export function TestPaperCreatePicker({
   const selectedChild = childOptions.find((child) => child.id === childId) ?? firstChild;
   const [subjectId, setSubjectId] = useState(selectedChild?.subjects[0]?.id ?? "");
   const selectedSubject = selectedChild?.subjects.find((subject) => subject.id === subjectId) ?? selectedChild?.subjects[0] ?? null;
-  const activeTemplates = templates.filter((template) => template.status === TestTemplateStatus.ACTIVE && template.subjectName === selectedSubject?.name);
+  const activeTemplates = templates.filter((template) => template.status === activeTemplateStatus && template.subjectName === selectedSubject?.name);
   const [templateId, setTemplateId] = useState(activeTemplates[0]?.id ?? "");
+  const [selectedTopicIds, setSelectedTopicIds] = useState<string[]>([]);
   const normalizedTemplateId = activeTemplates.some((template) => template.id === templateId) ? templateId : activeTemplates[0]?.id ?? "";
 
   const topicCount = useMemo(
@@ -60,20 +62,29 @@ export function TestPaperCreatePicker({
     const nextSubject = nextChild?.subjects[0];
     setChildId(nextChildId);
     setSubjectId(nextSubject?.id ?? "");
-    const nextTemplate = templates.find((template) => template.status === TestTemplateStatus.ACTIVE && template.subjectName === nextSubject?.name);
+    setSelectedTopicIds([]);
+    const nextTemplate = templates.find((template) => template.status === activeTemplateStatus && template.subjectName === nextSubject?.name);
     setTemplateId(nextTemplate?.id ?? "");
   }
 
   function handleSubjectChange(nextSubjectId: string) {
     const nextSubject = selectedChild?.subjects.find((subject) => subject.id === nextSubjectId);
     setSubjectId(nextSubjectId);
-    const nextTemplate = templates.find((template) => template.status === TestTemplateStatus.ACTIVE && template.subjectName === nextSubject?.name);
+    setSelectedTopicIds([]);
+    const nextTemplate = templates.find((template) => template.status === activeTemplateStatus && template.subjectName === nextSubject?.name);
     setTemplateId(nextTemplate?.id ?? "");
+  }
+
+  function handleTopicChange(topicId: string, checked: boolean) {
+    setSelectedTopicIds((current) => {
+      if (checked) return current.includes(topicId) ? current : [...current, topicId];
+      return current.filter((id) => id !== topicId);
+    });
   }
 
   return (
     <form action={generateOnlineTestPaperAction} className="grid gap-5">
-      <input type="hidden" name="source" value={kidMode ? OnlineTestPaperSource.SELF_PRACTICE : OnlineTestPaperSource.ASSIGNED_BY_PARENT} />
+      <input type="hidden" name="source" value={kidMode ? "SELF_PRACTICE" : "ASSIGNED_BY_PARENT"} />
       <div className="grid gap-4 lg:grid-cols-3">
         <Label>
           Child
@@ -102,17 +113,24 @@ export function TestPaperCreatePicker({
           <CardTitle>Select topics</CardTitle>
           <p className="mt-1 text-sm text-slate-600">
             Showing {topicCount} topics for {selectedChild?.name ?? "selected child"} | {selectedSubject?.name ?? "selected subject"}.
+            {" "}{selectedTopicIds.length} selected.
           </p>
         </div>
         {selectedSubject ? (
-          <div className="grid gap-3 md:grid-cols-2 xl:grid-cols-3">
+          <div key={selectedSubject.id} className="grid gap-3 md:grid-cols-2 xl:grid-cols-3">
             {selectedSubject.chapters.map((chapter) => (
               <div key={chapter.id} className="rounded-md border border-slate-200 p-3">
                 <p className="font-semibold">{selectedSubject.name} | {chapter.name}</p>
                 <div className="mt-2 grid gap-2">
                   {chapter.topics.map((topic) => (
                     <label key={topic.id} className="flex items-center gap-2 text-sm">
-                      <input type="checkbox" name="topicIds" value={topic.id} />
+                      <input
+                        type="checkbox"
+                        name="topicIds"
+                        value={topic.id}
+                        checked={selectedTopicIds.includes(topic.id)}
+                        onChange={(event) => handleTopicChange(topic.id, event.target.checked)}
+                      />
                       <span>{topic.name}</span>
                     </label>
                   ))}
@@ -137,7 +155,7 @@ export function TestPaperCreatePicker({
           </Label>
         ) : null}
       </div>
-      <Button type="submit" pendingText="Generating paper..." disabled={!selectedSubject || !normalizedTemplateId || topicCount === 0}>
+      <Button type="submit" pendingText="Generating paper..." disabled={!selectedSubject || !normalizedTemplateId || selectedTopicIds.length === 0}>
         Generate paper
       </Button>
     </form>

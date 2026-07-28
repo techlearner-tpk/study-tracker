@@ -214,16 +214,14 @@ async function releaseReservedQuota(requestId: string, failed = false) {
 }
 
 function selectedTopicsFromSubject(subject: SubjectWithTree, topicIds: string[]) {
+  const requestedTopicIds = new Set(topicIds.filter(Boolean));
   const selected = new Map<string, SubjectWithTree["chapters"][number]["topics"][number] & { chapterName: string }>();
   for (const chapter of subject.chapters) {
     for (const topic of chapter.topics) {
-      if (topicIds.includes(topic.id)) selected.set(topic.id, { ...topic, chapterName: chapter.name });
+      if (requestedTopicIds.has(topic.id)) selected.set(topic.id, { ...topic, chapterName: chapter.name });
     }
   }
-  if (selected.size !== new Set(topicIds).size) {
-    throw new Error("Every selected topic must belong to the selected subject.");
-  }
-  if (!selected.size) throw new Error("Select at least one topic.");
+  if (!selected.size) throw new Error("Select at least one topic from the selected subject.");
   return [...selected.values()];
 }
 
