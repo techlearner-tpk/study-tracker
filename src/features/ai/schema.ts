@@ -160,10 +160,18 @@ export const createTestTemplateSchema = z.object({
   difficulty: z.enum(onlineTestDifficultyValues).default("MIXED"),
 });
 
+export const updateTestTemplateSchema = createTestTemplateSchema.extend({
+  templateId: z.string().min(1),
+});
+
 export const createTestTemplateSectionSchema = z.object({
   templateId: z.string().min(1),
   name: z.string().trim().min(1),
   instructions: z.string().trim().optional(),
+});
+
+export const updateTestTemplateSectionSchema = createTestTemplateSectionSchema.extend({
+  sectionId: z.string().min(1),
 });
 
 export const createTestTemplateRuleSchema = z.object({
@@ -174,8 +182,20 @@ export const createTestTemplateRuleSchema = z.object({
   difficulty: z.enum(onlineTestDifficultyValues).default("MEDIUM"),
 });
 
+export const updateTestTemplateRuleSchema = createTestTemplateRuleSchema.extend({
+  ruleId: z.string().min(1),
+});
+
 export const templateIdSchema = z.object({
   templateId: z.string().min(1),
+});
+
+export const templateSectionIdSchema = z.object({
+  sectionId: z.string().min(1),
+});
+
+export const templateRuleIdSchema = z.object({
+  ruleId: z.string().min(1),
 });
 
 export const generateOnlineTestPaperSchema = z.object({

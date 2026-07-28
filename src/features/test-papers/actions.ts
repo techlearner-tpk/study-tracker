@@ -12,7 +12,12 @@ import {
   createTestTemplateSectionSchema,
   generateOnlineTestPaperSchema,
   onlineTestSubmitSchema,
+  templateRuleIdSchema,
+  templateSectionIdSchema,
   templateIdSchema,
+  updateTestTemplateRuleSchema,
+  updateTestTemplateSchema,
+  updateTestTemplateSectionSchema,
 } from "@/features/ai/schema";
 import {
   allowedQuestionTypesForSubject,
@@ -22,6 +27,29 @@ import {
   submitOnlineTestAttempt,
   validateTemplateTotals,
 } from "./service";
+
+function revalidateTemplateAdmin() {
+  revalidatePath("/admin/test-templates");
+}
+
+async function ensureEditableTemplate(templateId: string) {
+  const template = await prisma.testTemplate.findUnique({
+    where: { id: templateId },
+    select: { id: true, status: true },
+  });
+  if (!template) throw new Error("Template not found.");
+  if (template.status === TestTemplateStatus.ARCHIVED) {
+    throw new Error("Archived templates cannot be changed. Clone it first.");
+  }
+  return template;
+}
+
+async function markTemplateDraftIfNeeded(templateId: string) {
+  await prisma.testTemplate.update({
+    where: { id: templateId },
+    data: { status: TestTemplateStatus.DRAFT },
+  });
+}
 
 export async function createTestTemplateAction(formData: FormData) {
   const admin = await requireAdminUser();
@@ -36,13 +64,33 @@ export async function createTestTemplateAction(formData: FormData) {
       createdByUserId: admin.id,
     },
   });
-  revalidatePath("/admin/test-templates");
+  revalidateTemplateAdmin();
   redirect(`/admin/test-templates?templateId=${template.id}`);
+}
+
+export async function updateTestTemplateAction(formData: FormData) {
+  await requireAdminUser();
+  const data = updateTestTemplateSchema.parse(formDataToObject(formData));
+  await ensureEditableTemplate(data.templateId);
+  await prisma.testTemplate.update({
+    where: { id: data.templateId },
+    data: {
+      name: data.name,
+      subjectName: data.subjectName,
+      totalMarks: data.totalMarks,
+      durationMinutes: data.durationMinutes,
+      difficulty: data.difficulty as OnlineTestDifficulty,
+      status: TestTemplateStatus.DRAFT,
+    },
+  });
+  revalidateTemplateAdmin();
+  redirect(`/admin/test-templates?templateId=${data.templateId}`);
 }
 
 export async function addTestTemplateSectionAction(formData: FormData) {
   await requireAdminUser();
   const data = createTestTemplateSectionSchema.parse(formDataToObject(formData));
+  await ensureEditableTemplate(data.templateId);
   const count = await prisma.testTemplateSection.count({ where: { templateId: data.templateId } });
   await prisma.testTemplateSection.create({
     data: {
@@ -52,7 +100,42 @@ export async function addTestTemplateSectionAction(formData: FormData) {
       order: count,
     },
   });
-  revalidatePath("/admin/test-templates");
+  await markTemplateDraftIfNeeded(data.templateId);
+  revalidateTemplateAdmin();
+}
+
+export async function updateTestTemplateSectionAction(formData: FormData) {
+  await requireAdminUser();
+  const data = updateTestTemplateSectionSchema.parse(formDataToObject(formData));
+  const section = await prisma.testTemplateSection.findUnique({
+    where: { id: data.sectionId },
+    select: { templateId: true },
+  });
+  if (!section || section.templateId !== data.templateId) throw new Error("Template section not found.");
+  await ensureEditableTemplate(section.templateId);
+  await prisma.testTemplateSection.update({
+    where: { id: data.sectionId },
+    data: {
+      name: data.name,
+      instructions: data.instructions || null,
+    },
+  });
+  await markTemplateDraftIfNeeded(section.templateId);
+  revalidateTemplateAdmin();
+}
+
+export async function deleteTestTemplateSectionAction(formData: FormData) {
+  await requireAdminUser();
+  const { sectionId } = templateSectionIdSchema.parse(formDataToObject(formData));
+  const section = await prisma.testTemplateSection.findUnique({
+    where: { id: sectionId },
+    select: { templateId: true },
+  });
+  if (!section) throw new Error("Template section not found.");
+  await ensureEditableTemplate(section.templateId);
+  await prisma.testTemplateSection.delete({ where: { id: sectionId } });
+  await markTemplateDraftIfNeeded(section.templateId);
+  revalidateTemplateAdmin();
 }
 
 export async function addTestTemplateRuleAction(formData: FormData) {
@@ -63,6 +146,7 @@ export async function addTestTemplateRuleAction(formData: FormData) {
     include: { template: true },
   });
   if (!section) throw new Error("Template section not found.");
+  await ensureEditableTemplate(section.templateId);
   if (!allowedQuestionTypesForSubject(section.template.subjectName).has(data.questionType as OnlineTestQuestionType)) {
     throw new Error("Question type is not allowed for this subject.");
   }
@@ -77,7 +161,47 @@ export async function addTestTemplateRuleAction(formData: FormData) {
       order: count,
     },
   });
-  revalidatePath("/admin/test-templates");
+  await markTemplateDraftIfNeeded(section.templateId);
+  revalidateTemplateAdmin();
+}
+
+export async function updateTestTemplateRuleAction(formData: FormData) {
+  await requireAdminUser();
+  const data = updateTestTemplateRuleSchema.parse(formDataToObject(formData));
+  const rule = await prisma.testTemplateRule.findUnique({
+    where: { id: data.ruleId },
+    include: { section: { include: { template: true } } },
+  });
+  if (!rule || rule.sectionId !== data.sectionId) throw new Error("Template rule not found.");
+  await ensureEditableTemplate(rule.section.templateId);
+  if (!allowedQuestionTypesForSubject(rule.section.template.subjectName).has(data.questionType as OnlineTestQuestionType)) {
+    throw new Error("Question type is not allowed for this subject.");
+  }
+  await prisma.testTemplateRule.update({
+    where: { id: data.ruleId },
+    data: {
+      questionType: data.questionType as OnlineTestQuestionType,
+      marksPerQuestion: data.marksPerQuestion,
+      questionCount: data.questionCount,
+      difficulty: data.difficulty as OnlineTestDifficulty,
+    },
+  });
+  await markTemplateDraftIfNeeded(rule.section.templateId);
+  revalidateTemplateAdmin();
+}
+
+export async function deleteTestTemplateRuleAction(formData: FormData) {
+  await requireAdminUser();
+  const { ruleId } = templateRuleIdSchema.parse(formDataToObject(formData));
+  const rule = await prisma.testTemplateRule.findUnique({
+    where: { id: ruleId },
+    select: { section: { select: { templateId: true } } },
+  });
+  if (!rule) throw new Error("Template rule not found.");
+  await ensureEditableTemplate(rule.section.templateId);
+  await prisma.testTemplateRule.delete({ where: { id: ruleId } });
+  await markTemplateDraftIfNeeded(rule.section.templateId);
+  revalidateTemplateAdmin();
 }
 
 export async function activateTestTemplateAction(formData: FormData) {
@@ -93,7 +217,7 @@ export async function activateTestTemplateAction(formData: FormData) {
     where: { id: templateId },
     data: { status: TestTemplateStatus.ACTIVE },
   });
-  revalidatePath("/admin/test-templates");
+  revalidateTemplateAdmin();
 }
 
 export async function archiveTestTemplateAction(formData: FormData) {
@@ -103,7 +227,7 @@ export async function archiveTestTemplateAction(formData: FormData) {
     where: { id: templateId },
     data: { status: TestTemplateStatus.ARCHIVED },
   });
-  revalidatePath("/admin/test-templates");
+  revalidateTemplateAdmin();
 }
 
 export async function cloneTestTemplateAction(formData: FormData) {
@@ -141,7 +265,7 @@ export async function cloneTestTemplateAction(formData: FormData) {
       },
     },
   });
-  revalidatePath("/admin/test-templates");
+  revalidateTemplateAdmin();
   redirect(`/admin/test-templates?templateId=${clone.id}`);
 }
 
