@@ -15,6 +15,7 @@ const envSchema = z.object({
   AI_INTERNAL_RETRY_COUNT: z.coerce.number().int().min(0).default(1),
   AI_TEST_PAPER_ENABLED: z.string().default("true"),
   AI_TEST_PAPER_MAX_QUESTIONS: z.coerce.number().int().positive().default(30),
+  AI_TEST_PAPER_MAX_OUTPUT_TOKENS: z.coerce.number().int().positive().default(8192),
   AI_TEST_PAPER_RETRY_COUNT: z.coerce.number().int().min(0).default(2),
   AI_EVALUATION_REVIEW_THRESHOLD: z.coerce.number().min(0).max(1).default(0.75),
   AI_TEST_AUTOSAVE_INTERVAL_MS: z.coerce.number().int().positive().default(5000),
@@ -33,6 +34,7 @@ export type AiConfig = {
   internalRetryCount: number;
   testPaperEnabled: boolean;
   testPaperMaxQuestions: number;
+  testPaperMaxOutputTokens: number;
   testPaperRetryCount: number;
   evaluationReviewThreshold: number;
   testAutosaveIntervalMs: number;
@@ -122,6 +124,7 @@ export function getAiConfig(): AiConfig {
     internalRetryCount: parsed.AI_INTERNAL_RETRY_COUNT,
     testPaperEnabled: parsed.AI_TEST_PAPER_ENABLED === "true",
     testPaperMaxQuestions: parsed.AI_TEST_PAPER_MAX_QUESTIONS,
+    testPaperMaxOutputTokens: parsed.AI_TEST_PAPER_MAX_OUTPUT_TOKENS,
     testPaperRetryCount: parsed.AI_TEST_PAPER_RETRY_COUNT,
     evaluationReviewThreshold: parsed.AI_EVALUATION_REVIEW_THRESHOLD,
     testAutosaveIntervalMs: parsed.AI_TEST_AUTOSAVE_INTERVAL_MS,

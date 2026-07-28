@@ -16,6 +16,7 @@ describe("ai config", () => {
     vi.stubEnv("AI_MAX_OUTPUT_TOKENS", "1200");
     vi.stubEnv("AI_REQUEST_TIMEOUT_MS", "30000");
     vi.stubEnv("AI_INTERNAL_RETRY_COUNT", "1");
+    vi.stubEnv("AI_TEST_PAPER_MAX_OUTPUT_TOKENS", "8192");
   });
 
   it("normalizes Gemini model names from URLs and prefixed paths", () => {
@@ -37,5 +38,13 @@ describe("ai config", () => {
     resetAiConfigForTests();
     vi.stubEnv("AI_MODEL", encodeURIComponent("https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash:generateContent"));
     expect(getAiConfig().model).toBe("gemini-2.5-flash");
+  });
+
+  it("uses a larger output budget for AI test papers", () => {
+    vi.stubEnv("AI_MODEL", "gemini-2.5-flash");
+    vi.stubEnv("AI_TEST_PAPER_MAX_OUTPUT_TOKENS", "10000");
+
+    expect(getAiConfig().maxOutputTokens).toBe(1200);
+    expect(getAiConfig().testPaperMaxOutputTokens).toBe(10000);
   });
 });

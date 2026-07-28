@@ -48,6 +48,7 @@ describe("ai service", () => {
       testQuestionCount: 5,
       maxUserPromptLength: 500,
       maxOutputTokens: 1200,
+      testPaperMaxOutputTokens: 8192,
       requestTimeoutMs: 30000,
       internalRetryCount: 1,
     });

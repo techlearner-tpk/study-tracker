@@ -8,6 +8,8 @@ Rules:
 - Normalize the Gemini model name at startup.
 - Reject any model value that is not a plain Gemini model id.
 - Surface a direct config error instead of retrying or masking the problem with a fallback response.
+- Use a separate, larger `AI_TEST_PAPER_MAX_OUTPUT_TOKENS` budget for generated test papers.
+- If Gemini cuts off a response before valid JSON is complete, surface that directly instead of trying to parse or repair partial output.
 
 Reason:
 - This makes AI failures easier to debug.
