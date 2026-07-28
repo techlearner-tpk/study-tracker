@@ -1,19 +1,35 @@
 import "server-only";
 
-import { aiEvaluateAnswerSchema, aiGeneratedTestSchema, aiTeachResultSchema } from "@/features/ai/schema";
+import {
+  aiEvaluateAnswerSchema,
+  aiGeneratedTestSchema,
+  aiTeachResultSchema,
+  onlineTestAnswerEvaluationSchema,
+  onlineTestPaperReviewSchema,
+  onlineTestSectionGenerationSchema,
+} from "@/features/ai/schema";
 import { getAiConfig } from "./config";
 import { buildEvaluateAnswerPrompt } from "./prompts/evaluate-answer";
+import { buildEvaluateSubjectiveAnswerPrompt } from "./prompts/evaluate-subjective-answer";
 import { buildGenerateTestPrompt } from "./prompts/generate-test";
+import { buildGenerateTestPaperSectionPrompt } from "./prompts/generate-test-paper-section";
+import { buildReviewTestPaperPrompt } from "./prompts/review-test-paper";
 import { buildTeachTopicPrompt } from "./prompts/teach-topic";
 import { z } from "zod";
 import type {
   AiLearningProvider,
   EvaluateTestInput,
+  EvaluateSubjectiveAnswerInput,
+  GeneratedTestPaperSection,
   GeneratedTest,
+  GenerateTestPaperSectionInput,
   TeachTopicInput,
   TeachTopicResult,
   TestEvaluation,
   GenerateTestInput,
+  ReviewTestPaperInput,
+  SubjectiveAnswerEvaluation,
+  TestPaperReview,
 } from "./provider";
 
 function extractJson(text: string) {
@@ -106,6 +122,33 @@ export class GeminiAiLearningProvider implements AiLearningProvider {
     return callWithValidation(
       () => buildEvaluateAnswerPrompt(input),
       aiEvaluateAnswerSchema,
+      config.internalRetryCount,
+    );
+  }
+
+  async generateTestPaperSection(input: GenerateTestPaperSectionInput): Promise<GeneratedTestPaperSection> {
+    const config = getAiConfig();
+    return callWithValidation(
+      () => buildGenerateTestPaperSectionPrompt(input),
+      onlineTestSectionGenerationSchema,
+      config.testPaperRetryCount,
+    );
+  }
+
+  async reviewTestPaper(input: ReviewTestPaperInput): Promise<TestPaperReview> {
+    const config = getAiConfig();
+    return callWithValidation(
+      () => buildReviewTestPaperPrompt(input),
+      onlineTestPaperReviewSchema,
+      config.testPaperRetryCount,
+    );
+  }
+
+  async evaluateSubjectiveAnswer(input: EvaluateSubjectiveAnswerInput): Promise<SubjectiveAnswerEvaluation> {
+    const config = getAiConfig();
+    return callWithValidation(
+      () => buildEvaluateSubjectiveAnswerPrompt(input),
+      onlineTestAnswerEvaluationSchema,
       config.internalRetryCount,
     );
   }

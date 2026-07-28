@@ -1,4 +1,13 @@
-import { PrismaClient, LearningStatus, HabitGoalMetric, OutcomeGoalType, SubscriptionStatus } from "@prisma/client";
+import {
+  PrismaClient,
+  LearningStatus,
+  HabitGoalMetric,
+  OutcomeGoalType,
+  OnlineTestDifficulty,
+  OnlineTestQuestionType,
+  SubscriptionStatus,
+  TestTemplateStatus,
+} from "@prisma/client";
 import { resolveSubjectColor } from "@/lib/subject-colors";
 
 const prisma = new PrismaClient();
@@ -58,12 +67,20 @@ async function seedParent() {
       topicPromptLimit: 5,
       testQuestionCount: 5,
       maxUserPromptLength: 500,
+      testPaperMaxQuestions: 30,
+      testPaperRetryCount: 2,
+      evaluationReviewThreshold: 0.75,
+      testAutosaveIntervalMs: 5000,
     },
     create: {
       id: 1,
       topicPromptLimit: 5,
       testQuestionCount: 5,
       maxUserPromptLength: 500,
+      testPaperMaxQuestions: 30,
+      testPaperRetryCount: 2,
+      evaluationReviewThreshold: 0.75,
+      testAutosaveIntervalMs: 5000,
     },
   });
 
@@ -169,7 +186,79 @@ async function seedChild(userId: string, child: (typeof children)[number]) {
   }
 }
 
+async function seedTestTemplates(createdByUserId: string) {
+  const templates = [
+    {
+      name: "Mathematics Quick Test",
+      subjectName: "Mathematics",
+      sectionName: "Mathematics",
+      rules: [
+        { questionType: OnlineTestQuestionType.MULTIPLE_CHOICE, questionCount: 2, marksPerQuestion: 1 },
+        { questionType: OnlineTestQuestionType.SHORT_ANSWER, questionCount: 2, marksPerQuestion: 2 },
+        { questionType: OnlineTestQuestionType.LONG_ANSWER, questionCount: 1, marksPerQuestion: 4 },
+      ],
+    },
+    {
+      name: "Science Quick Test",
+      subjectName: "Science",
+      sectionName: "Science",
+      rules: [
+        { questionType: OnlineTestQuestionType.MULTIPLE_CHOICE, questionCount: 2, marksPerQuestion: 1 },
+        { questionType: OnlineTestQuestionType.SHORT_ANSWER, questionCount: 2, marksPerQuestion: 2 },
+        { questionType: OnlineTestQuestionType.LONG_ANSWER, questionCount: 1, marksPerQuestion: 4 },
+      ],
+    },
+    {
+      name: "English Quick Test",
+      subjectName: "English",
+      sectionName: "English",
+      rules: [
+        { questionType: OnlineTestQuestionType.READING_COMPREHENSION, questionCount: 1, marksPerQuestion: 4 },
+        { questionType: OnlineTestQuestionType.GRAMMAR, questionCount: 2, marksPerQuestion: 1 },
+        { questionType: OnlineTestQuestionType.WRITING, questionCount: 1, marksPerQuestion: 4 },
+      ],
+    },
+  ];
+
+  for (const templateData of templates) {
+    await prisma.testTemplate.create({
+      data: {
+        name: templateData.name,
+        subjectName: templateData.subjectName,
+        totalMarks: 10,
+        durationMinutes: 20,
+        difficulty: OnlineTestDifficulty.MIXED,
+        status: TestTemplateStatus.ACTIVE,
+        createdByUserId,
+        sections: {
+          create: {
+            name: templateData.sectionName,
+            order: 0,
+            rules: {
+              create: templateData.rules.map((rule, index) => ({
+                ...rule,
+                difficulty: OnlineTestDifficulty.MEDIUM,
+                order: index,
+              })),
+            },
+          },
+        },
+      },
+    });
+  }
+}
+
 async function main() {
+  await prisma.onlineTestAnswer.deleteMany();
+  await prisma.onlineTestAttempt.deleteMany();
+  await prisma.onlineTestQuestion.deleteMany();
+  await prisma.onlineTestSection.deleteMany();
+  await prisma.onlineTestPaperTopic.deleteMany();
+  await prisma.aiTopicUsageReservation.deleteMany();
+  await prisma.onlineTestPaper.deleteMany();
+  await prisma.testTemplateRule.deleteMany();
+  await prisma.testTemplateSection.deleteMany();
+  await prisma.testTemplate.deleteMany();
   await prisma.aiLearningMessage.deleteMany();
   await prisma.aiTestAttempt.deleteMany();
   await prisma.aiLearningSession.deleteMany();
@@ -188,6 +277,7 @@ async function main() {
   await prisma.user.deleteMany();
 
   const parent = await seedParent();
+  await seedTestTemplates(parent.id);
   const shouldSeedDemoData = process.env.SEED_DEMO_DATA === "true" || process.env.NODE_ENV !== "production";
   if (shouldSeedDemoData) {
     for (const child of children) {

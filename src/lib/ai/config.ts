@@ -13,6 +13,11 @@ const envSchema = z.object({
   AI_MAX_OUTPUT_TOKENS: z.coerce.number().int().positive().default(1200),
   AI_REQUEST_TIMEOUT_MS: z.coerce.number().int().positive().default(30000),
   AI_INTERNAL_RETRY_COUNT: z.coerce.number().int().min(0).default(1),
+  AI_TEST_PAPER_ENABLED: z.string().default("true"),
+  AI_TEST_PAPER_MAX_QUESTIONS: z.coerce.number().int().positive().default(30),
+  AI_TEST_PAPER_RETRY_COUNT: z.coerce.number().int().min(0).default(2),
+  AI_EVALUATION_REVIEW_THRESHOLD: z.coerce.number().min(0).max(1).default(0.75),
+  AI_TEST_AUTOSAVE_INTERVAL_MS: z.coerce.number().int().positive().default(5000),
 });
 
 export type AiConfig = {
@@ -26,6 +31,11 @@ export type AiConfig = {
   maxOutputTokens: number;
   requestTimeoutMs: number;
   internalRetryCount: number;
+  testPaperEnabled: boolean;
+  testPaperMaxQuestions: number;
+  testPaperRetryCount: number;
+  evaluationReviewThreshold: number;
+  testAutosaveIntervalMs: number;
 };
 
 let cachedConfig: AiConfig | null = null;
@@ -110,6 +120,11 @@ export function getAiConfig(): AiConfig {
     maxOutputTokens: parsed.AI_MAX_OUTPUT_TOKENS,
     requestTimeoutMs: parsed.AI_REQUEST_TIMEOUT_MS,
     internalRetryCount: parsed.AI_INTERNAL_RETRY_COUNT,
+    testPaperEnabled: parsed.AI_TEST_PAPER_ENABLED === "true",
+    testPaperMaxQuestions: parsed.AI_TEST_PAPER_MAX_QUESTIONS,
+    testPaperRetryCount: parsed.AI_TEST_PAPER_RETRY_COUNT,
+    evaluationReviewThreshold: parsed.AI_EVALUATION_REVIEW_THRESHOLD,
+    testAutosaveIntervalMs: parsed.AI_TEST_AUTOSAVE_INTERVAL_MS,
   };
 
   return cachedConfig;

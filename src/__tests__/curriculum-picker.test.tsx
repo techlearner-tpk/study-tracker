@@ -19,6 +19,7 @@ const curricula: CurriculumTreeVersion[] = [
     sourceReferences: null,
     publishedAt: null,
     archivedAt: null,
+    updatedAt: new Date("2026-07-01T00:00:00.000Z"),
     board: { id: "board_1", code: "CBSE", name: "Central Board" },
     classes: [
       {

@@ -37,8 +37,8 @@ export function AppShellFrame({
   const [mobileOpen, setMobileOpen] = useState(false);
   const pathname = usePathname();
   const overviewItems = items.filter((item) => item.href === "/");
-  const manageItems = items.filter((item) => item.href.includes("curriculum"));
-  const learningItems = items.filter((item) => item.href !== "/" && !item.href.includes("curriculum"));
+  const manageItems = items.filter((item) => item.href.includes("curriculum") || item.href.includes("test-templates"));
+  const learningItems = items.filter((item) => item.href !== "/" && !item.href.includes("curriculum") && !item.href.includes("test-templates"));
 
   useEffect(() => {
     const stored = window.localStorage.getItem(sidebarStorageKey);

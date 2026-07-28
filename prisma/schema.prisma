@@ -101,34 +101,104 @@ enum AiLearningMessageRole {
   ASSISTANT
 }
 
+enum TestTemplateStatus {
+  DRAFT
+  ACTIVE
+  ARCHIVED
+}
+
+enum OnlineTestQuestionType {
+  MULTIPLE_CHOICE
+  TRUE_FALSE
+  FILL_IN_THE_BLANK
+  VERY_SHORT_ANSWER
+  SHORT_ANSWER
+  LONG_ANSWER
+  NUMERICAL
+  CASE_BASED
+  ASSERTION_REASON
+  READING_COMPREHENSION
+  GRAMMAR
+  WRITING
+  VOCABULARY
+}
+
+enum OnlineTestDifficulty {
+  EASY
+  MEDIUM
+  HARD
+  MIXED
+}
+
+enum OnlineTestPaperSource {
+  ASSIGNED_BY_PARENT
+  SELF_PRACTICE
+}
+
+enum OnlineTestPaperStatus {
+  GENERATING
+  REVIEWING
+  DRAFT
+  ASSIGNED
+  IN_PROGRESS
+  SUBMITTED
+  EVALUATED
+  ARCHIVED
+  FAILED
+}
+
+enum OnlineTestAiReviewStatus {
+  PENDING
+  PASSED
+  FAILED
+  NEEDS_REVIEW
+}
+
+enum OnlineTestAttemptStatus {
+  NOT_STARTED
+  IN_PROGRESS
+  SUBMITTED
+  EVALUATED
+  NEEDS_REVIEW
+}
+
+enum AiQuotaReservationStatus {
+  RESERVED
+  CONSUMED
+  RELEASED
+  FAILED
+}
+
 model User {
-  id           String        @id @default(cuid())
-  email        String        @unique
-  name         String
-  passwordHash String
-  clerkUserId  String?       @unique
-  role         UserRole      @default(PARENT)
-  verifiedAt   DateTime?
-  childId      String?       @unique
-  createdAt    DateTime      @default(now())
-  updatedAt    DateTime      @updatedAt
-  child        Child?        @relation("KidChild", fields: [childId], references: [id], onDelete: Cascade)
-  children     Child[]       @relation("ParentChildren")
-  assignments  Assignment[]  @relation("AssignmentsCreatedBy")
-  subscription Subscription? @relation("ParentSubscription")
+  id            String            @id @default(cuid())
+  email         String            @unique
+  name          String
+  passwordHash  String
+  clerkUserId   String?           @unique
+  role          UserRole          @default(PARENT)
+  verifiedAt    DateTime?
+  childId       String?           @unique
+  createdAt     DateTime          @default(now())
+  updatedAt     DateTime          @updatedAt
+  child         Child?            @relation("KidChild", fields: [childId], references: [id], onDelete: Cascade)
+  children      Child[]           @relation("ParentChildren")
+  assignments   Assignment[]      @relation("AssignmentsCreatedBy")
+  subscription  Subscription?     @relation("ParentSubscription")
+  testTemplates TestTemplate[]    @relation("TestTemplatesCreatedBy")
+  testPapers    OnlineTestPaper[] @relation("OnlineTestPapersCreatedBy")
 }
 
 model Child {
-  id                    String                 @id @default(cuid())
+  id                    String                    @id @default(cuid())
   userId                String?
   name                  String
   className             String
   school                String?
   themeColor            String?
-  createdAt             DateTime               @default(now())
-  updatedAt             DateTime               @updatedAt
-  user                  User?                  @relation("ParentChildren", fields: [userId], references: [id], onDelete: Cascade)
-  kidUser               User?                  @relation("KidChild")
+  createdAt             DateTime                  @default(now())
+  updatedAt             DateTime                  @updatedAt
+  user                  User?                     @relation("ParentChildren", fields: [userId], references: [id], onDelete: Cascade)
+  kidUser               User?                     @relation("KidChild")
   magicLinkTokens       MagicLinkToken[]
   subjects              Subject[]
   habitGoals            HabitGoal[]
@@ -138,18 +208,22 @@ model Child {
   aiTopicUsages         AiTopicUsage[]
   aiLearningSessions    AiLearningSession[]
   aiTestAttempts        AiTestAttempt[]
+  onlineTestPapers      OnlineTestPaper[]
+  onlineTestAttempts    OnlineTestAttempt[]
+  aiQuotaReservations   AiTopicUsageReservation[]
 
   @@index([name])
   @@index([userId])
 }
 
 model CurriculumBoard {
-  id        String              @id @default(cuid())
-  code      String              @unique
-  name      String
-  createdAt DateTime            @default(now())
-  updatedAt DateTime            @updatedAt
-  versions  CurriculumVersion[]
+  id            String              @id @default(cuid())
+  code          String              @unique
+  name          String
+  createdAt     DateTime            @default(now())
+  updatedAt     DateTime            @updatedAt
+  versions      CurriculumVersion[]
+  testTemplates TestTemplate[]
 }
 
 model CurriculumVersion {
@@ -188,6 +262,7 @@ model CurriculumClass {
   version               CurriculumVersion      @relation(fields: [versionId], references: [id], onDelete: Cascade)
   subjects              CurriculumSubject[]
   curriculumAssignments CurriculumAssignment[]
+  testTemplates         TestTemplate[]
 
   @@unique([versionId, level])
   @@unique([versionId, stableKey])
@@ -338,6 +413,8 @@ model Subject {
   child                  Child                 @relation(fields: [childId], references: [id], onDelete: Cascade)
   curriculumAssignment   CurriculumAssignment? @relation(fields: [curriculumAssignmentId], references: [id], onDelete: SetNull)
   chapters               Chapter[]
+  testTemplates          TestTemplate[]
+  onlineTestPapers       OnlineTestPaper[]
 
   @@unique([childId, name])
   @@index([childId])
@@ -346,19 +423,21 @@ model Subject {
 }
 
 model Chapter {
-  id                     String                @id @default(cuid())
+  id                     String                 @id @default(cuid())
   subjectId              String
   name                   String
-  order                  Int                   @default(0)
+  order                  Int                    @default(0)
   curriculumAssignmentId String?
   curriculumVersionId    String?
   curriculumSubjectId    String?
   curriculumChapterId    String?
-  createdAt              DateTime              @default(now())
-  updatedAt              DateTime              @updatedAt
-  subject                Subject               @relation(fields: [subjectId], references: [id], onDelete: Cascade)
-  curriculumAssignment   CurriculumAssignment? @relation(fields: [curriculumAssignmentId], references: [id], onDelete: SetNull)
+  createdAt              DateTime               @default(now())
+  updatedAt              DateTime               @updatedAt
+  subject                Subject                @relation(fields: [subjectId], references: [id], onDelete: Cascade)
+  curriculumAssignment   CurriculumAssignment?  @relation(fields: [curriculumAssignmentId], references: [id], onDelete: SetNull)
   topics                 Topic[]
+  onlineTestTopics       OnlineTestPaperTopic[]
+  onlineTestQuestions    OnlineTestQuestion[]
 
   @@index([subjectId])
   @@index([curriculumVersionId])
@@ -366,24 +445,24 @@ model Chapter {
 }
 
 model Topic {
-  id                     String                @id @default(cuid())
+  id                     String                    @id @default(cuid())
   chapterId              String
   name                   String
   description            String?
-  status                 LearningStatus        @default(NOT_STARTED)
+  status                 LearningStatus            @default(NOT_STARTED)
   confidenceRating       Int?
   notes                  String?
-  order                  Int                   @default(0)
+  order                  Int                       @default(0)
   curriculumAssignmentId String?
   curriculumVersionId    String?
   curriculumSubjectId    String?
   curriculumChapterId    String?
   curriculumTopicId      String?
-  createdAt              DateTime              @default(now())
-  updatedAt              DateTime              @updatedAt
+  createdAt              DateTime                  @default(now())
+  updatedAt              DateTime                  @updatedAt
   completedAt            DateTime?
-  chapter                Chapter               @relation(fields: [chapterId], references: [id], onDelete: Cascade)
-  curriculumAssignment   CurriculumAssignment? @relation(fields: [curriculumAssignmentId], references: [id], onDelete: SetNull)
+  chapter                Chapter                   @relation(fields: [chapterId], references: [id], onDelete: Cascade)
+  curriculumAssignment   CurriculumAssignment?     @relation(fields: [curriculumAssignmentId], references: [id], onDelete: SetNull)
   studySessions          StudySession[]
   practiceSessions       PracticeSession[]
   revisionSessions       RevisionSession[]
@@ -391,6 +470,9 @@ model Topic {
   aiTopicUsages          AiTopicUsage[]
   aiLearningSessions     AiLearningSession[]
   aiTestAttempts         AiTestAttempt[]
+  onlineTestTopics       OnlineTestPaperTopic[]
+  onlineTestQuestions    OnlineTestQuestion[]
+  aiQuotaReservations    AiTopicUsageReservation[]
 
   @@index([chapterId])
   @@index([status])
@@ -465,12 +547,16 @@ model Subscription {
 }
 
 model AiSetting {
-  id                  Int      @id @default(1)
-  topicPromptLimit    Int?
-  testQuestionCount   Int?
-  maxUserPromptLength Int?
-  updatedAt           DateTime @updatedAt
-  createdAt           DateTime @default(now())
+  id                        Int      @id @default(1)
+  topicPromptLimit          Int?
+  testQuestionCount         Int?
+  maxUserPromptLength       Int?
+  testPaperMaxQuestions     Int?
+  testPaperRetryCount       Int?
+  evaluationReviewThreshold Float?
+  testAutosaveIntervalMs    Int?
+  updatedAt                 DateTime @updatedAt
+  createdAt                 DateTime @default(now())
 }
 
 model AiRequestLog {
@@ -487,18 +573,237 @@ model AiRequestLog {
 }
 
 model AiTopicUsage {
-  id          String   @id @default(cuid())
-  childId     String
-  topicId     String
-  promptCount Int      @default(0)
-  createdAt   DateTime @default(now())
-  updatedAt   DateTime @updatedAt
-  child       Child    @relation(fields: [childId], references: [id], onDelete: Cascade)
-  topic       Topic    @relation(fields: [topicId], references: [id], onDelete: Cascade)
+  id           String                    @id @default(cuid())
+  childId      String
+  topicId      String
+  promptCount  Int                       @default(0)
+  createdAt    DateTime                  @default(now())
+  updatedAt    DateTime                  @updatedAt
+  child        Child                     @relation(fields: [childId], references: [id], onDelete: Cascade)
+  topic        Topic                     @relation(fields: [topicId], references: [id], onDelete: Cascade)
+  reservations AiTopicUsageReservation[]
 
   @@unique([childId, topicId])
   @@index([childId])
   @@index([topicId])
+}
+
+model AiTopicUsageReservation {
+  id          String                   @id @default(cuid())
+  requestId   String
+  childId     String
+  topicId     String
+  usageId     String?
+  testPaperId String?
+  status      AiQuotaReservationStatus @default(RESERVED)
+  createdAt   DateTime                 @default(now())
+  updatedAt   DateTime                 @updatedAt
+  child       Child                    @relation(fields: [childId], references: [id], onDelete: Cascade)
+  topic       Topic                    @relation(fields: [topicId], references: [id], onDelete: Cascade)
+  usage       AiTopicUsage?            @relation(fields: [usageId], references: [id], onDelete: SetNull)
+  testPaper   OnlineTestPaper?         @relation(fields: [testPaperId], references: [id], onDelete: Cascade)
+
+  @@unique([requestId, topicId])
+  @@index([childId, topicId, status])
+  @@index([testPaperId])
+}
+
+model TestTemplate {
+  id              String                @id @default(cuid())
+  name            String
+  boardId         String?
+  classId         String?
+  subjectId       String?
+  subjectName     String
+  totalMarks      Int
+  durationMinutes Int
+  difficulty      OnlineTestDifficulty  @default(MIXED)
+  status          TestTemplateStatus    @default(DRAFT)
+  createdByUserId String
+  createdAt       DateTime              @default(now())
+  updatedAt       DateTime              @updatedAt
+  board           CurriculumBoard?      @relation(fields: [boardId], references: [id], onDelete: SetNull)
+  class           CurriculumClass?      @relation(fields: [classId], references: [id], onDelete: SetNull)
+  subject         Subject?              @relation(fields: [subjectId], references: [id], onDelete: SetNull)
+  createdBy       User                  @relation("TestTemplatesCreatedBy", fields: [createdByUserId], references: [id], onDelete: Restrict)
+  sections        TestTemplateSection[]
+  testPapers      OnlineTestPaper[]
+
+  @@index([status])
+  @@index([subjectName])
+  @@index([createdByUserId])
+}
+
+model TestTemplateSection {
+  id           String             @id @default(cuid())
+  templateId   String
+  name         String
+  instructions String?
+  order        Int                @default(0)
+  createdAt    DateTime           @default(now())
+  updatedAt    DateTime           @updatedAt
+  template     TestTemplate       @relation(fields: [templateId], references: [id], onDelete: Cascade)
+  rules        TestTemplateRule[]
+
+  @@index([templateId])
+}
+
+model TestTemplateRule {
+  id                  String                 @id @default(cuid())
+  sectionId           String
+  questionType        OnlineTestQuestionType
+  marksPerQuestion    Int
+  questionCount       Int
+  difficulty          OnlineTestDifficulty   @default(MEDIUM)
+  internalChoiceCount Int                    @default(0)
+  order               Int                    @default(0)
+  createdAt           DateTime               @default(now())
+  updatedAt           DateTime               @updatedAt
+  section             TestTemplateSection    @relation(fields: [sectionId], references: [id], onDelete: Cascade)
+
+  @@index([sectionId])
+}
+
+model OnlineTestPaper {
+  id                  String                    @id @default(cuid())
+  childId             String
+  subjectId           String
+  templateId          String
+  createdByUserId     String
+  source              OnlineTestPaperSource
+  title               String
+  totalMarks          Int
+  durationMinutes     Int
+  difficulty          OnlineTestDifficulty      @default(MIXED)
+  status              OnlineTestPaperStatus     @default(DRAFT)
+  aiReviewStatus      OnlineTestAiReviewStatus  @default(PENDING)
+  generationRequestId String?
+  aiReviewJson        Json?
+  dueAt               DateTime?
+  assignedAt          DateTime?
+  createdAt           DateTime                  @default(now())
+  updatedAt           DateTime                  @updatedAt
+  child               Child                     @relation(fields: [childId], references: [id], onDelete: Cascade)
+  subject             Subject                   @relation(fields: [subjectId], references: [id], onDelete: Restrict)
+  template            TestTemplate              @relation(fields: [templateId], references: [id], onDelete: Restrict)
+  createdBy           User                      @relation("OnlineTestPapersCreatedBy", fields: [createdByUserId], references: [id], onDelete: Restrict)
+  topics              OnlineTestPaperTopic[]
+  sections            OnlineTestSection[]
+  questions           OnlineTestQuestion[]
+  attempts            OnlineTestAttempt[]
+  quotaReservations   AiTopicUsageReservation[]
+
+  @@index([childId])
+  @@index([subjectId])
+  @@index([templateId])
+  @@index([createdByUserId])
+  @@index([status])
+}
+
+model OnlineTestPaperTopic {
+  id                     String          @id @default(cuid())
+  testPaperId            String
+  topicId                String
+  chapterId              String
+  allocatedMarks         Int
+  allocatedQuestionCount Int
+  createdAt              DateTime        @default(now())
+  testPaper              OnlineTestPaper @relation(fields: [testPaperId], references: [id], onDelete: Cascade)
+  topic                  Topic           @relation(fields: [topicId], references: [id], onDelete: Restrict)
+  chapter                Chapter         @relation(fields: [chapterId], references: [id], onDelete: Restrict)
+
+  @@unique([testPaperId, topicId])
+  @@index([topicId])
+  @@index([chapterId])
+}
+
+model OnlineTestSection {
+  id           String               @id @default(cuid())
+  testPaperId  String
+  name         String
+  instructions String?
+  order        Int                  @default(0)
+  createdAt    DateTime             @default(now())
+  updatedAt    DateTime             @updatedAt
+  testPaper    OnlineTestPaper      @relation(fields: [testPaperId], references: [id], onDelete: Cascade)
+  questions    OnlineTestQuestion[]
+
+  @@index([testPaperId])
+}
+
+model OnlineTestQuestion {
+  id                String                   @id @default(cuid())
+  testPaperId       String
+  sectionId         String
+  chapterId         String
+  topicId           String
+  questionType      OnlineTestQuestionType
+  questionText      String
+  optionsJson       Json?
+  correctAnswerJson Json
+  markingSchemeJson Json
+  explanation       String
+  marks             Int
+  difficulty        OnlineTestDifficulty     @default(MEDIUM)
+  order             Int                      @default(0)
+  aiReviewStatus    OnlineTestAiReviewStatus @default(PENDING)
+  createdAt         DateTime                 @default(now())
+  updatedAt         DateTime                 @updatedAt
+  testPaper         OnlineTestPaper          @relation(fields: [testPaperId], references: [id], onDelete: Cascade)
+  section           OnlineTestSection        @relation(fields: [sectionId], references: [id], onDelete: Cascade)
+  chapter           Chapter                  @relation(fields: [chapterId], references: [id], onDelete: Restrict)
+  topic             Topic                    @relation(fields: [topicId], references: [id], onDelete: Restrict)
+  answers           OnlineTestAnswer[]
+
+  @@index([testPaperId])
+  @@index([sectionId])
+  @@index([topicId])
+}
+
+model OnlineTestAttempt {
+  id              String                  @id @default(cuid())
+  testPaperId     String
+  childId         String
+  status          OnlineTestAttemptStatus @default(NOT_STARTED)
+  startedAt       DateTime?
+  submittedAt     DateTime?
+  evaluatedAt     DateTime?
+  aiAwardedMarks  Float?
+  finalMarks      Float?
+  percentage      Float?
+  overallFeedback String?
+  strengthsJson   Json?
+  weakAreasJson   Json?
+  createdAt       DateTime                @default(now())
+  updatedAt       DateTime                @updatedAt
+  testPaper       OnlineTestPaper         @relation(fields: [testPaperId], references: [id], onDelete: Cascade)
+  child           Child                   @relation(fields: [childId], references: [id], onDelete: Cascade)
+  answers         OnlineTestAnswer[]
+
+  @@index([testPaperId])
+  @@index([childId])
+  @@index([status])
+}
+
+model OnlineTestAnswer {
+  id                   String             @id @default(cuid())
+  attemptId            String
+  questionId           String
+  answerText           String?
+  answerJson           Json?
+  aiAwardedMarks       Float?
+  finalMarks           Float?
+  aiFeedback           String?
+  parentFeedback       String?
+  evaluationConfidence Float?
+  needsReview          Boolean            @default(false)
+  createdAt            DateTime           @default(now())
+  updatedAt            DateTime           @updatedAt
+  attempt              OnlineTestAttempt  @relation(fields: [attemptId], references: [id], onDelete: Cascade)
+  question             OnlineTestQuestion @relation(fields: [questionId], references: [id], onDelete: Cascade)
+
+  @@unique([attemptId, questionId])
+  @@index([questionId])
 }
 
 model AiLearningSession {
