@@ -1,7 +1,6 @@
 import Link from "next/link";
 import {
   OnlineTestAttemptStatus,
-  OnlineTestPaperSource,
   OnlineTestPaperStatus,
   OnlineTestQuestionType,
   TestTemplateStatus,
@@ -12,6 +11,7 @@ import { Card, CardTitle } from "@/components/ui/card";
 import { Input, Label, Select } from "@/components/ui/form";
 import { Progress } from "@/components/ui/progress";
 import { AiCautionNote } from "@/features/ai/components";
+import { TestPaperCreatePicker } from "./create-picker";
 import {
   acceptAiOnlineTestMarksAction,
   activateTestTemplateAction,
@@ -22,7 +22,6 @@ import {
   createTestTemplateAction,
   deleteTestTemplateRuleAction,
   deleteTestTemplateSectionAction,
-  generateOnlineTestPaperAction,
   startOnlineTestAttemptAction,
   updateTestTemplateAction,
   updateTestTemplateRuleAction,
@@ -329,62 +328,7 @@ export function TestPaperCreateForm({ data, kidMode = false }: { data: Selection
       </header>
       <AiCautionNote />
       <Card>
-        <form action={generateOnlineTestPaperAction} className="grid gap-5">
-          <input type="hidden" name="source" value={kidMode ? OnlineTestPaperSource.SELF_PRACTICE : OnlineTestPaperSource.ASSIGNED_BY_PARENT} />
-          <div className="grid gap-4 lg:grid-cols-3">
-            <Label>
-              Child
-              <Select name="childId" required>
-                {children.map((child) => <option key={child.id} value={child.id}>{child.name} | {child.className}</option>)}
-              </Select>
-            </Label>
-            <Label>
-              Subject
-              <Select name="subjectId" required>
-                {children.flatMap((child) => child.subjects.map((subject) => <option key={subject.id} value={subject.id}>{child.name} | {subject.name}</option>))}
-              </Select>
-            </Label>
-            <Label>
-              Template
-              <Select name="templateId" required>
-                {data.templates.filter((template) => template.status === TestTemplateStatus.ACTIVE).map((template) => (
-                  <option key={template.id} value={template.id}>{template.subjectName} | {template.name}</option>
-                ))}
-              </Select>
-            </Label>
-          </div>
-          <div className="grid gap-3">
-            <CardTitle>Select topics</CardTitle>
-            <div className="grid gap-3 md:grid-cols-2 xl:grid-cols-3">
-              {children.flatMap((child) => child.subjects.flatMap((subject) => subject.chapters.map((chapter) => (
-                <div key={chapter.id} className="rounded-md border border-slate-200 p-3">
-                  <p className="font-semibold">{subject.name} | {chapter.name}</p>
-                  <div className="mt-2 grid gap-2">
-                    {chapter.topics.map((topic) => (
-                      <label key={topic.id} className="flex items-center gap-2 text-sm">
-                        <input type="checkbox" name="topicIds" value={topic.id} />
-                        <span>{topic.name}</span>
-                      </label>
-                    ))}
-                  </div>
-                </div>
-              ))))}
-            </div>
-          </div>
-          <div className="grid gap-4 lg:grid-cols-3">
-            <Label>
-              Title
-              <Input name="title" placeholder="Optional" />
-            </Label>
-            {!kidMode ? (
-              <Label>
-                Due date
-                <Input name="dueAt" type="date" />
-              </Label>
-            ) : null}
-          </div>
-          <Button type="submit" pendingText="Generating paper...">Generate paper</Button>
-        </form>
+        <TestPaperCreatePicker childOptions={children} templates={data.templates} kidMode={kidMode} />
       </Card>
     </div>
   );
