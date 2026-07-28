@@ -2,6 +2,7 @@ import { describe, expect, it } from "vitest";
 import { OnlineTestDifficulty, OnlineTestQuestionType, TestTemplateStatus } from "@prisma/client";
 import { onlineTestSectionGenerationSchema } from "@/features/ai/schema";
 import { allowedQuestionTypesForSubject, validateTemplateTotals } from "@/features/test-papers/rules";
+import { buildGenerateTestPaperSectionPrompt } from "@/lib/ai/prompts/generate-test-paper-section";
 
 function templateFixture(overrides: Partial<Parameters<typeof validateTemplateTotals>[0]> = {}) {
   return {
@@ -94,5 +95,31 @@ describe("online test papers", () => {
     });
 
     expect(parsed.questions[0].clientQuestionId).toBe("section-rule-1");
+  });
+
+  it("instructs AI test generation to return markingScheme as an array", () => {
+    const prompt = buildGenerateTestPaperSectionPrompt({
+      sectionName: "Section A",
+      slots: [
+        {
+          clientQuestionId: "section-rule-1",
+          subject: "Mathematics",
+          className: "Class 8",
+          boardName: "CBSE",
+          chapterId: "chapter_1",
+          chapterName: "Geometry",
+          topicId: "topic_1",
+          topicName: "Polygons",
+          questionType: "SHORT_ANSWER",
+          marks: 2,
+          difficulty: "MEDIUM",
+        },
+      ],
+    });
+
+    expect(prompt.system).toContain("markingScheme must be a JSON array");
+    expect(prompt.system).toContain("Never return markingScheme as a string");
+    expect(prompt.user).toContain("[{\"criterion\"");
+    expect(prompt.user).toContain("Do not wrap markingScheme in quotes");
   });
 });
