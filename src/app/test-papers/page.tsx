@@ -11,7 +11,7 @@ export default async function TestPapersPage() {
 
   return (
     <AppShell>
-      <TestPaperList papers={papers} hrefBase="/test-papers" newHref="/test-papers/new" />
+      <TestPaperList papers={papers} hrefBase="/test-papers" newHref="/test-papers/new" canDelete />
     </AppShell>
   );
 }

@@ -20,6 +20,8 @@ import {
   archiveTestTemplateAction,
   cloneTestTemplateAction,
   createTestTemplateAction,
+  deleteFailedOnlineTestPapersAction,
+  deleteOnlineTestPaperAction,
   deleteTestTemplateRuleAction,
   deleteTestTemplateSectionAction,
   startOnlineTestAttemptAction,
@@ -280,7 +282,9 @@ export function TestTemplateAdminView({ templates, selectedTemplate }: { templat
   );
 }
 
-export function TestPaperList({ papers, hrefBase, newHref }: { papers: any[]; hrefBase: string; newHref: string }) {
+export function TestPaperList({ papers, hrefBase, newHref, canDelete = false }: { papers: any[]; hrefBase: string; newHref: string; canDelete?: boolean }) {
+  const hasFailedPapers = papers.some((paper) => paper.status === OnlineTestPaperStatus.FAILED);
+
   return (
     <div className="grid gap-6">
       <header className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
@@ -289,7 +293,14 @@ export function TestPaperList({ papers, hrefBase, newHref }: { papers: any[]; hr
           <h1 className="text-3xl font-semibold tracking-tight">Online Test Papers</h1>
           <p className="mt-2 text-sm text-slate-600">Generate and take subject-level tests for Mathematics, Science, and English.</p>
         </div>
-        <Link href={newHref}><Button type="button">New test paper</Button></Link>
+        <div className="flex flex-wrap gap-2">
+          {canDelete && hasFailedPapers ? (
+            <form action={deleteFailedOnlineTestPapersAction}>
+              <Button type="submit" variant="danger" pendingText="Deleting...">Delete failed</Button>
+            </form>
+          ) : null}
+          <Link href={newHref}><Button type="button">New test paper</Button></Link>
+        </div>
       </header>
       <AiCautionNote />
       <div className="grid gap-3">
@@ -303,6 +314,12 @@ export function TestPaperList({ papers, hrefBase, newHref }: { papers: any[]; hr
               <div className="flex items-center gap-2">
                 <Badge className={statusTone(paper.status)}>{paper.status.replaceAll("_", " ")}</Badge>
                 <Link href={`${hrefBase}/${paper.id}`}><Button type="button" variant="secondary">Open</Button></Link>
+                {canDelete ? (
+                  <form action={deleteOnlineTestPaperAction}>
+                    <input type="hidden" name="paperId" value={paper.id} />
+                    <Button type="submit" variant="ghost" className="text-red-700 hover:bg-red-50 hover:text-red-800" pendingText="Deleting...">Delete</Button>
+                  </form>
+                ) : null}
               </div>
             </div>
           </Card>
@@ -345,7 +362,15 @@ export function TestPaperDetail({ paper, hrefBase, canTake = false, parentMode =
           <h1 className="text-3xl font-semibold tracking-tight">{paper.title}</h1>
           <p className="mt-2 text-sm text-slate-600">{paper.totalMarks} marks | {paper.durationMinutes} minutes | {paper.source.replaceAll("_", " ")}</p>
         </div>
-        <Badge className={statusTone(paper.status)}>{paper.status.replaceAll("_", " ")}</Badge>
+        <div className="flex flex-wrap items-center gap-2">
+          <Badge className={statusTone(paper.status)}>{paper.status.replaceAll("_", " ")}</Badge>
+          {parentMode ? (
+            <form action={deleteOnlineTestPaperAction}>
+              <input type="hidden" name="paperId" value={paper.id} />
+              <Button type="submit" variant="danger" pendingText="Deleting...">Delete paper</Button>
+            </form>
+          ) : null}
+        </div>
       </header>
       <AiCautionNote />
       {attempt?.status === OnlineTestAttemptStatus.EVALUATED || attempt?.status === OnlineTestAttemptStatus.NEEDS_REVIEW ? (
@@ -365,11 +390,15 @@ export function TestPaperDetail({ paper, hrefBase, canTake = false, parentMode =
         </Card>
       ) : canTake ? (
         <Card>
-          <CardTitle>Ready to take</CardTitle>
-          <p className="mt-2 text-sm text-slate-600">This paper is online. Start when the child is ready.</p>
+          <CardTitle>{parentMode ? "Open test player" : "Ready to take"}</CardTitle>
+          <p className="mt-2 text-sm text-slate-600">
+            {parentMode
+              ? "Open the answer screen for this paper. The kid can also solve it after signing in from Online Test Papers."
+              : "This paper is online. Start when you are ready."}
+          </p>
           <form action={startOnlineTestAttemptAction} className="mt-4">
             <input type="hidden" name="paperId" value={paper.id} />
-            <Button type="submit">Start test</Button>
+            <Button type="submit">{parentMode ? "Open answer screen" : "Start test"}</Button>
           </form>
         </Card>
       ) : null}

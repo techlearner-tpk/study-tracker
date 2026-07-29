@@ -492,6 +492,33 @@ export async function loadOnlineTestPapersForKid(childId: string) {
   });
 }
 
+export async function deleteOwnedOnlineTestPaper(userId: string, paperId: string) {
+  const paper = await prisma.onlineTestPaper.findUnique({
+    where: { id: paperId },
+    select: {
+      id: true,
+      source: true,
+      child: { select: { userId: true, kidUser: { select: { id: true } } } },
+    },
+  });
+  if (!paper || (paper.child.userId !== userId && paper.child.kidUser?.id !== userId)) {
+    throw new Error("Test paper not found.");
+  }
+  if (paper.child.kidUser?.id === userId && paper.source !== OnlineTestPaperSource.SELF_PRACTICE) {
+    throw new Error("Kids can delete only self-practice test papers.");
+  }
+  await prisma.onlineTestPaper.delete({ where: { id: paper.id } });
+}
+
+export async function deleteFailedOnlineTestPapersForParent(userId: string) {
+  await prisma.onlineTestPaper.deleteMany({
+    where: {
+      status: OnlineTestPaperStatus.FAILED,
+      child: { userId },
+    },
+  });
+}
+
 export async function getOwnedOnlineTestPaper(userId: string, paperId: string): Promise<OnlineTestPaperTree> {
   const paper = await prisma.onlineTestPaper.findUnique({
     where: { id: paperId },

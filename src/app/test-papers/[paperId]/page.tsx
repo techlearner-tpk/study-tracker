@@ -12,7 +12,7 @@ export default async function TestPaperDetailPage({ params }: { params: Promise<
 
   return (
     <AppShell>
-      <TestPaperDetail paper={paper} hrefBase="/test-papers" parentMode />
+      <TestPaperDetail paper={paper} hrefBase="/test-papers" canTake parentMode />
     </AppShell>
   );
 }

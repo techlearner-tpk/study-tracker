@@ -11,6 +11,7 @@ import {
   createTestTemplateSchema,
   createTestTemplateSectionSchema,
   generateOnlineTestPaperSchema,
+  onlineTestPaperIdSchema,
   onlineTestSubmitSchema,
   templateRuleIdSchema,
   templateSectionIdSchema,
@@ -21,6 +22,8 @@ import {
 } from "@/features/ai/schema";
 import {
   allowedQuestionTypesForSubject,
+  deleteFailedOnlineTestPapersForParent,
+  deleteOwnedOnlineTestPaper,
   generateOnlineTestPaper,
   getOwnedOnlineTestPaper,
   startOnlineTestAttempt,
@@ -316,6 +319,22 @@ export async function submitOnlineTestAttemptAction(formData: FormData) {
   revalidatePath(`/test-papers/${data.paperId}`);
   revalidatePath(`/kid/tests/${data.paperId}`);
   redirect(currentUser.role === "KID" ? `/kid/tests/${data.paperId}` : `/test-papers/${data.paperId}`);
+}
+
+export async function deleteOnlineTestPaperAction(formData: FormData) {
+  const currentUser = await requireCurrentUser();
+  const { paperId } = onlineTestPaperIdSchema.parse(formDataToObject(formData));
+  await deleteOwnedOnlineTestPaper(currentUser.id, paperId);
+  revalidatePath("/test-papers");
+  revalidatePath("/kid/tests");
+  redirect(currentUser.role === "KID" ? "/kid/tests" : "/test-papers");
+}
+
+export async function deleteFailedOnlineTestPapersAction() {
+  const parent = await requireParentUser();
+  await deleteFailedOnlineTestPapersForParent(parent.id);
+  revalidatePath("/test-papers");
+  revalidatePath("/kid/tests");
 }
 
 export async function acceptAiOnlineTestMarksAction(formData: FormData) {
