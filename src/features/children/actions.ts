@@ -16,6 +16,20 @@ import { resolveChildThemeColor, resolveSubjectColor } from "@/lib/subject-color
 
 const displayNameFromEmail = (email: string) => email.split("@")[0].replace(/[._-]+/g, " ");
 
+async function sendKidInvitation(email: string, child: { id: string; name: string }) {
+  const client = await clerkClient();
+  await client.invitations.createInvitation({
+    emailAddress: email,
+    redirectUrl: `${appUrl()}/sign-up`,
+    ignoreExisting: true,
+    publicMetadata: {
+      role: "KID",
+      childId: child.id,
+      childName: child.name,
+    },
+  });
+}
+
 export async function inviteKid(formData: FormData) {
   const parent = await requireParentUser();
   const email = String(formData.get("kidEmail") ?? "").trim().toLowerCase();
@@ -56,17 +70,7 @@ export async function inviteKid(formData: FormData) {
       },
     });
 
-    const client = await clerkClient();
-    await client.invitations.createInvitation({
-      emailAddress: email,
-      redirectUrl: `${appUrl()}/sign-up`,
-      ignoreExisting: true,
-      publicMetadata: {
-        role: "KID",
-        childId: child.id,
-        childName: child.name,
-      },
-    });
+    await sendKidInvitation(email, child);
   } catch (error) {
     const message = error instanceof Error ? error.message : "Unable to send invite";
     redirect(`/?inviteError=${encodeURIComponent(message)}`);
@@ -166,17 +170,7 @@ export async function createChild(formData: FormData) {
 
   if (data.kidEmail) {
     const email = data.kidEmail.toLowerCase();
-    const client = await clerkClient();
-    await client.invitations.createInvitation({
-      emailAddress: email,
-      redirectUrl: `${appUrl()}/sign-up`,
-      ignoreExisting: true,
-      publicMetadata: {
-        role: "KID",
-        childId: child.id,
-        childName: child.name,
-      },
-    });
+    await sendKidInvitation(email, child);
   }
 
   revalidatePath("/");
@@ -188,7 +182,27 @@ export async function createChild(formData: FormData) {
 export async function updateChild(formData: FormData) {
   const user = await requireParentUser();
   const data = childSchema.required({ id: true }).parse(formDataToObject(formData));
-  await getOwnedChild(user.id, data.id);
+  const existingChild = await getOwnedChild(user.id, data.id);
+  const email = data.kidEmail?.toLowerCase();
+
+  if (email && existingChild.kidUser && email !== existingChild.kidUser.email.toLowerCase()) {
+    redirect(`/children/${data.id}?updateError=${encodeURIComponent("This child already has a linked kid account. Remove or change the email from Clerk before using another address.")}`);
+  }
+
+  if (email && !existingChild.kidUser) {
+    const existingUser = await prisma.user.findUnique({
+      where: { email },
+      select: { id: true, childId: true, role: true },
+    });
+
+    if (existingUser?.childId && existingUser.childId !== data.id) {
+      redirect(`/children/${data.id}?updateError=${encodeURIComponent("That email is already linked to another child.")}`);
+    }
+    if (existingUser?.role === "PARENT" && !existingUser.childId) {
+      redirect(`/children/${data.id}?updateError=${encodeURIComponent("That email is already used by a parent account.")}`);
+    }
+  }
+
   await prisma.child.update({
     where: { id: data.id },
     data: {
@@ -198,6 +212,37 @@ export async function updateChild(formData: FormData) {
       themeColor: resolveChildThemeColor(data.themeColor),
     },
   });
+
+  if (email && !existingChild.kidUser) {
+    await prisma.user.upsert({
+      where: { email },
+      update: {
+        role: "KID",
+        childId: data.id,
+        name: displayNameFromEmail(email),
+      },
+      create: {
+        email,
+        name: displayNameFromEmail(email),
+        role: "KID",
+        childId: data.id,
+        verifiedAt: null,
+        passwordHash: "clerk-pending-kid-account",
+      },
+    });
+
+    try {
+      await sendKidInvitation(email, { id: data.id, name: data.name });
+    } catch (error) {
+      const message = error instanceof Error ? error.message : "Unable to send kid invitation";
+      redirect(`/children/${data.id}?updateError=${encodeURIComponent(message)}`);
+    }
+
+    revalidatePath(`/children/${data.id}`);
+    invalidateChildDashboardCaches(data.id, user.id);
+    redirect(`/children/${data.id}?updateStatus=invite-sent`);
+  }
+
   revalidatePath(`/children/${data.id}`);
   invalidateChildDashboardCaches(data.id, user.id);
 }

@@ -7,6 +7,7 @@ export type OwnedChild = Prisma.ChildGetPayload<{
     kidUser: {
       select: {
         id: true;
+        email: true;
         clerkUserId: true;
       };
     };
@@ -91,7 +92,7 @@ export async function getOwnedChild(userId: string, childId: string): Promise<Ow
   const child = await prisma.child.findUnique({
     where: { id: childId },
     include: {
-      kidUser: { select: { id: true, clerkUserId: true } },
+      kidUser: { select: { id: true, email: true, clerkUserId: true } },
       subjects: {
         orderBy: [{ order: "asc" }, { createdAt: "asc" }],
         include: {

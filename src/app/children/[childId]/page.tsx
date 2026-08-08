@@ -51,7 +51,7 @@ export default async function ChildPage({
   searchParams,
 }: {
   params: Promise<{ childId: string }>;
-  searchParams?: Promise<{ deleteError?: string; created?: string; subject?: string; subjectId?: string }>;
+  searchParams?: Promise<{ deleteError?: string; updateError?: string; updateStatus?: string; created?: string; subject?: string; subjectId?: string }>;
 }) {
   const user = await requireParentUser();
   const { childId } = await params;
@@ -61,6 +61,8 @@ export default async function ChildPage({
 
   const { child, analytics } = dashboard;
   const deleteError = query?.deleteError ? String(query.deleteError) : null;
+  const updateError = query?.updateError ? String(query.updateError) : null;
+  const updateStatus = query?.updateStatus ? String(query.updateStatus) : null;
   const created = query?.created ? String(query.created) : null;
   const subjectQuery = String(query?.subject ?? "").trim().toLowerCase();
   const visibleSubjects = child.subjects.filter((subject) => matchesSubjectQuery(subject, subjectQuery));
@@ -93,6 +95,8 @@ export default async function ChildPage({
         </header>
 
         {created ? <Notice tone="success">Child created.</Notice> : null}
+        {updateStatus === "invite-sent" ? <Notice tone="success">Child updated. A Clerk sign-up invitation was sent to the kid email.</Notice> : null}
+        {updateError ? <Notice tone="error">{updateError}</Notice> : null}
         {deleteError ? <Notice tone="error">{deleteError}</Notice> : null}
 
         <section className="grid gap-4 xl:grid-cols-[minmax(0,1fr)_360px] xl:items-start">
@@ -334,7 +338,7 @@ export default async function ChildPage({
             </Card>
             <Card>
               <IconTitle icon={<PenLine size={18} />} title="Edit child" />
-              <div className="mt-4"><ChildForm child={child} /></div>
+              <div className="mt-4"><ChildForm child={child} showKidEmail /></div>
             </Card>
             <Card>
               <IconTitle icon={<PlusCircle size={18} />} title="Add subject" />

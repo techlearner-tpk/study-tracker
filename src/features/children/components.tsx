@@ -15,7 +15,7 @@ export function ChildForm({
   showKidEmail = false,
   curricula = [],
 }: {
-  child?: { id: string; name: string; className: string; school: string | null; themeColor: string | null };
+  child?: { id: string; name: string; className: string; school: string | null; themeColor: string | null; kidUser?: { email: string } | null };
   showKidEmail?: boolean;
   curricula?: CurriculumTreeVersion[];
 }) {
@@ -43,7 +43,11 @@ export function ChildForm({
         onChange={setThemeColor}
       />
       {showKidEmail ? (
-        <Label className="sm:col-span-2">Kid email<Input name="kidEmail" type="email" placeholder="kid@example.com" /></Label>
+        <Label className="sm:col-span-2">
+          Kid email
+          <Input name="kidEmail" type="email" defaultValue={child?.kidUser?.email ?? ""} placeholder="kid@example.com" />
+          {child && !child.kidUser ? <span className="mt-1 block text-xs text-slate-500">Add an email later to send the child a Clerk sign-up invitation.</span> : null}
+        </Label>
       ) : null}
       <div className="sm:col-span-2">
         <Button type="submit">{child ? "Save child" : "Add child"}</Button>
