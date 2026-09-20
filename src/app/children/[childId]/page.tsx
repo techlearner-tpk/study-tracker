@@ -96,6 +96,7 @@ export default async function ChildPage({
 
         {created ? <Notice tone="success">Child created.</Notice> : null}
         {updateStatus === "invite-sent" ? <Notice tone="success">Child updated. A Clerk sign-up invitation was sent to the kid email.</Notice> : null}
+        {updateStatus === "invite-resent" ? <Notice tone="success">A fresh Clerk sign-up invitation was sent. Older pending invitation links were revoked.</Notice> : null}
         {updateError ? <Notice tone="error">{updateError}</Notice> : null}
         {deleteError ? <Notice tone="error">{deleteError}</Notice> : null}
 

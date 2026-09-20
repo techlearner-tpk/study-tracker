@@ -8,14 +8,14 @@ import { Input, Label } from "@/components/ui/form";
 import { CurriculumPicker } from "@/features/curriculum/picker";
 import type { CurriculumTreeVersion } from "@/features/curriculum/service";
 import { childThemeChoices, resolveChildThemeColor } from "@/lib/subject-colors";
-import { createChild, deleteChild, inviteKid, updateChild } from "./actions";
+import { createChild, deleteChild, inviteKid, resendKidInvitation, updateChild } from "./actions";
 
 export function ChildForm({
   child,
   showKidEmail = false,
   curricula = [],
 }: {
-  child?: { id: string; name: string; className: string; school: string | null; themeColor: string | null; kidUser?: { email: string } | null };
+  child?: { id: string; name: string; className: string; school: string | null; themeColor: string | null; kidUser?: { email: string; clerkUserId?: string | null } | null };
   showKidEmail?: boolean;
   curricula?: CurriculumTreeVersion[];
 }) {
@@ -45,12 +45,33 @@ export function ChildForm({
       {showKidEmail ? (
         <Label className="sm:col-span-2">
           Kid email
-          <Input name="kidEmail" type="email" defaultValue={child?.kidUser?.email ?? ""} placeholder="kid@example.com" />
+          <Input
+            name="kidEmail"
+            type="email"
+            defaultValue={child?.kidUser?.email ?? ""}
+            placeholder="kid@example.com"
+            readOnly={Boolean(child?.kidUser?.clerkUserId)}
+            aria-readonly={Boolean(child?.kidUser?.clerkUserId)}
+            className={child?.kidUser?.clerkUserId ? "cursor-not-allowed bg-slate-100 text-slate-600" : undefined}
+          />
           {child && !child.kidUser ? <span className="mt-1 block text-xs text-slate-500">Add an email later to send the child a Clerk sign-up invitation.</span> : null}
+          {child?.kidUser && !child.kidUser.clerkUserId ? <span className="mt-1 block text-xs text-amber-700">Invitation pending. You can resend it if the previous email expired or had the wrong link.</span> : null}
+          {child?.kidUser?.clerkUserId ? <span className="mt-1 block text-xs text-emerald-700">Kid account is active. The sign-in email can no longer be changed here.</span> : null}
         </Label>
       ) : null}
-      <div className="sm:col-span-2">
-        <Button type="submit">{child ? "Save child" : "Add child"}</Button>
+      <div className="flex flex-wrap gap-2 sm:col-span-2">
+        <Button type="submit" pendingText={child ? "Saving..." : "Adding..."}>{child ? "Save child" : "Add child"}</Button>
+        {child?.kidUser ? (
+          <Button
+            type="submit"
+            formAction={resendKidInvitation}
+            variant="secondary"
+            pendingText="Resending..."
+            disabled={Boolean(child.kidUser.clerkUserId)}
+          >
+            {child.kidUser.clerkUserId ? "Kid signed up" : "Resend invite"}
+          </Button>
+        ) : null}
       </div>
     </form>
   );

@@ -61,7 +61,7 @@ Log in at `/login`, then continue to `/sign-in` or `/sign-up`.
 
 For Neon, put the pooled connection string in `DATABASE_URL` and the direct connection string in `DIRECT_URL`.
 Set `SHADOW_DATABASE_URL` to a disposable PostgreSQL database for `prisma migrate dev` so Prisma can replay migrations safely.
-Set `APP_URL` to your local URL in development and your deployed URL in production.
+Set `APP_URL` to your local URL in development and your deployed HTTPS URL in production. Invitation links use this value; production rejects localhost values and falls back to Vercel's system URL when available.
 Set the Clerk sign-in and sign-up URLs to `/sign-in` and `/sign-up` locally, then update them to your production domain after deploy.
 Use the Clerk publishable and secret keys for the matching environment.
 

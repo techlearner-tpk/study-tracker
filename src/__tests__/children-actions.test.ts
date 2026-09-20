@@ -1,7 +1,8 @@
-import { beforeEach, describe, expect, it, vi } from "vitest";
+import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 
 const mocks = vi.hoisted(() => ({
   revalidatePath: vi.fn(),
+  revalidateTag: vi.fn(),
   requireParentUser: vi.fn(),
   prismaChildCreate: vi.fn(),
   prismaChildUpdate: vi.fn(),
@@ -11,11 +12,14 @@ const mocks = vi.hoisted(() => ({
   getOwnedChild: vi.fn(),
   clerkClient: vi.fn(),
   createInvitation: vi.fn(),
+  getInvitationList: vi.fn(),
+  revokeInvitation: vi.fn(),
   deleteUser: vi.fn(),
 }));
 
 vi.mock("next/cache", () => ({
   revalidatePath: mocks.revalidatePath,
+  revalidateTag: mocks.revalidateTag,
 }));
 
 vi.mock("@/lib/auth", () => ({
@@ -47,6 +51,10 @@ vi.mock("@clerk/nextjs/server", () => ({
 import { inviteKid } from "@/features/children/actions";
 
 describe("children actions", () => {
+  afterEach(() => {
+    vi.unstubAllEnvs();
+  });
+
   beforeEach(() => {
     vi.clearAllMocks();
     mocks.requireParentUser.mockResolvedValue({ id: "parent_1" });
@@ -65,9 +73,13 @@ describe("children actions", () => {
     mocks.deleteUser.mockResolvedValue({
       id: "clerk_kid_1",
     });
+    mocks.getInvitationList.mockResolvedValue({ data: [], totalCount: 0 });
+    mocks.revokeInvitation.mockResolvedValue({ id: "invite_old", status: "revoked" });
     mocks.clerkClient.mockResolvedValue({
       invitations: {
         createInvitation: mocks.createInvitation,
+        getInvitationList: mocks.getInvitationList,
+        revokeInvitation: mocks.revokeInvitation,
       },
       users: {
         deleteUser: mocks.deleteUser,
@@ -100,6 +112,25 @@ describe("children actions", () => {
       }),
     );
     expect(mocks.revalidatePath).toHaveBeenCalledWith("/");
+  });
+
+  it("uses the public Vercel domain for invitations in production", async () => {
+    vi.stubEnv("NODE_ENV", "production");
+    vi.stubEnv("APP_URL", "http://localhost:3000");
+    vi.stubEnv("VERCEL_PROJECT_PRODUCTION_URL", "study-tracker-weld-seven.vercel.app");
+
+    const formData = new FormData();
+    formData.set("kidEmail", "kid@example.com");
+
+    await expect(inviteKid(formData)).rejects.toMatchObject({
+      digest: expect.stringContaining("NEXT_REDIRECT"),
+    });
+
+    expect(mocks.createInvitation).toHaveBeenCalledWith(
+      expect.objectContaining({
+        redirectUrl: "https://study-tracker-weld-seven.vercel.app/sign-up",
+      }),
+    );
   });
 
   it("deletes the linked Clerk kid account when a child is removed", async () => {
@@ -163,5 +194,70 @@ describe("children actions", () => {
     });
     expect(mocks.prismaUserUpsert).not.toHaveBeenCalled();
     expect(mocks.createInvitation).not.toHaveBeenCalled();
+  });
+
+  it("resends an invitation only while the kid signup is pending", async () => {
+    const { resendKidInvitation } = await import("@/features/children/actions");
+    mocks.getOwnedChild.mockResolvedValueOnce({
+      id: "child_1",
+      name: "Tisha",
+      kidUser: { email: "kid@example.com", clerkUserId: null },
+    });
+    mocks.getInvitationList.mockResolvedValueOnce({
+      data: [{ id: "invite_old", emailAddress: "kid@example.com" }],
+      totalCount: 1,
+    });
+
+    const formData = new FormData();
+    formData.set("id", "child_1");
+
+    await expect(resendKidInvitation(formData)).rejects.toMatchObject({
+      digest: expect.stringContaining("NEXT_REDIRECT"),
+    });
+
+    expect(mocks.getInvitationList).toHaveBeenCalledWith({
+      query: "kid@example.com",
+      status: "pending",
+    });
+    expect(mocks.createInvitation).toHaveBeenCalledWith(
+      expect.objectContaining({ emailAddress: "kid@example.com" }),
+    );
+    expect(mocks.revokeInvitation).toHaveBeenCalledWith("invite_old");
+  });
+
+  it("blocks invitation resend after the kid has signed up", async () => {
+    const { resendKidInvitation } = await import("@/features/children/actions");
+    mocks.getOwnedChild.mockResolvedValueOnce({
+      id: "child_1",
+      name: "Tisha",
+      kidUser: { email: "kid@example.com", clerkUserId: "clerk_kid_1" },
+    });
+
+    const formData = new FormData();
+    formData.set("id", "child_1");
+
+    await expect(resendKidInvitation(formData)).rejects.toMatchObject({
+      digest: expect.stringContaining("NEXT_REDIRECT"),
+    });
+    expect(mocks.createInvitation).not.toHaveBeenCalled();
+  });
+
+  it("blocks changing the email after the kid has signed up", async () => {
+    const { updateChild } = await import("@/features/children/actions");
+    mocks.getOwnedChild.mockResolvedValueOnce({
+      id: "child_1",
+      kidUser: { email: "kid@example.com", clerkUserId: "clerk_kid_1" },
+    });
+
+    const formData = new FormData();
+    formData.set("id", "child_1");
+    formData.set("name", "Tisha");
+    formData.set("className", "Class 8");
+    formData.set("kidEmail", "different@example.com");
+
+    await expect(updateChild(formData)).rejects.toMatchObject({
+      digest: expect.stringContaining("NEXT_REDIRECT"),
+    });
+    expect(mocks.prismaChildUpdate).not.toHaveBeenCalled();
   });
 });

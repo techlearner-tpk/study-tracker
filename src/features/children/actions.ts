@@ -16,8 +16,16 @@ import { resolveChildThemeColor, resolveSubjectColor } from "@/lib/subject-color
 
 const displayNameFromEmail = (email: string) => email.split("@")[0].replace(/[._-]+/g, " ");
 
-async function sendKidInvitation(email: string, child: { id: string; name: string }) {
+async function sendKidInvitation(
+  email: string,
+  child: { id: string; name: string },
+  options: { replacePending?: boolean } = {},
+) {
   const client = await clerkClient();
+  const previousInvitations = options.replacePending
+    ? await client.invitations.getInvitationList({ query: email, status: "pending" })
+    : null;
+
   await client.invitations.createInvitation({
     emailAddress: email,
     redirectUrl: `${appUrl()}/sign-up`,
@@ -28,6 +36,15 @@ async function sendKidInvitation(email: string, child: { id: string; name: strin
       childName: child.name,
     },
   });
+
+  if (previousInvitations) {
+    const matchingInvitations = previousInvitations.data.filter(
+      (invitation) => invitation.emailAddress.toLowerCase() === email.toLowerCase(),
+    );
+    await Promise.allSettled(
+      matchingInvitations.map((invitation) => client.invitations.revokeInvitation(invitation.id)),
+    );
+  }
 }
 
 export async function inviteKid(formData: FormData) {
@@ -245,6 +262,33 @@ export async function updateChild(formData: FormData) {
 
   revalidatePath(`/children/${data.id}`);
   invalidateChildDashboardCaches(data.id, user.id);
+}
+
+export async function resendKidInvitation(formData: FormData) {
+  const user = await requireParentUser();
+  const childId = String(formData.get("id") ?? "").trim();
+  if (!childId) {
+    redirect("/?inviteError=Child%20is%20required");
+  }
+
+  const child = await getOwnedChild(user.id, childId);
+  if (!child.kidUser?.email) {
+    redirect(`/children/${childId}?updateError=${encodeURIComponent("Add a kid email before sending an invitation.")}`);
+  }
+  if (child.kidUser.clerkUserId) {
+    redirect(`/children/${childId}?updateError=${encodeURIComponent("This kid has already signed up, so an invitation cannot be resent.")}`);
+  }
+
+  try {
+    await sendKidInvitation(child.kidUser.email, child, { replacePending: true });
+  } catch (error) {
+    const message = error instanceof Error ? error.message : "Unable to resend kid invitation";
+    redirect(`/children/${childId}?updateError=${encodeURIComponent(message)}`);
+  }
+
+  revalidatePath(`/children/${childId}`);
+  invalidateChildDashboardCaches(childId, user.id);
+  redirect(`/children/${childId}?updateStatus=invite-resent`);
 }
 
 export async function deleteChild(formData: FormData) {
