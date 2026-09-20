@@ -1,6 +1,6 @@
 import Link from "next/link";
 import { notFound } from "next/navigation";
-import { ArrowRight, BookOpen, ClipboardList, Clock, FileQuestion, Target, Trophy } from "lucide-react";
+import { ArrowRight, ClipboardList, Clock, FileQuestion, Target, Trophy } from "lucide-react";
 import { AppShell } from "@/components/layout/app-shell";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
@@ -8,6 +8,7 @@ import { Card, CardTitle } from "@/components/ui/card";
 import { Progress } from "@/components/ui/progress";
 import { loadAssignmentsForKid } from "@/features/assignments/service";
 import { buildChildAnalytics } from "@/features/dashboard/queries";
+import { KidSubjectExplorer } from "@/features/dashboard/kid-subject-explorer";
 import { loadOnlineTestPapersForKid } from "@/features/test-papers/service";
 import { requireKidUser } from "@/lib/auth";
 import { getOwnedChild } from "@/lib/ownership";
@@ -77,25 +78,18 @@ export default async function KidPage() {
           </Card>
         </section>
 
-        <Card>
-          <div className="flex items-center justify-between gap-3"><div><CardTitle>My subjects</CardTitle><p className="mt-1 text-sm text-slate-600">Open a topic to study it or use AI learning help.</p></div><BookOpen size={20} className="text-emerald-700" /></div>
-          <div className="mt-4 grid gap-3 sm:grid-cols-2 xl:grid-cols-3">
-            {child.subjects.map((subject) => {
-              const topics = subject.chapters.flatMap((chapter) => chapter.topics);
-              const subjectColor = resolveSubjectColor(subject.name, subject.color);
-              return (
-                <div key={subject.id} className="rounded-lg border bg-white p-4" style={{ borderColor: `${subjectColor}55` }}>
-                  <div className="flex items-center justify-between gap-3"><p className="font-semibold text-slate-950">{subject.name}</p><span className="h-3 w-3 rounded-full" style={{ backgroundColor: subjectColor }} /></div>
-                  <p className="mt-1 text-xs text-slate-500">{subject.chapters.length} chapters | {topics.length} topics</p>
-                  <div className="mt-3 grid gap-1">
-                    {topics.slice(0, 3).map((topic) => <Link key={topic.id} href={`/kid/topics/${topic.id}`} className="truncate rounded px-2 py-1.5 text-sm text-slate-700 hover:bg-slate-50 hover:text-emerald-800">{topic.name}</Link>)}
-                    {!topics.length ? <span className="text-sm text-slate-500">No topics yet.</span> : null}
-                  </div>
-                </div>
-              );
-            })}
-          </div>
-        </Card>
+        <KidSubjectExplorer
+          subjects={child.subjects.map((subject) => ({
+            id: subject.id,
+            name: subject.name,
+            color: resolveSubjectColor(subject.name, subject.color),
+            chapters: subject.chapters.map((chapter) => ({
+              id: chapter.id,
+              name: chapter.name,
+              topics: chapter.topics.map((topic) => ({ id: topic.id, name: topic.name, status: topic.status })),
+            })),
+          }))}
+        />
 
         <section className="grid gap-4 lg:grid-cols-2">
           <Card>
