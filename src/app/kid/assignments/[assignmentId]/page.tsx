@@ -1,7 +1,7 @@
 import Link from "next/link";
 import { notFound } from "next/navigation";
 import { ArrowLeft } from "lucide-react";
-import { UserButton } from "@clerk/nextjs";
+import { AppShell } from "@/components/layout/app-shell";
 import { Button } from "@/components/ui/button";
 import { AiLearningPanel } from "@/features/ai/components";
 import { Notice } from "@/components/ui/notice";
@@ -28,8 +28,8 @@ export default async function KidAssignmentPage({
   if (!assignment) notFound();
 
   return (
-    <main className="min-h-screen bg-stone-50 px-4 py-6 text-stone-900 sm:px-6 lg:px-8">
-      <div className="mx-auto grid max-w-5xl gap-6">
+    <AppShell>
+      <div className="grid gap-6">
         <header className="flex items-center justify-between gap-3">
           <div>
             <p className="text-sm font-medium text-emerald-800">Kid portal</p>
@@ -42,7 +42,6 @@ export default async function KidAssignmentPage({
                 Back
               </Button>
             </Link>
-            <UserButton />
           </div>
         </header>
 
@@ -61,6 +60,6 @@ export default async function KidAssignmentPage({
           <AssignmentDetailView assignment={assignment} hrefBase="/kid/assignments" />
         </div>
       </div>
-    </main>
+    </AppShell>
   );
 }

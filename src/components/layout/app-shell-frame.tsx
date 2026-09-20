@@ -26,19 +26,21 @@ export function AppShellFrame({
   children,
   items,
   childrenList,
+  homeHref,
   userName,
 }: {
   children: React.ReactNode;
   items: SidebarItem[];
   childrenList: SidebarChild[];
+  homeHref: string;
   userName: string;
 }) {
   const [collapsed, setCollapsed] = useState(false);
   const [mobileOpen, setMobileOpen] = useState(false);
   const pathname = usePathname();
-  const overviewItems = items.filter((item) => item.href === "/");
+  const overviewItems = items.filter((item) => item.href === homeHref);
   const manageItems = items.filter((item) => item.href.includes("curriculum") || item.href.includes("test-templates"));
-  const learningItems = items.filter((item) => item.href !== "/" && !item.href.includes("curriculum") && !item.href.includes("test-templates"));
+  const learningItems = items.filter((item) => item.href !== homeHref && !item.href.includes("curriculum") && !item.href.includes("test-templates"));
 
   useEffect(() => {
     const stored = window.localStorage.getItem(sidebarStorageKey);
@@ -52,7 +54,7 @@ export function AppShellFrame({
   return (
     <div className="min-h-screen bg-[#fbfdfb] text-slate-950">
       <header className="sticky top-0 z-40 flex items-center justify-between border-b border-slate-200/80 bg-white/95 px-4 py-3 shadow-sm backdrop-blur lg:hidden">
-        <Link href="/" className="flex min-w-0 items-center gap-3 text-base font-semibold tracking-tight text-slate-950" title="Study Tracker">
+        <Link href={homeHref} className="flex min-w-0 items-center gap-3 text-base font-semibold tracking-tight text-slate-950" title="Study Tracker">
           <span className="flex h-9 w-9 items-center justify-center rounded-md bg-emerald-50 text-emerald-700">
             <BookOpenCheck size={22} />
           </span>
@@ -84,6 +86,7 @@ export function AppShellFrame({
               collapsed={false}
               learningItems={learningItems}
               manageItems={manageItems}
+              homeHref={homeHref}
               onCloseMobile={() => setMobileOpen(false)}
               overviewItems={overviewItems}
               pathname={pathname}
@@ -114,6 +117,7 @@ export function AppShellFrame({
           collapsed={collapsed}
           learningItems={learningItems}
           manageItems={manageItems}
+          homeHref={homeHref}
           onCollapse={() => setCollapsed((value) => !value)}
           onExpand={() => setCollapsed(false)}
           overviewItems={overviewItems}
@@ -151,6 +155,7 @@ function SidebarContent({
   collapsed,
   learningItems,
   manageItems,
+  homeHref,
   onCloseMobile,
   onCollapse,
   onExpand,
@@ -162,6 +167,7 @@ function SidebarContent({
   collapsed: boolean;
   learningItems: SidebarItem[];
   manageItems: SidebarItem[];
+  homeHref: string;
   onCloseMobile?: () => void;
   onCollapse?: () => void;
   onExpand?: () => void;
@@ -173,7 +179,7 @@ function SidebarContent({
     <div className="flex h-full flex-col">
       <div className={cn("flex items-center gap-3", collapsed ? "justify-center" : "justify-between")}>
         <Link
-          href="/"
+          href={homeHref}
           className="flex min-w-0 items-center gap-3 text-lg font-semibold tracking-tight text-slate-950"
           title="Study Tracker"
           onClick={onCloseMobile}
@@ -223,7 +229,7 @@ function SidebarContent({
           </SidebarSection>
         ) : null}
 
-        <SidebarSection collapsed={collapsed} title="Children">
+        {childrenList.length ? <SidebarSection collapsed={collapsed} title="Children">
           <div className={cn("grid gap-2", collapsed ? "justify-items-center" : "")}>
             {childrenList.map((child, index) => {
               const href = `/children/${child.id}`;
@@ -250,7 +256,7 @@ function SidebarContent({
               );
             })}
           </div>
-        </SidebarSection>
+        </SidebarSection> : null}
       </div>
 
       <div className={cn("mt-auto border-t border-slate-100 pt-4", collapsed ? "flex justify-center" : "")}>

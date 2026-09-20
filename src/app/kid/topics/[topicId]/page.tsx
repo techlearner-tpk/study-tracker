@@ -1,5 +1,6 @@
 import { format } from "date-fns";
 import { notFound } from "next/navigation";
+import { AppShell } from "@/components/layout/app-shell";
 import { Badge } from "@/components/ui/badge";
 import { Card, CardTitle } from "@/components/ui/card";
 import { AiLearningPanel } from "@/features/ai/components";
@@ -21,8 +22,8 @@ export default async function KidTopicPage({ params }: { params: Promise<{ topic
   const totalStudyTime = topic.studySessions.reduce((total, session) => total + session.durationMinutes, 0);
 
   return (
-    <main className="min-h-screen bg-stone-50 px-4 py-6 text-stone-900 sm:px-6 lg:px-8">
-      <div className="mx-auto grid max-w-4xl gap-6">
+    <AppShell>
+      <div className="grid gap-6">
         <header>
           <p className="text-sm text-stone-600">{topic.chapter.subject.child.name} · {topic.chapter.subject.name} · {topic.chapter.name}</p>
           <h1 className="mt-1 text-3xl font-semibold tracking-tight">{topic.name}</h1>
@@ -53,6 +54,6 @@ export default async function KidTopicPage({ params }: { params: Promise<{ topic
           </div>
         </Card>
       </div>
-    </main>
+    </AppShell>
   );
 }

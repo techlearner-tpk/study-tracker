@@ -1,6 +1,6 @@
 import Link from "next/link";
 import { Plus } from "lucide-react";
-import { UserButton } from "@clerk/nextjs";
+import { AppShell } from "@/components/layout/app-shell";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Card, CardTitle } from "@/components/ui/card";
@@ -19,20 +19,12 @@ export default async function KidAssignmentsPage() {
   const groups = groupAssignments(assignments);
 
   return (
-    <main className="min-h-screen bg-stone-50 px-4 py-6 text-stone-900 sm:px-6 lg:px-8">
-      <div className="mx-auto grid max-w-5xl gap-6">
-        <header className="flex items-center justify-between gap-3">
+    <AppShell>
+      <div className="grid gap-6">
+        <header>
           <div>
             <p className="text-sm font-medium text-emerald-800">Kid portal</p>
             <h1 className="text-3xl font-semibold tracking-tight">My assignments</h1>
-          </div>
-          <div className="flex items-center gap-3">
-            <Link href="/kid">
-              <Button type="button" variant="secondary">
-                Back
-              </Button>
-            </Link>
-            <UserButton />
           </div>
         </header>
 
@@ -63,6 +55,6 @@ export default async function KidAssignmentsPage() {
           )}
         </div>
       </div>
-    </main>
+    </AppShell>
   );
 }
