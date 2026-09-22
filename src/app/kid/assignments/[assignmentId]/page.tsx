@@ -24,7 +24,7 @@ export default async function KidAssignmentPage({
   const { assignmentId } = await params;
   const query = await searchParams;
   const assignment = await getOwnedAssignment(user.id, assignmentId);
-  const access = await getAssignmentAiAccessState(user.id, assignmentId);
+  const access = await getAssignmentAiAccessState(user.id, assignmentId, assignment);
   if (!assignment) notFound();
 
   return (

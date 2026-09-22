@@ -25,7 +25,7 @@ export default async function TopicPage({
   const { topicId } = await params;
   const query = await searchParams;
   const topic = await getOwnedTopic(user.id, topicId);
-  const access = await getTopicAiAccessState(user.id, topicId);
+  const access = await getTopicAiAccessState(user.id, topicId, topic);
   const isAdmin = isAdminUser(user);
   const deleteError = query?.deleteError ? String(query.deleteError) : null;
   const deleteStatus = query?.deleteStatus ? String(query.deleteStatus) : null;
@@ -42,7 +42,7 @@ export default async function TopicPage({
   ].sort((a, b) => Number(b.date) - Number(a.date));
 
   return (
-    <AppShell>
+    <AppShell currentUser={user}>
       <div className="grid gap-6">
         <header>
           <div className="flex flex-wrap items-center gap-2 text-sm text-stone-600">

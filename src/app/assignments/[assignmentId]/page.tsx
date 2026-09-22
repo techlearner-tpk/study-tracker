@@ -20,11 +20,11 @@ export default async function AssignmentPage({
   const { assignmentId } = await params;
   const query = await searchParams;
   const assignment = await getOwnedAssignment(user.id, assignmentId);
-  const access = await getAssignmentAiAccessState(user.id, assignmentId);
+  const access = await getAssignmentAiAccessState(user.id, assignmentId, assignment);
   if (!assignment) notFound();
 
   return (
-    <AppShell>
+    <AppShell currentUser={user}>
       <div className="grid gap-6">
         <AiLearningPanel
           access={access}

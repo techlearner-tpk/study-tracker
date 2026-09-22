@@ -629,9 +629,11 @@ async function getTopicAccessState(
     };
   }
 
-  const subscription = await getCachedFamilySubscription(parentId);
+  const [subscription, usage] = await Promise.all([
+    getCachedFamilySubscription(parentId),
+    getAiUsage(topic.chapter.subject.child.id, topic.id),
+  ]);
   const hasAccess = subscriptionAllowsAi(subscription);
-  const usage = await getAiUsage(topic.chapter.subject.child.id, topic.id);
 
   return {
     enabled: config.enabled,
@@ -652,8 +654,12 @@ export async function getTopicAiAccessState(
   return getTopicAccessState(userId, topicId, ownedTopic);
 }
 
-export async function getAssignmentAiAccessState(userId: string, assignmentId: string) {
-  const assignment = await getOwnedAssignment(userId, assignmentId);
+export async function getAssignmentAiAccessState(
+  userId: string,
+  assignmentId: string,
+  ownedAssignment?: Awaited<ReturnType<typeof getOwnedAssignment>>,
+) {
+  const assignment = ownedAssignment ?? await getOwnedAssignment(userId, assignmentId);
   const access = await getTopicAccessState(userId, assignment.topicId);
   return { ...access, assignment };
 }
