@@ -42,7 +42,7 @@ vi.mock("@/lib/prisma", () => ({
   },
 }));
 
-import { createAssignment, saveAssignmentScore } from "@/features/assignments/actions";
+import { createAssignment, saveAssignmentScore, startAssignment } from "@/features/assignments/actions";
 
 describe("assignment actions", () => {
   beforeEach(() => {
@@ -64,7 +64,8 @@ describe("assignment actions", () => {
       childId: "child_1",
       topicId: "topic_1",
       type: "TEST",
-      child: { id: "child_1" },
+      status: "PLANNED",
+      child: { id: "child_1", userId: "parent_1" },
     });
     mocks.prismaAssignmentFindFirst.mockResolvedValue(null);
     mocks.prismaAssignmentCreate.mockResolvedValue({ id: "assignment_1" });
@@ -127,6 +128,33 @@ describe("assignment actions", () => {
         where: { id: "assignment_1" },
         data: { score: 18 },
       }),
+    );
+  });
+
+  it("starts a kid assignment and redirects with success feedback", async () => {
+    mocks.requireCurrentUser.mockResolvedValueOnce({ id: "kid_1", role: "KID", childId: "child_1" });
+    const formData = new FormData();
+    formData.set("id", "assignment_1");
+
+    await expect(startAssignment(formData)).rejects.toThrow("redirect");
+
+    expect(mocks.prismaAssignmentUpdate).toHaveBeenCalledWith({
+      where: { id: "assignment_1" },
+      data: { status: "IN_PROGRESS", isActive: true },
+    });
+    expect(mocks.redirect).toHaveBeenLastCalledWith("/kid/assignments/assignment_1?startStatus=started");
+  });
+
+  it("returns visible feedback instead of crashing when start fails", async () => {
+    mocks.requireCurrentUser.mockResolvedValueOnce({ id: "kid_1", role: "KID", childId: "child_1" });
+    mocks.prismaAssignmentUpdate.mockRejectedValueOnce(new Error("connection pool timeout"));
+    const formData = new FormData();
+    formData.set("id", "assignment_1");
+
+    await expect(startAssignment(formData)).rejects.toThrow("redirect");
+
+    expect(mocks.redirect).toHaveBeenLastCalledWith(
+      "/kid/assignments/assignment_1?startError=Unable%20to%20start%20this%20assignment.%20Please%20try%20again.",
     );
   });
 });

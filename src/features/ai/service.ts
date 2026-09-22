@@ -46,21 +46,6 @@ function premiumMessage(hasAccess: boolean, enabled: boolean) {
   return "";
 }
 
-async function resolveFamilyParentId(userId: string) {
-  const user = await prisma.user.findUnique({
-    where: { id: userId },
-    select: { id: true, role: true, childId: true },
-  });
-  if (!user) return null;
-  if (user.role === "PARENT") return user.id;
-  if (!user.childId) return null;
-  const child = await prisma.child.findUnique({
-    where: { id: user.childId },
-    select: { userId: true },
-  });
-  return child?.userId ?? null;
-}
-
 async function resolveRuntimeAiSettings(): Promise<RuntimeAiSettings> {
   const env = getAiConfig();
   const settings = await getCachedAiSettings();
@@ -76,6 +61,10 @@ export async function canUseAiFeatures(parentId: string) {
   if (!config.enabled) return false;
 
   const subscription = await getCachedFamilySubscription(parentId);
+  return subscriptionAllowsAi(subscription);
+}
+
+function subscriptionAllowsAi(subscription: Awaited<ReturnType<typeof getCachedFamilySubscription>>) {
   if (!subscription) return false;
   if (subscription.status !== SubscriptionStatus.TRIAL && subscription.status !== SubscriptionStatus.ACTIVE) return false;
   const now = new Date();
@@ -619,9 +608,13 @@ async function withRequestLog<T extends { sessionId?: string }>(requestId: strin
   }
 }
 
-async function getTopicAccessState(userId: string, topicId: string): Promise<AiAccessState & { topic: Awaited<ReturnType<typeof getOwnedTopic>> }> {
-  const topic = await getOwnedTopic(userId, topicId);
-  const parentId = await resolveFamilyParentId(userId);
+async function getTopicAccessState(
+  userId: string,
+  topicId: string,
+  ownedTopic?: Awaited<ReturnType<typeof getOwnedTopic>>,
+): Promise<AiAccessState & { topic: Awaited<ReturnType<typeof getOwnedTopic>> }> {
+  const topic = ownedTopic ?? await getOwnedTopic(userId, topicId);
+  const parentId = topic.chapter.subject.child.userId;
   const config = getAiConfig();
 
   if (!config.enabled || !parentId) {
@@ -637,7 +630,7 @@ async function getTopicAccessState(userId: string, topicId: string): Promise<AiA
   }
 
   const subscription = await getCachedFamilySubscription(parentId);
-  const hasAccess = await canUseAiFeatures(parentId);
+  const hasAccess = subscriptionAllowsAi(subscription);
   const usage = await getAiUsage(topic.chapter.subject.child.id, topic.id);
 
   return {
@@ -651,8 +644,12 @@ async function getTopicAccessState(userId: string, topicId: string): Promise<AiA
   };
 }
 
-export async function getTopicAiAccessState(userId: string, topicId: string) {
-  return getTopicAccessState(userId, topicId);
+export async function getTopicAiAccessState(
+  userId: string,
+  topicId: string,
+  ownedTopic?: Awaited<ReturnType<typeof getOwnedTopic>>,
+) {
+  return getTopicAccessState(userId, topicId, ownedTopic);
 }
 
 export async function getAssignmentAiAccessState(userId: string, assignmentId: string) {

@@ -1,10 +1,10 @@
 import { Bot, BookOpen, CalendarDays, ClipboardList, FileQuestion, Home, LineChart } from "lucide-react";
 import { getChildren } from "@/features/dashboard/queries";
-import { isAdminUser, requireCurrentUser } from "@/lib/auth";
+import { isAdminUser, requireCurrentUser, type CurrentUser } from "@/lib/auth";
 import { AppShellFrame } from "./app-shell-frame";
 
-export async function AppShell({ children }: { children: React.ReactNode }) {
-  const user = await requireCurrentUser();
+export async function AppShell({ children, currentUser }: { children: React.ReactNode; currentUser?: CurrentUser }) {
+  const user = currentUser ?? await requireCurrentUser();
   const kidMode = user.role === "KID";
   const childrenList = kidMode ? [] : await getChildren(user.id);
   const admin = isAdminUser(user);

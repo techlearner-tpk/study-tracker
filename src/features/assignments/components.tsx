@@ -177,12 +177,14 @@ export function AssignmentDetailView({
             </div>
             {assignment.instructions ? <p className="rounded-md bg-stone-50 p-3 text-sm text-stone-700">{assignment.instructions}</p> : null}
             <div className="flex flex-wrap gap-2">
-              <form action={startAssignment}>
-                <input type="hidden" name="id" value={assignment.id} />
-                <Button type="submit" variant="secondary">
-                  Start
-                </Button>
-              </form>
+              {!["COMPLETED", "SKIPPED"].includes(assignment.status) ? (
+                <form action={startAssignment}>
+                  <input type="hidden" name="id" value={assignment.id} />
+                  <Button type="submit" variant="secondary" disabled={assignment.status === "IN_PROGRESS"} pendingText="Starting...">
+                    {assignment.status === "IN_PROGRESS" ? "In progress" : "Start"}
+                  </Button>
+                </form>
+              ) : null}
               <form action={completeAssignment}>
                 <input type="hidden" name="id" value={assignment.id} />
                 <Button type="submit">Mark completed</Button>

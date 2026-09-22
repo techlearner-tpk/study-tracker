@@ -17,12 +17,12 @@ export default async function KidTopicPage({ params }: { params: Promise<{ topic
   if (!user.childId) notFound();
 
   const topic = await getOwnedTopic(user.id, topicId);
-  const access = await getTopicAiAccessState(user.id, topicId);
+  const access = await getTopicAiAccessState(user.id, topicId, topic);
 
   const totalStudyTime = topic.studySessions.reduce((total, session) => total + session.durationMinutes, 0);
 
   return (
-    <AppShell>
+    <AppShell currentUser={user}>
       <div className="grid gap-6">
         <header>
           <p className="text-sm text-stone-600">{topic.chapter.subject.child.name} · {topic.chapter.subject.name} · {topic.chapter.name}</p>

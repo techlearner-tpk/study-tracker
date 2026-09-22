@@ -32,7 +32,7 @@ export default async function KidPage() {
   const completedPapers = papers.filter((paper) => ["SUBMITTED", "EVALUATED"].includes(paper.status));
 
   return (
-    <AppShell>
+    <AppShell currentUser={user}>
       <div className="grid gap-6">
         <header>
           <p className="text-sm font-medium text-emerald-700">Kid portal</p>

@@ -98,6 +98,7 @@ describe("ai service", () => {
       limit: 7,
       subscriptionStatus: "ACTIVE",
     });
+    expect(mocks.prismaUserFindUnique).not.toHaveBeenCalled();
 
     await expect(canUseAiFeatures("parent_1")).resolves.toBe(true);
   });

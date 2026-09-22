@@ -92,18 +92,33 @@ export async function createAssignment(formData: FormData) {
 export async function startAssignment(formData: FormData) {
   const currentUser = await requireCurrentUser();
   const data = assignmentStatusUpdateSchema.parse(formDataToObject(formData));
-  const assignment = await getOwnedAssignment(currentUser.id, data.id);
+  const destination = assignmentRedirectPath(currentUser.role === "KID", data.id);
+  let assignment: Awaited<ReturnType<typeof getOwnedAssignment>> | null = null;
+  let errorMessage: string | null = null;
 
-  await prisma.assignment.update({
-    where: { id: assignment.id },
-    data: {
-      status: AssignmentStatus.IN_PROGRESS,
-      isActive: true,
-    },
-  });
+  try {
+    assignment = await getOwnedAssignment(currentUser.id, data.id);
+    if (assignment.status === AssignmentStatus.COMPLETED || assignment.status === AssignmentStatus.SKIPPED) {
+      errorMessage = "This assignment can no longer be started.";
+    } else if (assignment.status !== AssignmentStatus.IN_PROGRESS) {
+      await prisma.assignment.update({
+        where: { id: assignment.id },
+        data: {
+          status: AssignmentStatus.IN_PROGRESS,
+          isActive: true,
+        },
+      });
+    }
+  } catch {
+    errorMessage = "Unable to start this assignment. Please try again.";
+  }
+
+  if (errorMessage || !assignment) {
+    redirect(`${destination}?startError=${encodeURIComponent(errorMessage ?? "Unable to start this assignment.")}`);
+  }
 
   invalidateAssignmentPaths(currentUser.role === "KID", assignment.id, assignment.childId, assignment.child.userId);
-  redirect(assignmentRedirectPath(currentUser.role === "KID", assignment.id));
+  redirect(`${destination}?startStatus=started`);
 }
 
 export async function completeAssignment(formData: FormData) {

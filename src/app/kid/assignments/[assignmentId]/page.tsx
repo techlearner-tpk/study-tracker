@@ -17,7 +17,7 @@ export default async function KidAssignmentPage({
   searchParams,
 }: {
   params: Promise<{ assignmentId: string }>;
-  searchParams?: Promise<{ studyStatus?: string; practiceStatus?: string; revisionStatus?: string }>;
+  searchParams?: Promise<{ studyStatus?: string; practiceStatus?: string; revisionStatus?: string; startStatus?: string; startError?: string }>;
 }) {
   const user = await requireKidUser();
   if (!user.childId) notFound();
@@ -28,7 +28,7 @@ export default async function KidAssignmentPage({
   if (!assignment) notFound();
 
   return (
-    <AppShell>
+    <AppShell currentUser={user}>
       <div className="grid gap-6">
         <header className="flex items-center justify-between gap-3">
           <div>
@@ -57,6 +57,8 @@ export default async function KidAssignmentPage({
           {query?.studyStatus ? <Notice tone="success">Study session logged.</Notice> : null}
           {query?.practiceStatus ? <Notice tone="success">Practice session logged.</Notice> : null}
           {query?.revisionStatus ? <Notice tone="success">Revision session logged.</Notice> : null}
+          {query?.startStatus ? <Notice tone="success">Assignment started.</Notice> : null}
+          {query?.startError ? <Notice tone="error">{query.startError}</Notice> : null}
           <AssignmentDetailView assignment={assignment} hrefBase="/kid/assignments" />
         </div>
       </div>
