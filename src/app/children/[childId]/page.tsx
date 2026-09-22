@@ -10,7 +10,6 @@ import { Notice } from "@/components/ui/notice";
 import { Progress } from "@/components/ui/progress";
 import { calculateTopicProgress } from "@/lib/analytics";
 import { requireParentUser } from "@/lib/auth";
-import { formatClassLabel } from "@/lib/display";
 import { resolveSubjectColor } from "@/lib/subject-colors";
 import { minutesLabel } from "@/lib/utils";
 import { ChapterForm } from "@/features/chapters/components";
@@ -79,7 +78,6 @@ export default async function ChildPage({
               {child.name.slice(0, 1).toUpperCase()}
             </div>
             <div className="min-w-0">
-              <p className="text-sm font-medium text-emerald-700">{formatClassLabel(child.className)}</p>
               <h1 className="truncate text-3xl font-semibold tracking-tight text-slate-950">{child.name}</h1>
               <p className="mt-1 text-sm text-slate-500">{child.school ?? "School not set"}</p>
             </div>
@@ -106,7 +104,7 @@ export default async function ChildPage({
           <div className="flex min-h-24 flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
             <div>
               <DynamicGreeting name={child.name} />
-              <p className="mt-2 text-sm text-slate-500">Let's make today a steady learning day.</p>
+              <p className="mt-2 text-sm text-slate-500">Let&apos;s make today a steady learning day.</p>
             </div>
             <div className="hidden items-center gap-8 sm:flex">
               <StudyGreetingArt />

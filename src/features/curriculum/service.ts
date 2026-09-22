@@ -935,9 +935,7 @@ export async function snapshotCurriculumToChild(
     throw new Error("Choose a valid class");
   }
 
-  const selectedSubjectIds = input.selectedSubjectIds.length
-    ? input.selectedSubjectIds
-    : curriculumClass.subjects.filter((subject) => subject.isDefaultSelected).map((subject) => subject.id);
+  const selectedSubjectIds = input.selectedSubjectIds;
 
   if (!selectedSubjectIds.length) {
     throw new Error("Select at least one subject");
@@ -962,70 +960,6 @@ export async function snapshotCurriculumToChild(
     curriculumVersionId: version.id,
     curriculumSubjectId: subject.id,
   }));
-  const chapterRows: Array<{
-    id: string;
-    subjectId: string;
-    name: string;
-    order: number;
-    curriculumAssignmentId: string;
-    curriculumVersionId: string;
-    curriculumSubjectId: string;
-    curriculumChapterId: string;
-  }> = [];
-  const topicRows: Array<{
-    id: string;
-    chapterId: string;
-    name: string;
-    description: null;
-    status: "NOT_STARTED";
-    confidenceRating: null;
-    notes: null;
-    order: number;
-    curriculumAssignmentId: string;
-    curriculumVersionId: string;
-    curriculumSubjectId: string;
-    curriculumChapterId: string;
-    curriculumTopicId: string;
-  }> = [];
-
-  for (const subject of selectedSubjects) {
-    const subjectRow = subjectRows.find((row) => row.curriculumSubjectId === subject.id);
-    if (!subjectRow) {
-      throw new Error(`Failed to prepare subject ${subject.id}`);
-    }
-    for (const chapter of subject.chapters.filter((entry) => !entry.archivedAt).sort((left, right) => left.sequence - right.sequence)) {
-      const chapterRow = {
-        id: randomUUID(),
-        subjectId: subjectRow.id,
-        name: chapter.name,
-        order: chapter.sequence,
-        curriculumAssignmentId: assignmentId,
-        curriculumVersionId: version.id,
-        curriculumSubjectId: subject.id,
-        curriculumChapterId: chapter.id,
-      };
-      chapterRows.push(chapterRow);
-
-      for (const topic of chapter.topics.filter((entry) => !entry.archivedAt).sort((left, right) => left.sequence - right.sequence)) {
-        topicRows.push({
-          id: randomUUID(),
-          chapterId: chapterRow.id,
-          name: topic.name,
-          description: null,
-          status: "NOT_STARTED",
-          confidenceRating: null,
-          notes: null,
-          order: topic.sequence,
-          curriculumAssignmentId: assignmentId,
-          curriculumVersionId: version.id,
-          curriculumSubjectId: subject.id,
-          curriculumChapterId: chapter.id,
-          curriculumTopicId: topic.id,
-        });
-      }
-    }
-  }
-
   const assignment = await tx.curriculumAssignment.create({
     data: {
       id: assignmentId,
@@ -1039,13 +973,6 @@ export async function snapshotCurriculumToChild(
   if (subjectRows.length) {
     await tx.subject.createMany({ data: subjectRows });
   }
-  if (chapterRows.length) {
-    await tx.chapter.createMany({ data: chapterRows });
-  }
-  if (topicRows.length) {
-    await tx.topic.createMany({ data: topicRows });
-  }
-
   return assignment;
 }
 

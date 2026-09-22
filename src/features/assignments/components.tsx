@@ -146,7 +146,7 @@ export function AssignmentDetailView({
         </div>
         <div>
           <p className="text-sm text-stone-600">
-            {assignment.child.name} | {assignment.child.className}
+            {assignment.child.name}
           </p>
           <h1 className="text-3xl font-semibold tracking-tight">{topicName}</h1>
           <div className="mt-2 flex flex-wrap items-center gap-2 text-sm text-stone-600">

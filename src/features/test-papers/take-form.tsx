@@ -29,7 +29,7 @@ export function OnlineTestTakeForm({ paper, attemptId, backHref }: { paper: Onli
   return (
     <div className="grid gap-6">
       <header>
-        <p className="text-sm text-slate-600">{paper.subject.name} | {paper.child.className}</p>
+        <p className="text-sm text-slate-600">{paper.subject.name}</p>
         <h1 className="text-3xl font-semibold tracking-tight">{paper.title}</h1>
         <p className="mt-2 text-sm text-slate-600">{paper.totalMarks} marks | {paper.durationMinutes} minutes | Question {current + 1} of {questions.length}</p>
       </header>

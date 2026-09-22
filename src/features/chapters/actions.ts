@@ -3,12 +3,12 @@
 import { revalidatePath } from "next/cache";
 import { prisma } from "@/lib/prisma";
 import { getOwnedChapter, getOwnedSubject } from "@/lib/ownership";
-import { requireParentUser } from "@/lib/auth";
+import { requireCurrentUser, requireParentUser } from "@/lib/auth";
 import { chapterSchema, formDataToObject } from "@/lib/validations";
 import { invalidateChildDashboardCaches } from "@/lib/cache-tags";
 
 export async function saveChapter(formData: FormData) {
-  const user = await requireParentUser();
+  const user = await requireCurrentUser();
   const data = chapterSchema.parse(formDataToObject(formData));
   const subject = await getOwnedSubject(user.id, data.subjectId);
   if (data.id) {
@@ -18,7 +18,8 @@ export async function saveChapter(formData: FormData) {
     await prisma.chapter.create({ data: { subjectId: data.subjectId, name: data.name, order: data.order } });
   }
   revalidatePath(`/children/${subject.childId}`);
-  invalidateChildDashboardCaches(subject.childId, user.id);
+  revalidatePath("/kid");
+  invalidateChildDashboardCaches(subject.childId, subject.child.userId);
 }
 
 export async function deleteChapter(formData: FormData) {

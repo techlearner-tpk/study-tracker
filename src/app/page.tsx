@@ -8,7 +8,6 @@ import { Card, CardTitle } from "@/components/ui/card";
 import { ChildForm, KidInviteForm } from "@/features/children/components";
 import { getChildren, getChildDashboard } from "@/features/dashboard/queries";
 import { loadPublishedCurriculumCatalog } from "@/features/curriculum/service";
-import { formatClassLabel } from "@/lib/display";
 import { requireCurrentUser } from "@/lib/auth";
 import { minutesLabel } from "@/lib/utils";
 import { Notice } from "@/components/ui/notice";
@@ -39,7 +38,7 @@ export default async function Home({
         <header className="flex flex-col justify-between gap-4 sm:flex-row sm:items-center">
           <div>
             <p className="text-sm font-medium text-emerald-700">Children</p>
-            <h1 className="mt-1 text-3xl font-semibold tracking-tight text-slate-950">Manage your children's learning</h1>
+            <h1 className="mt-1 text-3xl font-semibold tracking-tight text-slate-950">Manage your children&apos;s learning</h1>
             <p className="mt-2 text-sm text-slate-500">Track study time, streaks, topics, assignments, and AI learning from one calm place.</p>
           </div>
           <a href="#add-child">
@@ -69,7 +68,7 @@ export default async function Home({
               </span>
               <div>
                 <CardTitle className="text-base">Invite your child by email</CardTitle>
-                <p className="mt-1 text-sm text-slate-500">Add the child's sign-in email so they can open their own student view.</p>
+                <p className="mt-1 text-sm text-slate-500">Add the child&apos;s sign-in email so they can open their own student view.</p>
               </div>
             </div>
             <div className="w-full sm:max-w-xl">
@@ -90,7 +89,7 @@ export default async function Home({
           <Card className="bg-gradient-to-br from-white to-emerald-50">
             <CardTitle>What gets created</CardTitle>
             <div className="mt-4 grid gap-3 text-sm text-slate-600">
-              <p className="flex items-center gap-2"><BookOpen size={16} className="text-emerald-700" /> Reusable curriculum subjects and chapters.</p>
+              <p className="flex items-center gap-2"><BookOpen size={16} className="text-emerald-700" /> An empty learning structure, with optional starter subject names.</p>
               <p className="flex items-center gap-2"><Target size={16} className="text-emerald-700" /> Topic progress, practice, and revision tracking.</p>
               <p className="flex items-center gap-2"><Trophy size={16} className="text-emerald-700" /> Habit and outcome goals for the child.</p>
             </div>
@@ -100,7 +99,7 @@ export default async function Home({
         {children.length === 0 ? (
           <Card className="text-center">
             <CardTitle>No children yet</CardTitle>
-            <p className="mt-2 text-sm text-stone-600">Add a child to create default subjects and begin tracking calmly.</p>
+            <p className="mt-2 text-sm text-stone-600">Add a child, then create any school, Olympiad, hobby, or personal learning subject.</p>
           </Card>
         ) : (
           <Card>
@@ -134,7 +133,7 @@ function ChildSummaryCard({
             <CardTitle className="truncate text-lg">{child.name}</CardTitle>
             <p className="mt-1 flex flex-wrap items-center gap-2 text-sm text-slate-500">
               <GraduationCap size={15} />
-              {formatClassLabel(child.className)}
+              {child.school ?? "School not set"}
               {child.school ? <span>| {child.school}</span> : null}
             </p>
             <Badge className="mt-2 border-emerald-100 bg-emerald-50 text-emerald-800">Active</Badge>

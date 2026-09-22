@@ -98,7 +98,6 @@ describe("create child curriculum integration", () => {
   it("keeps the existing add kid flow working without a curriculum", async () => {
     const formData = new FormData();
     formData.set("name", "Aarav");
-    formData.set("className", "5");
     formData.set("school", "Sanskriti");
     formData.set("themeColor", "#4f766a");
 
@@ -111,18 +110,17 @@ describe("create child curriculum integration", () => {
         data: expect.objectContaining({
           userId: "parent_1",
           name: "Aarav",
-          className: "5",
+          className: "Not specified",
         }),
       }),
     );
-    expect(mocks.subjectCreateMany).toHaveBeenCalled();
+    expect(mocks.subjectCreateMany).not.toHaveBeenCalled();
     expect(mocks.snapshotCurriculumToChild).not.toHaveBeenCalled();
   });
 
   it("snapshots the selected curriculum when one is chosen", async () => {
     const formData = new FormData();
     formData.set("name", "Aarav");
-    formData.set("className", "Class 5");
     formData.set("curriculumVersionId", "version_1");
     formData.set("curriculumClassId", "class_1");
     formData.append("selectedSubjectIds", "subject_math");
@@ -151,7 +149,6 @@ describe("create child curriculum integration", () => {
 
     const formData = new FormData();
     formData.set("name", "Aarav");
-    formData.set("className", "Class 5");
     formData.set("curriculumVersionId", "version_1");
     formData.set("curriculumClassId", "class_1");
     formData.append("selectedSubjectIds", "subject_math");

@@ -1,7 +1,6 @@
 // @vitest-environment jsdom
 
 import { fireEvent, render, screen } from "@testing-library/react";
-import { useState } from "react";
 import { describe, expect, it } from "vitest";
 import { CurriculumPicker } from "@/features/curriculum/picker";
 import type { CurriculumTreeVersion } from "@/features/curriculum/service";
@@ -83,25 +82,24 @@ const curricula: CurriculumTreeVersion[] = [
   },
 ];
 
-function Wrapper() {
-  const [className, setClassName] = useState("");
-  return <CurriculumPicker curricula={curricula} className={className} onClassNameChange={setClassName} />;
-}
-
 describe("curriculum picker", () => {
-  it("preselects the default subject", () => {
-    render(<Wrapper />);
+  it("keeps curriculum optional and subjects empty by default", () => {
+    render(<CurriculumPicker curricula={curricula} />);
+    expect(screen.queryByRole("checkbox", { name: /Mathematics/i })).toBeNull();
+
+    fireEvent.click(screen.getByRole("checkbox", { name: /Choose starter subjects/i }));
     const math = screen.getByRole("checkbox", { name: /Mathematics/i }) as HTMLInputElement;
     const english = screen.getByRole("checkbox", { name: /English/i }) as HTMLInputElement;
 
-    expect(math.checked).toBe(true);
+    expect(math.checked).toBe(false);
     expect(english.checked).toBe(false);
   });
 
-  it("allows the parent to deselect a subject", () => {
-    render(<Wrapper />);
+  it("allows the parent to select a starter subject", () => {
+    render(<CurriculumPicker curricula={curricula} />);
+    fireEvent.click(screen.getByRole("checkbox", { name: /Choose starter subjects/i }));
     const math = screen.getByRole("checkbox", { name: /Mathematics/i }) as HTMLInputElement;
     fireEvent.click(math);
-    expect(math.checked).toBe(false);
+    expect(math.checked).toBe(true);
   });
 });

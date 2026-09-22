@@ -103,7 +103,6 @@ export default async function AiAdminPage({
                   <div className="flex flex-wrap items-center justify-between gap-2">
                     <div>
                       <p className="font-medium text-stone-900">{child.name}</p>
-                      <p className="text-sm text-stone-600">{child.className}</p>
                     </div>
                     <Badge>{child.aiTopicUsages.length} tracked topics</Badge>
                   </div>

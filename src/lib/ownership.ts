@@ -151,22 +151,23 @@ export async function getOwnedChild(userId: string, childId: string): Promise<Ow
 }
 
 export async function getOwnedSubject(userId: string, subjectId: string) {
-  const subject = await prisma.subject.findFirst({
-    where: { id: subjectId, child: { userId } },
-    include: { child: true },
+  const subject = await prisma.subject.findUnique({
+    where: { id: subjectId },
+    include: { child: { include: { kidUser: true } } },
   });
 
-  if (!subject) notFound();
+  if (!subject || (subject.child.userId !== userId && subject.child.kidUser?.id !== userId)) notFound();
   return subject;
 }
 
 export async function getOwnedChapter(userId: string, chapterId: string) {
-  const chapter = await prisma.chapter.findFirst({
-    where: { id: chapterId, subject: { child: { userId } } },
-    include: { subject: { include: { child: true } } },
+  const chapter = await prisma.chapter.findUnique({
+    where: { id: chapterId },
+    include: { subject: { include: { child: { include: { kidUser: true } } } } },
   });
 
-  if (!chapter) notFound();
+  const child = chapter?.subject.child;
+  if (!chapter || !child || (child.userId !== userId && child.kidUser?.id !== userId)) notFound();
   return chapter;
 }
 

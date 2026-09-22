@@ -79,6 +79,8 @@ export default async function KidPage() {
         </section>
 
         <KidSubjectExplorer
+          childId={child.id}
+          childThemeColor={child.themeColor}
           subjects={child.subjects.map((subject) => ({
             id: subject.id,
             name: subject.name,

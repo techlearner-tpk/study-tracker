@@ -5,7 +5,7 @@ const optionalText = z.string().trim().optional().transform((value) => value || 
 export const childSchema = z.object({
   id: z.string().optional(),
   name: z.string().trim().min(1, "Name is required"),
-  className: z.string().trim().min(1, "Class is required"),
+  className: optionalText,
   school: optionalText,
   themeColor: optionalText,
   kidEmail: z.string().trim().email("Enter a valid kid email").optional().or(z.literal("").transform(() => undefined)),

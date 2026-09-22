@@ -15,24 +15,21 @@ export function ChildForm({
   showKidEmail = false,
   curricula = [],
 }: {
-  child?: { id: string; name: string; className: string; school: string | null; themeColor: string | null; kidUser?: { email: string; clerkUserId?: string | null } | null };
+  child?: { id: string; name: string; school: string | null; themeColor: string | null; kidUser?: { email: string; clerkUserId?: string | null } | null };
   showKidEmail?: boolean;
   curricula?: CurriculumTreeVersion[];
 }) {
-  const [className, setClassName] = useState(child?.className ?? curricula[0]?.classes[0]?.name ?? "");
   const [themeColor, setThemeColor] = useState(resolveChildThemeColor(child?.themeColor));
 
   return (
     <form action={child ? updateChild : createChild} className="grid gap-4 sm:grid-cols-2">
       {child ? <input type="hidden" name="id" value={child.id} /> : null}
       <Label>Name<Input name="name" defaultValue={child?.name} required /></Label>
-      {curricula.length ? (
+      {!child && curricula.length ? (
         <div className="sm:col-span-2">
-          <CurriculumPicker curricula={curricula} className={className} onClassNameChange={setClassName} />
+          <CurriculumPicker curricula={curricula} />
         </div>
-      ) : (
-        <Label>Class<Input name="className" value={className} onChange={(event) => setClassName(event.target.value)} required /></Label>
-      )}
+      ) : null}
       <Label>School<Input name="school" defaultValue={child?.school ?? ""} /></Label>
       <ColorSwatchField
         label="Theme color"

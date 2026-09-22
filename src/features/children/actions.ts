@@ -8,11 +8,10 @@ import { getOwnedChild } from "@/lib/ownership";
 import { requireParentUser } from "@/lib/auth";
 import { childSchema, deleteChildSchema, formDataToObject } from "@/lib/validations";
 import { invalidateChildDashboardCaches, invalidateParentDashboardCaches } from "@/lib/cache-tags";
-import { defaultSubjects } from "@/features/subjects/constants";
 import { clerkClient } from "@clerk/nextjs/server";
 import { appUrl } from "@/lib/app-url";
 import { loadCurriculumVersionTree, snapshotCurriculumToChild } from "@/features/curriculum/service";
-import { resolveChildThemeColor, resolveSubjectColor } from "@/lib/subject-colors";
+import { resolveChildThemeColor } from "@/lib/subject-colors";
 
 const displayNameFromEmail = (email: string) => email.split("@")[0].replace(/[._-]+/g, " ");
 
@@ -59,14 +58,7 @@ export async function inviteKid(formData: FormData) {
       data: {
         userId: parent.id,
         name: displayNameFromEmail(email),
-        className: "Not set",
-        subjects: {
-          create: defaultSubjects.map((name, index) => ({
-            name,
-            color: resolveSubjectColor(name),
-            order: index + 1,
-          })),
-        },
+        className: "Not specified",
       },
     });
 
@@ -104,11 +96,7 @@ export async function createChild(formData: FormData) {
   const curriculumVersionId = String(formData.get("curriculumVersionId") ?? "").trim();
   const curriculumClassId = String(formData.get("curriculumClassId") ?? "").trim();
   const selectedSubjectIds = formData.getAll("selectedSubjectIds").map(String).filter(Boolean);
-  const usingCurriculum = Boolean(curriculumVersionId && curriculumClassId);
-
-  if (usingCurriculum && selectedSubjectIds.length === 0) {
-    throw new Error("Select at least one subject");
-  }
+  const usingCurriculum = Boolean(curriculumVersionId && curriculumClassId && selectedSubjectIds.length);
 
   const curriculumVersion = usingCurriculum ? await loadCurriculumVersionTree(curriculumVersionId) : null;
   if (usingCurriculum && !curriculumVersion) {
@@ -119,7 +107,6 @@ export async function createChild(formData: FormData) {
     where: {
       userId: user.id,
       name: { equals: data.name.trim(), mode: "insensitive" },
-      className: { equals: data.className.trim(), mode: "insensitive" },
     },
     select: { id: true },
   });
@@ -132,7 +119,7 @@ export async function createChild(formData: FormData) {
       data: {
         userId: user.id,
         name: data.name,
-        className: data.className,
+        className: "Not specified",
         school: data.school,
         themeColor: resolveChildThemeColor(data.themeColor),
       },
@@ -158,32 +145,21 @@ export async function createChild(formData: FormData) {
       });
     }
 
-    if (!usingCurriculum) {
-      await tx.subject.createMany({
-        data: defaultSubjects.map((name, index) => ({
+    if (usingCurriculum) {
+      await snapshotCurriculumToChild(
+        tx,
+        {
           childId: createdChild.id,
-          name,
-          color: resolveSubjectColor(name),
-          order: index + 1,
-        })),
-      });
+          curriculumVersionId,
+          curriculumClassId,
+          selectedSubjectIds,
+        },
+        curriculumVersion,
+      );
     }
 
     return createdChild;
   });
-
-  if (usingCurriculum) {
-    await snapshotCurriculumToChild(
-      prisma,
-      {
-        childId: child.id,
-        curriculumVersionId,
-        curriculumClassId,
-        selectedSubjectIds,
-      },
-      curriculumVersion,
-    );
-  }
 
   if (data.kidEmail) {
     const email = data.kidEmail.toLowerCase();
@@ -224,7 +200,6 @@ export async function updateChild(formData: FormData) {
     where: { id: data.id },
     data: {
       name: data.name,
-      className: data.className,
       school: data.school,
       themeColor: resolveChildThemeColor(data.themeColor),
     },

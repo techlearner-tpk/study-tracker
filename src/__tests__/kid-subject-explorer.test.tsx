@@ -38,7 +38,7 @@ const subjects: KidSubject[] = [
 
 describe("KidSubjectExplorer", () => {
   it("lets a kid select a subject and chapter", () => {
-    render(<KidSubjectExplorer subjects={subjects} />);
+    render(<KidSubjectExplorer subjects={subjects} childId="child_1" />);
 
     fireEvent.click(screen.getByRole("button", { name: /Mathematics/ }));
     fireEvent.click(screen.getByRole("button", { name: /Geometry/ }));
@@ -48,7 +48,7 @@ describe("KidSubjectExplorer", () => {
   });
 
   it("searches across subject, chapter, and topic names", () => {
-    render(<KidSubjectExplorer subjects={subjects} />);
+    render(<KidSubjectExplorer subjects={subjects} childId="child_1" />);
 
     fireEvent.change(screen.getByRole("textbox", { name: "Search subjects, chapters, or topics" }), {
       target: { value: "polygon" },

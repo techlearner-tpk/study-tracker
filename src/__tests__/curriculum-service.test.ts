@@ -367,10 +367,8 @@ describe("curriculum service", () => {
     expect(calls.assignment[0].selectedSubjectIds).toEqual(["subject_english"]);
     expect(calls.subject).toHaveLength(1);
     expect(calls.subject[0].name).toBe("English");
-    expect(calls.chapter).toHaveLength(1);
-    expect(calls.topic).toHaveLength(1);
-    expect(calls.topic[0].curriculumTopicId).toBe("topic_main_idea");
-    expect(calls.topic[0].name).toBe("Main idea");
+    expect(calls.chapter).toHaveLength(0);
+    expect(calls.topic).toHaveLength(0);
   });
 
   it("keeps the snapshot independent from later source edits", async () => {
@@ -386,7 +384,7 @@ describe("curriculum service", () => {
     });
 
     expect(calls.subject[0].name).toBe("Mathematics");
-    expect(calls.chapter[0].name).toBe("Fractions");
-    expect(calls.topic[0].name).toBe("Equivalent fractions");
+    expect(calls.chapter).toHaveLength(0);
+    expect(calls.topic).toHaveLength(0);
   });
 });

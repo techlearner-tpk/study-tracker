@@ -7,6 +7,9 @@ import { Badge } from "@/components/ui/badge";
 import { Card, CardTitle } from "@/components/ui/card";
 import { Input } from "@/components/ui/form";
 import { Progress } from "@/components/ui/progress";
+import { SubjectForm } from "@/features/subjects/components";
+import { ChapterForm } from "@/features/chapters/components";
+import { TopicForm } from "@/features/topics/components";
 import { cn } from "@/lib/utils";
 
 type KidTopic = {
@@ -44,7 +47,7 @@ function includes(value: string, query: string) {
   return value.toLowerCase().includes(query);
 }
 
-export function KidSubjectExplorer({ subjects }: { subjects: KidSubject[] }) {
+export function KidSubjectExplorer({ subjects, childId, childThemeColor }: { subjects: KidSubject[]; childId: string; childThemeColor?: string | null }) {
   const [query, setQuery] = useState("");
   const [selectedSubjectId, setSelectedSubjectId] = useState(subjects[0]?.id ?? "");
   const [selectedChapterId, setSelectedChapterId] = useState(subjects[0]?.chapters[0]?.id ?? "");
@@ -145,8 +148,14 @@ export function KidSubjectExplorer({ subjects }: { subjects: KidSubject[] }) {
             })}
           </div>
         ) : (
-          <div className="mt-4 rounded-md border border-dashed border-slate-200 px-4 py-6 text-center text-sm text-slate-500">No subjects, chapters, or topics match "{query}".</div>
+          <div className="mt-4 rounded-md border border-dashed border-slate-200 px-4 py-6 text-center text-sm text-slate-500">
+            {query ? `No subjects, chapters, or topics match "${query}".` : "No subjects yet. Add any school, Olympiad, hobby, or personal learning subject."}
+          </div>
         )}
+        <details className="mt-4 border-t border-slate-200 pt-4">
+          <summary className="cursor-pointer text-sm font-semibold text-emerald-700">Add subject</summary>
+          <div className="mt-4 max-w-xl"><SubjectForm childId={childId} childThemeColor={childThemeColor} /></div>
+        </details>
       </Card>
 
       {activeSubject ? (
@@ -182,6 +191,10 @@ export function KidSubjectExplorer({ subjects }: { subjects: KidSubject[] }) {
                 })}
                 {!visibleChapters.length ? <p className="text-sm text-slate-500">No matching chapters.</p> : null}
               </div>
+              <details className="mt-4 border-t border-slate-200 pt-3">
+                <summary className="cursor-pointer text-sm font-semibold text-emerald-700">Add chapter</summary>
+                <div className="mt-3"><ChapterForm subjectId={activeSubject.id} /></div>
+              </details>
             </div>
 
             <div className="min-w-0 rounded-lg border border-slate-200 bg-white p-4">
@@ -200,8 +213,12 @@ export function KidSubjectExplorer({ subjects }: { subjects: KidSubject[] }) {
                     ))}
                     {!visibleTopics.length ? <p className="text-sm text-slate-500">No matching topics in this chapter.</p> : null}
                   </div>
+                  <details className="mt-4 border-t border-slate-200 pt-3">
+                    <summary className="cursor-pointer text-sm font-semibold text-emerald-700">Add topic</summary>
+                    <div className="mt-3"><TopicForm chapterId={activeChapter.id} returnTo="/kid" /></div>
+                  </details>
                 </>
-              ) : <p className="text-sm text-slate-500">Select a chapter to see its topics.</p>}
+              ) : <p className="text-sm text-slate-500">Add or select a chapter to start adding topics.</p>}
             </div>
           </div>
         </Card>

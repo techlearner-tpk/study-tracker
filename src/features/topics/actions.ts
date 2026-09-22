@@ -5,12 +5,12 @@ import { revalidatePath } from "next/cache";
 import { redirect } from "next/navigation";
 import { prisma } from "@/lib/prisma";
 import { getOwnedChapter, getOwnedTopic } from "@/lib/ownership";
-import { requireParentUser } from "@/lib/auth";
+import { requireCurrentUser, requireParentUser } from "@/lib/auth";
 import { formDataToObject, topicSchema } from "@/lib/validations";
 import { invalidateChildDashboardCaches } from "@/lib/cache-tags";
 
 export async function saveTopic(formData: FormData) {
-  const user = await requireParentUser();
+  const user = await requireCurrentUser();
   const data = topicSchema.parse(formDataToObject(formData));
   const chapter = await getOwnedChapter(user.id, data.chapterId);
   const returnTo = String(formData.get("returnTo") ?? "").trim();
@@ -31,8 +31,10 @@ export async function saveTopic(formData: FormData) {
     : await prisma.topic.create({ data: { ...payload, chapterId: data.chapterId } });
 
   revalidatePath(`/children/${chapter.subject.childId}`);
+  revalidatePath("/kid");
+  revalidatePath(`/kid/topics/${topic.id}`);
   revalidatePath(`/topics/${topic.id}`);
-  invalidateChildDashboardCaches(chapter.subject.childId, user.id);
+  invalidateChildDashboardCaches(chapter.subject.childId, chapter.subject.child.userId);
   if (returnTo && !data.id) {
     const separator = returnTo.includes("?") ? "&" : "?";
     redirect(`${returnTo}${separator}topicId=${topic.id}`);

@@ -7,6 +7,7 @@ import { prisma } from "@/lib/prisma";
 import { requireAdminUser, requireParentUser } from "@/lib/auth";
 import { invalidateChildDashboardCaches, invalidateCurriculumCatalogCache } from "@/lib/cache-tags";
 import { formDataToObject } from "@/lib/validations";
+import { getOwnedChild } from "@/lib/ownership";
 import {
   curriculumChapterFormSchema,
   curriculumClassFormSchema,
@@ -494,6 +495,7 @@ export async function applyCurriculumToChild(formData: FormData) {
   }
 
   const childId = String(formData.get("childId") ?? "");
+  await getOwnedChild(parent.id, childId);
   await snapshotCurriculumToChild(prisma, {
     childId,
     curriculumVersionId: data.curriculumVersionId,

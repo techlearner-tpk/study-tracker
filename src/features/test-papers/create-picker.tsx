@@ -89,7 +89,7 @@ export function TestPaperCreatePicker({
         <Label>
           Child
           <Select name="childId" value={childId} onChange={(event) => handleChildChange(event.target.value)} required>
-            {childOptions.map((child) => <option key={child.id} value={child.id}>{child.name} | {child.className}</option>)}
+            {childOptions.map((child) => <option key={child.id} value={child.id}>{child.name}</option>)}
           </Select>
         </Label>
         <Label>
