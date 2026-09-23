@@ -1,58 +1,85 @@
+import { Suspense } from "react";
 import { format } from "date-fns";
 import { notFound } from "next/navigation";
 import { AppShell } from "@/components/layout/app-shell";
 import { Badge } from "@/components/ui/badge";
 import { Card, CardTitle } from "@/components/ui/card";
-import { AiLearningPanel } from "@/features/ai/components";
-import { getTopicAiAccessState } from "@/features/ai/service";
+import { Notice } from "@/components/ui/notice";
+import { DeferredTopicAiPanel, TopicAiPanelFallback } from "@/features/ai/deferred-topic-panel";
+import { TopicActivityWorkspace } from "@/features/topics/activity-workspace";
 import { requireKidUser } from "@/lib/auth";
 import { getOwnedTopic } from "@/lib/ownership";
 import { minutesLabel } from "@/lib/utils";
 
 export const dynamic = "force-dynamic";
 
-export default async function KidTopicPage({ params }: { params: Promise<{ topicId: string }> }) {
+export default async function KidTopicPage({
+  params,
+  searchParams,
+}: {
+  params: Promise<{ topicId: string }>;
+  searchParams?: Promise<{ studyStatus?: string; practiceStatus?: string; revisionStatus?: string }>;
+}) {
   const user = await requireKidUser();
   const { topicId } = await params;
+  const query = await searchParams;
   if (!user.childId) notFound();
 
   const topic = await getOwnedTopic(user.id, topicId);
-  const access = await getTopicAiAccessState(user.id, topicId, topic);
-
   const totalStudyTime = topic.studySessions.reduce((total, session) => total + session.durationMinutes, 0);
+  const subjectColor = topic.chapter.subject.color ?? "#4f766a";
 
   return (
     <AppShell currentUser={user}>
       <div className="grid gap-6">
         <header>
-          <p className="text-sm text-stone-600">{topic.chapter.subject.child.name} · {topic.chapter.subject.name} · {topic.chapter.name}</p>
+          <div className="flex flex-wrap items-center gap-2 text-sm text-stone-600">
+            <span>{topic.chapter.subject.child.name}</span>
+            <span>|</span>
+            <span className="inline-flex items-center gap-2 rounded-full border border-stone-200 px-2.5 py-1">
+              <span className="h-2.5 w-2.5 rounded-full" style={{ backgroundColor: subjectColor }} />
+              {topic.chapter.subject.name}
+            </span>
+            <span>|</span>
+            <span>{topic.chapter.name}</span>
+          </div>
           <h1 className="mt-1 text-3xl font-semibold tracking-tight">{topic.name}</h1>
           <div className="mt-3 flex flex-wrap gap-2">
             <Badge>{topic.status.replace("_", " ").toLowerCase()}</Badge>
             <Badge>Confidence {topic.confidenceRating ? `${topic.confidenceRating}/5` : "not set"}</Badge>
             <Badge>{minutesLabel(totalStudyTime)} total</Badge>
+            <Badge>{topic.studySessions.length} study sessions</Badge>
           </div>
         </header>
 
-        <Card>
-          <CardTitle>About this topic</CardTitle>
-          <p className="mt-3 text-sm text-stone-600">{topic.description ?? "No description yet."}</p>
-          <p className="mt-3 whitespace-pre-wrap text-sm text-stone-600">{topic.notes ?? "No notes yet."}</p>
-        </Card>
+        <section className="grid gap-4 lg:grid-cols-3">
+          <Card>
+            <CardTitle>Status</CardTitle>
+            <p className="mt-3 text-sm text-stone-600">{topic.description ?? "No description yet."}</p>
+          </Card>
+          <Card>
+            <CardTitle>Notes</CardTitle>
+            <p className="mt-3 whitespace-pre-wrap text-sm text-stone-600">{topic.notes ?? "No notes yet."}</p>
+          </Card>
+          <Card>
+            <CardTitle>Last studied</CardTitle>
+            <p className="mt-3 text-sm text-stone-600">{topic.studySessions[0] ? format(topic.studySessions[0].startTime, "PP p") : "Not studied yet"}</p>
+          </Card>
+        </section>
 
-        <AiLearningPanel access={access} topicId={topic.id} topicName={topic.name} historyHref={`/kid/topics/${topic.id}/ai-history`} />
+        {query?.studyStatus ? <Notice tone="success">Study session logged.</Notice> : null}
+        {query?.practiceStatus ? <Notice tone="success">Practice session logged.</Notice> : null}
+        {query?.revisionStatus ? <Notice tone="success">Revision session logged.</Notice> : null}
 
-        <Card>
-          <CardTitle>Study timeline</CardTitle>
-          <div className="mt-4 grid gap-3">
-            {topic.studySessions.length ? topic.studySessions.map((session) => (
-              <div key={session.id} className="rounded-md border border-stone-200 bg-white px-3 py-2 text-sm">
-                <p className="font-medium">{minutesLabel(session.durationMinutes)}</p>
-                <p className="text-xs text-stone-500">{format(session.startTime, "PP p")}</p>
-              </div>
-            )) : <p className="text-sm text-stone-600">No study activity yet.</p>}
-          </div>
-        </Card>
+        <TopicActivityWorkspace topic={topic} />
+
+        <Suspense fallback={<TopicAiPanelFallback />}>
+          <DeferredTopicAiPanel
+            userId={user.id}
+            topic={topic}
+            historyHref={`/kid/topics/${topic.id}/ai-history`}
+          />
+        </Suspense>
       </div>
     </AppShell>
   );

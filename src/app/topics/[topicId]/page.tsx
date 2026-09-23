@@ -1,13 +1,11 @@
+import { Suspense } from "react";
 import { format } from "date-fns";
 import { AppShell } from "@/components/layout/app-shell";
 import { Badge } from "@/components/ui/badge";
 import { Card, CardTitle } from "@/components/ui/card";
 import { Notice } from "@/components/ui/notice";
-import { AiLearningPanel } from "@/features/ai/components";
-import { getTopicAiAccessState } from "@/features/ai/service";
-import { PracticeSessionForm } from "@/features/practice-sessions/components";
-import { RevisionSessionForm } from "@/features/revision-sessions/components";
-import { StudySessionForm } from "@/features/study-sessions/components";
+import { DeferredTopicAiPanel, TopicAiPanelFallback } from "@/features/ai/deferred-topic-panel";
+import { TopicActivityWorkspace } from "@/features/topics/activity-workspace";
 import { isAdminUser, requireCurrentUser } from "@/lib/auth";
 import { getOwnedTopic } from "@/lib/ownership";
 import { minutesLabel } from "@/lib/utils";
@@ -25,7 +23,6 @@ export default async function TopicPage({
   const { topicId } = await params;
   const query = await searchParams;
   const topic = await getOwnedTopic(user.id, topicId);
-  const access = await getTopicAiAccessState(user.id, topicId, topic);
   const isAdmin = isAdminUser(user);
   const deleteError = query?.deleteError ? String(query.deleteError) : null;
   const deleteStatus = query?.deleteStatus ? String(query.deleteStatus) : null;
@@ -35,12 +32,6 @@ export default async function TopicPage({
   const subjectColor = topic.chapter.subject.color ?? "#4f766a";
 
   const totalStudyTime = topic.studySessions.reduce((total, session) => total + session.durationMinutes, 0);
-  const timeline = [
-    ...topic.studySessions.map((session) => ({ type: "Study", date: session.startTime, minutes: session.durationMinutes, notes: session.notes })),
-    ...topic.practiceSessions.map((session) => ({ type: "Practice", date: session.date, minutes: session.durationMinutes, notes: session.notes })),
-    ...topic.revisionSessions.map((session) => ({ type: "Revision", date: session.date, minutes: session.durationMinutes, notes: session.notes })),
-  ].sort((a, b) => Number(b.date) - Number(a.date));
-
   return (
     <AppShell currentUser={user}>
       <div className="grid gap-6">
@@ -84,55 +75,17 @@ export default async function TopicPage({
         {practiceStatus ? <Notice tone="success">Practice session logged.</Notice> : null}
         {revisionStatus ? <Notice tone="success">Revision session logged.</Notice> : null}
 
-        <AiLearningPanel
-          access={access}
-          topicId={topic.id}
-          topicName={topic.name}
-          historyHref={`/topics/${topic.id}/ai-history`}
-          deleteError={deleteError}
-          isAdmin={isAdmin}
-        />
+        <TopicActivityWorkspace topic={topic} />
 
-        <section className="grid gap-4">
-          <Card>
-            <CardTitle>Study Sessions</CardTitle>
-            <div className="mt-4">
-              <StudySessionForm topicId={topic.id} />
-            </div>
-          </Card>
-          <Card>
-            <CardTitle>Practice Sessions</CardTitle>
-            <div className="mt-4">
-              <PracticeSessionForm topicId={topic.id} />
-            </div>
-          </Card>
-          <Card>
-            <CardTitle>Revision Sessions</CardTitle>
-            <div className="mt-4">
-              <RevisionSessionForm topicId={topic.id} />
-            </div>
-          </Card>
-        </section>
-
-        <Card>
-          <CardTitle>Timeline of activity</CardTitle>
-          <div className="mt-4 grid gap-3">
-            {timeline.length ? (
-              timeline.map((item, index) => (
-                <div key={`${item.type}-${index}`} className="rounded-md border border-stone-200 p-3">
-                  <div className="flex justify-between text-sm">
-                    <span className="font-medium">{item.type}</span>
-                    <span>{minutesLabel(item.minutes)}</span>
-                  </div>
-                  <p className="text-xs text-stone-500">{format(item.date, "PP p")}</p>
-                  {item.notes ? <p className="mt-2 text-sm text-stone-600">{item.notes}</p> : null}
-                </div>
-              ))
-            ) : (
-              <p className="text-sm text-stone-600">No activity yet.</p>
-            )}
-          </div>
-        </Card>
+        <Suspense fallback={<TopicAiPanelFallback />}>
+          <DeferredTopicAiPanel
+            userId={user.id}
+            topic={topic}
+            historyHref={`/topics/${topic.id}/ai-history`}
+            deleteError={deleteError}
+            isAdmin={isAdmin}
+          />
+        </Suspense>
       </div>
     </AppShell>
   );
