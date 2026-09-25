@@ -4,12 +4,10 @@ import {
   AiQuotaReservationStatus,
   OnlineTestAiReviewStatus,
   OnlineTestAttemptStatus,
-  OnlineTestDifficulty,
   OnlineTestPaperSource,
   OnlineTestPaperStatus,
   OnlineTestQuestionType,
   Prisma,
-  SubscriptionStatus,
   TestTemplateStatus,
 } from "@prisma/client";
 import { prisma } from "@/lib/prisma";
@@ -19,6 +17,7 @@ import { canUseAiFeatures, getAiUsage } from "@/features/ai/service";
 import type {
   AiLearningProvider,
   GeneratedTestPaperSection,
+  TestPaperReview,
   TestPaperQuestionSlot,
 } from "@/lib/ai/provider";
 import {
@@ -323,6 +322,94 @@ function validateGeneratedSection(section: GeneratedTestPaperSection, slots: Tes
   }
 }
 
+type PaperSectionPlan = ReturnType<typeof buildSlots>["slotsBySection"][number];
+type GeneratedPaperSection = PaperSectionPlan & { generated: GeneratedTestPaperSection };
+
+async function generatePaperSections(
+  provider: Pick<AiLearningProvider, "generateTestPaperSection">,
+  sections: PaperSectionPlan[],
+  feedbackBySection = new Map<string, string[]>(),
+) {
+  return Promise.all(
+    sections.map(async (section): Promise<GeneratedPaperSection> => {
+      const generated = await provider.generateTestPaperSection({
+        sectionName: section.sectionName,
+        sectionInstructions: section.sectionInstructions,
+        slots: section.slots,
+        reviewFeedback: feedbackBySection.get(section.sectionId),
+      });
+      validateGeneratedSection(generated, section.slots);
+      return { ...section, generated };
+    }),
+  );
+}
+
+function rejectedQuestionIds(review: TestPaperReview, questions: GeneratedTestPaperSection["questions"]) {
+  const expectedIds = new Set(questions.map((question) => question.clientQuestionId));
+  const reviewsById = new Map<string, TestPaperReview["questionReviews"][number]>();
+  let invalidCoverage = false;
+
+  for (const item of review.questionReviews) {
+    if (!expectedIds.has(item.clientQuestionId) || reviewsById.has(item.clientQuestionId)) {
+      invalidCoverage = true;
+      continue;
+    }
+    reviewsById.set(item.clientQuestionId, item);
+  }
+
+  const rejected = new Set<string>();
+  for (const question of questions) {
+    const item = reviewsById.get(question.clientQuestionId);
+    if (!item?.approved) rejected.add(question.clientQuestionId);
+  }
+
+  if (invalidCoverage || (!review.approved && rejected.size === 0)) {
+    return new Set(expectedIds);
+  }
+  return rejected;
+}
+
+function reviewFeedbackBySection(
+  review: TestPaperReview,
+  generatedSections: GeneratedPaperSection[],
+  rejectedIds: Set<string>,
+) {
+  const reviewById = new Map(review.questionReviews.map((item) => [item.clientQuestionId, item]));
+  const feedback = new Map<string, string[]>();
+
+  for (const section of generatedSections) {
+    const sectionFeedback = section.slots
+      .filter((slot) => rejectedIds.has(slot.clientQuestionId))
+      .map((slot) => {
+        const item = reviewById.get(slot.clientQuestionId);
+        return [
+          `Question ${slot.clientQuestionId}`,
+          item?.issueCode,
+          item?.message,
+          item?.suggestedCorrection ? `Suggested correction: ${item.suggestedCorrection}` : null,
+        ].filter(Boolean).join(" - ");
+      });
+
+    if (sectionFeedback.length) {
+      feedback.set(section.sectionId, [...review.paperIssues, ...sectionFeedback]);
+    }
+  }
+  return feedback;
+}
+
+function teacherReviewFailureMessage(review: TestPaperReview) {
+  const details = [
+    ...review.paperIssues,
+    ...review.questionReviews
+      .filter((item) => !item.approved)
+      .map((item) => item.message || item.issueCode),
+  ].filter((value): value is string => Boolean(value)).slice(0, 3);
+
+  return details.length
+    ? `AI teacher review rejected this paper: ${details.join("; ")}. Please try again.`
+    : "AI teacher review could not approve every question. Please try again.";
+}
+
 export async function generateOnlineTestPaper({
   userId,
   childId,
@@ -380,32 +467,44 @@ export async function generateOnlineTestPaper({
       assignedAt: source === OnlineTestPaperSource.ASSIGNED_BY_PARENT ? new Date() : null,
     },
   });
+  let lastReview: TestPaperReview | null = null;
 
   try {
     await reserveTopicQuota(childId, topicTotals.map((topic) => topic.topicId), requestId, paper.id);
 
-    const generatedSections = await Promise.all(
-      slotsBySection.map(async (section) => {
-        const generated = await provider.generateTestPaperSection({
-          sectionName: section.sectionName,
-          sectionInstructions: section.sectionInstructions,
-          slots: section.slots,
-        });
-        validateGeneratedSection(generated, section.slots);
-        return { ...section, generated };
-      }),
-    );
+    let generatedSections = await generatePaperSections(provider, slotsBySection);
 
-    const questions = generatedSections.flatMap((section) => section.generated.questions);
-    const review = await provider.reviewTestPaper({
+    let questions = generatedSections.flatMap((section) => section.generated.questions);
+    let review = await provider.reviewTestPaper({
       className: subject.child.className,
       boardName,
       subjectName: subject.name,
       totalMarks: template.totalMarks,
       questions,
     });
-    if (!review.approved || review.questionReviews.some((item) => !item.approved)) {
-      throw new Error("AI teacher review rejected this paper. Please try again.");
+    lastReview = review;
+    let rejectedIds = rejectedQuestionIds(review, questions);
+
+    if (!review.approved || rejectedIds.size > 0) {
+      const feedbackBySection = reviewFeedbackBySection(review, generatedSections, rejectedIds);
+      const sectionsToRepair = slotsBySection.filter((section) => feedbackBySection.has(section.sectionId));
+      const repairedSections = await generatePaperSections(provider, sectionsToRepair, feedbackBySection);
+      const repairedById = new Map(repairedSections.map((section) => [section.sectionId, section]));
+      generatedSections = generatedSections.map((section) => repairedById.get(section.sectionId) ?? section);
+      questions = generatedSections.flatMap((section) => section.generated.questions);
+      review = await provider.reviewTestPaper({
+        className: subject.child.className,
+        boardName,
+        subjectName: subject.name,
+        totalMarks: template.totalMarks,
+        questions,
+      });
+      lastReview = review;
+      rejectedIds = rejectedQuestionIds(review, questions);
+    }
+
+    if (!review.approved || rejectedIds.size > 0) {
+      throw new Error(teacherReviewFailureMessage(review));
     }
 
     await prisma.$transaction(async (tx) => {
@@ -467,7 +566,11 @@ export async function generateOnlineTestPaper({
     await releaseReservedQuota(requestId, true).catch(() => undefined);
     await prisma.onlineTestPaper.update({
       where: { id: paper.id },
-      data: { status: OnlineTestPaperStatus.FAILED, aiReviewStatus: OnlineTestAiReviewStatus.FAILED },
+      data: {
+        status: OnlineTestPaperStatus.FAILED,
+        aiReviewStatus: OnlineTestAiReviewStatus.FAILED,
+        ...(lastReview ? { aiReviewJson: lastReview as Prisma.InputJsonValue } : {}),
+      },
     }).catch(() => undefined);
     throw error;
   }

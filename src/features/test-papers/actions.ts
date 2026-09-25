@@ -283,16 +283,25 @@ export async function generateOnlineTestPaperAction(formData: FormData) {
     throw new Error("Parents must create assigned tests.");
   }
   const dueAt = data.dueAt ? new Date(data.dueAt) : null;
-  const paperId = await generateOnlineTestPaper({
-    userId: currentUser.id,
-    childId: data.childId,
-    subjectId: data.subjectId,
-    templateId: data.templateId,
-    topicIds: data.topicIds,
-    source,
-    title: data.title,
-    dueAt,
-  });
+  let paperId: string;
+  try {
+    paperId = await generateOnlineTestPaper({
+      userId: currentUser.id,
+      childId: data.childId,
+      subjectId: data.subjectId,
+      templateId: data.templateId,
+      topicIds: data.topicIds,
+      source,
+      title: data.title,
+      dueAt,
+    });
+  } catch (error) {
+    const message = error instanceof Error
+      ? error.message.slice(0, 500)
+      : "The test paper could not be generated. Please try again.";
+    const createPath = currentUser.role === "KID" ? "/kid/tests/new" : "/test-papers/new";
+    redirect(`${createPath}?error=${encodeURIComponent(message)}`);
+  }
   revalidatePath("/test-papers");
   revalidatePath("/kid/tests");
   redirect(source === OnlineTestPaperSource.SELF_PRACTICE ? `/kid/tests/${paperId}/take` : `/test-papers/${paperId}`);

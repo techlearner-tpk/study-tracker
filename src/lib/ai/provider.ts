@@ -59,6 +59,7 @@ export type GenerateTestPaperSectionInput = {
   sectionName: string;
   sectionInstructions?: string | null;
   slots: TestPaperQuestionSlot[];
+  reviewFeedback?: string[];
 };
 
 export type GeneratedTestPaperSection = z.infer<typeof onlineTestSectionGenerationSchema>;

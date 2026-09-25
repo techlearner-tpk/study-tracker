@@ -12,7 +12,7 @@ export default async function KidTestDetailPage({ params }: { params: Promise<{ 
 
   return (
     <AppShell>
-      <TestPaperDetail paper={paper} hrefBase="/kid/tests" canTake />
+      <TestPaperDetail paper={paper} canTake />
     </AppShell>
   );
 }

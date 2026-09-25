@@ -10,6 +10,7 @@ import { Button } from "@/components/ui/button";
 import { Card, CardTitle } from "@/components/ui/card";
 import { Input, Label, Select } from "@/components/ui/form";
 import { Progress } from "@/components/ui/progress";
+import { Notice } from "@/components/ui/notice";
 import { AiCautionNote } from "@/features/ai/components";
 import { TestPaperCreatePicker } from "./create-picker";
 import {
@@ -34,6 +35,7 @@ import { OnlineTestTakeForm } from "./take-form";
 
 type Template = Awaited<ReturnType<typeof import("./queries").loadTestTemplatesForAdmin>>[number];
 type SelectionData = Awaited<ReturnType<typeof import("./service").loadTestPaperSelectionForParent>>;
+type TestPaperListItem = Awaited<ReturnType<typeof import("./service").loadOnlineTestPapersForParent>>[number];
 
 function statusTone(status: string) {
   if (status === "ACTIVE" || status === "EVALUATED") return "bg-emerald-50 text-emerald-800";
@@ -282,7 +284,7 @@ export function TestTemplateAdminView({ templates, selectedTemplate }: { templat
   );
 }
 
-export function TestPaperList({ papers, hrefBase, newHref, canDelete = false }: { papers: any[]; hrefBase: string; newHref: string; canDelete?: boolean }) {
+export function TestPaperList({ papers, hrefBase, newHref, canDelete = false }: { papers: TestPaperListItem[]; hrefBase: string; newHref: string; canDelete?: boolean }) {
   const hasFailedPapers = papers.some((paper) => paper.status === OnlineTestPaperStatus.FAILED);
 
   return (
@@ -334,7 +336,15 @@ export function TestPaperList({ papers, hrefBase, newHref, canDelete = false }: 
   );
 }
 
-export function TestPaperCreateForm({ data, kidMode = false }: { data: SelectionData | { child: SelectionData["children"][number]; templates: SelectionData["templates"] }; kidMode?: boolean }) {
+export function TestPaperCreateForm({
+  data,
+  error,
+  kidMode = false,
+}: {
+  data: SelectionData | { child: SelectionData["children"][number]; templates: SelectionData["templates"] };
+  error?: string | null;
+  kidMode?: boolean;
+}) {
   const children = "children" in data ? data.children : [data.child];
   return (
     <div className="grid gap-6">
@@ -344,6 +354,7 @@ export function TestPaperCreateForm({ data, kidMode = false }: { data: Selection
         <p className="mt-2 text-sm text-slate-600">Select a subject, template, and topics. The existing topic AI quota is used for every selected topic.</p>
       </header>
       <AiCautionNote />
+      {error ? <Notice tone="error">{error}</Notice> : null}
       <Card>
         <TestPaperCreatePicker childOptions={children} templates={data.templates} kidMode={kidMode} />
       </Card>
@@ -351,7 +362,7 @@ export function TestPaperCreateForm({ data, kidMode = false }: { data: Selection
   );
 }
 
-export function TestPaperDetail({ paper, hrefBase, canTake = false, parentMode = false }: { paper: OnlineTestPaperTree; hrefBase: string; canTake?: boolean; parentMode?: boolean }) {
+export function TestPaperDetail({ paper, canTake = false, parentMode = false }: { paper: OnlineTestPaperTree; canTake?: boolean; parentMode?: boolean }) {
   const attempt = paper.attempts[0];
   const earned = attempt?.finalMarks ?? attempt?.aiAwardedMarks ?? 0;
   return (

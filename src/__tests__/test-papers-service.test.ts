@@ -135,7 +135,38 @@ describe("online test papers", () => {
 
     expect(prompt.system).toContain("issueCode must be exactly one of");
     expect(prompt.system).toContain("Never use issueCode values such as NONE");
+    expect(prompt.system).toContain("exactly one questionReviews entry for every supplied clientQuestionId");
+    expect(prompt.system).toContain("Do not reject for harmless wording preferences");
     expect(prompt.user).toContain("For approved questionReviews");
+  });
+
+  it("passes teacher feedback into a repaired section without changing its slots", () => {
+    const prompt = buildGenerateTestPaperSectionPrompt({
+      sectionName: "Section A",
+      slots: [
+        {
+          clientQuestionId: "section-rule-1",
+          subject: "Mathematics",
+          className: "Class 8",
+          boardName: "CBSE",
+          chapterId: "chapter_1",
+          chapterName: "Geometry",
+          topicId: "topic_1",
+          topicName: "Polygons",
+          questionType: "SHORT_ANSWER",
+          marks: 2,
+          difficulty: "MEDIUM",
+        },
+      ],
+      reviewFeedback: [
+        "Question section-rule-1 - INCORRECT_ANSWER - The answer key is wrong - Suggested correction: Use 720 degrees.",
+      ],
+    });
+
+    expect(prompt.system).toContain("correct every listed issue");
+    expect(prompt.user).toContain("Teacher review feedback from the previous attempt");
+    expect(prompt.user).toContain("INCORRECT_ANSWER");
+    expect(prompt.user).toContain("section-rule-1");
   });
 
   it("rejects unknown AI review issue codes", () => {
