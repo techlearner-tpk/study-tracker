@@ -8,19 +8,23 @@ import { Card, CardTitle } from "@/components/ui/card";
 import { Input } from "@/components/ui/form";
 import { Progress } from "@/components/ui/progress";
 import { SubjectForm } from "@/features/subjects/components";
-import { ChapterForm } from "@/features/chapters/components";
-import { TopicForm } from "@/features/topics/components";
+import { ChapterForm, DeleteChapterButton } from "@/features/chapters/components";
+import { DeleteTopicButton, TopicForm } from "@/features/topics/components";
 import { cn } from "@/lib/utils";
 
 type KidTopic = {
   id: string;
   name: string;
+  description?: string | null;
   status: string;
+  confidenceRating?: number | null;
+  notes?: string | null;
 };
 
 type KidChapter = {
   id: string;
   name: string;
+  order?: number;
   topics: KidTopic[];
 };
 
@@ -204,12 +208,40 @@ export function KidSubjectExplorer({ subjects, childId, childThemeColor }: { sub
                     <div><p className="break-words font-semibold text-slate-950">Topics in {activeChapter.name}</p><p className="mt-1 text-sm text-slate-500">Chapter progress {progressFor(activeChapter.topics).percentage}%</p></div>
                     <div className="w-full sm:w-56"><Progress value={progressFor(activeChapter.topics).percentage} /></div>
                   </div>
+                  <details className="mt-4 rounded-md border border-slate-200 bg-slate-50/70 p-3">
+                    <summary className="cursor-pointer text-sm font-semibold text-slate-700">Edit chapter</summary>
+                    <div className="mt-3 grid gap-3">
+                      <ChapterForm
+                        subjectId={activeSubject.id}
+                        chapter={{ ...activeChapter, order: activeChapter.order ?? 0 }}
+                      />
+                      <div className="flex justify-end"><DeleteChapterButton chapter={activeChapter} /></div>
+                    </div>
+                  </details>
                   <div className="mt-4 grid gap-2">
                     {visibleTopics.map((topic) => (
-                      <Link key={topic.id} href={`/kid/topics/${topic.id}`} className="flex min-h-12 items-center justify-between gap-3 rounded-md border border-slate-200 px-3 py-2.5 transition hover:border-emerald-200 hover:bg-emerald-50">
-                        <span className="min-w-0 break-words font-medium text-slate-950">{topic.name}</span>
-                        <span className="flex shrink-0 items-center gap-2"><Badge>{statusLabel(topic.status)}</Badge><ChevronRight size={17} className="text-slate-400" /></span>
-                      </Link>
+                      <div key={topic.id} className="grid gap-2">
+                        <Link href={`/kid/topics/${topic.id}`} className="flex min-h-12 items-center justify-between gap-3 rounded-md border border-slate-200 px-3 py-2.5 transition hover:border-emerald-200 hover:bg-emerald-50">
+                          <span className="min-w-0 break-words font-medium text-slate-950">{topic.name}</span>
+                          <span className="flex shrink-0 items-center gap-2"><Badge>{statusLabel(topic.status)}</Badge><ChevronRight size={17} className="text-slate-400" /></span>
+                        </Link>
+                        <details className="rounded-md border border-slate-200 bg-slate-50/70 px-3 py-2">
+                          <summary className="cursor-pointer text-sm font-semibold text-slate-700">Edit topic</summary>
+                          <div className="mt-3 grid gap-3">
+                            <TopicForm
+                              chapterId={activeChapter.id}
+                              topic={{
+                                ...topic,
+                                description: topic.description ?? null,
+                                confidenceRating: topic.confidenceRating ?? null,
+                                notes: topic.notes ?? null,
+                              }}
+                              returnTo="/kid"
+                            />
+                            <div className="flex justify-end"><DeleteTopicButton topic={topic} /></div>
+                          </div>
+                        </details>
+                      </div>
                     ))}
                     {!visibleTopics.length ? <p className="text-sm text-slate-500">No matching topics in this chapter.</p> : null}
                   </div>

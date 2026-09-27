@@ -2,33 +2,59 @@ import Link from "next/link";
 import { Star } from "lucide-react";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
+import { ConfirmSubmitButton } from "@/components/ui/confirm-submit-button";
 import { Input, Label, Select, Textarea } from "@/components/ui/form";
-import { saveTopic } from "./actions";
+import { deleteTopic, saveTopic } from "./actions";
 
-export function TopicForm({ chapterId, returnTo }: { chapterId: string; returnTo?: string }) {
+export type EditableTopic = {
+  id: string;
+  name: string;
+  description: string | null;
+  status: string;
+  confidenceRating: number | null;
+  notes: string | null;
+};
+
+export function TopicForm({ chapterId, returnTo, topic }: { chapterId: string; returnTo?: string; topic?: EditableTopic }) {
   return (
     <form action={saveTopic} className="grid gap-3">
+      {topic ? <input type="hidden" name="id" value={topic.id} /> : null}
       <input type="hidden" name="chapterId" value={chapterId} />
       {returnTo ? <input type="hidden" name="returnTo" value={returnTo} /> : null}
-      <Label>Topic<Input name="name" required /></Label>
-      <Label>Description<Textarea name="description" /></Label>
+      <Label>Topic<Input name="name" defaultValue={topic?.name} required /></Label>
+      <Label>Description<Textarea name="description" defaultValue={topic?.description ?? ""} /></Label>
       <div className="grid gap-3 sm:grid-cols-2">
         <Label>Status
-          <Select name="status" defaultValue="NOT_STARTED">
+          <Select name="status" defaultValue={topic?.status ?? "NOT_STARTED"}>
             <option value="NOT_STARTED">Not Started</option>
             <option value="IN_PROGRESS">In Progress</option>
             <option value="COMPLETED">Completed</option>
           </Select>
         </Label>
         <Label>Confidence
-          <Select name="confidenceRating" defaultValue="">
+          <Select name="confidenceRating" defaultValue={topic?.confidenceRating ?? ""}>
             <option value="">Optional</option>
             {[1, 2, 3, 4, 5].map((value) => <option key={value} value={value}>{value}</option>)}
           </Select>
         </Label>
       </div>
-      <Label>Notes<Textarea name="notes" /></Label>
-      <Button type="submit">Add topic</Button>
+      <Label>Notes<Textarea name="notes" defaultValue={topic?.notes ?? ""} /></Label>
+      <Button type="submit" pendingText={topic ? "Saving..." : "Adding..."}>{topic ? "Save topic" : "Add topic"}</Button>
+    </form>
+  );
+}
+
+export function DeleteTopicButton({ topic }: { topic: Pick<EditableTopic, "id" | "name"> }) {
+  return (
+    <form action={deleteTopic}>
+      <input type="hidden" name="id" value={topic.id} />
+      <ConfirmSubmitButton
+        confirmationMessage={`Delete topic "${topic.name}" and its learning history?`}
+        variant="danger"
+        pendingText="Deleting..."
+      >
+        Delete topic
+      </ConfirmSubmitButton>
     </form>
   );
 }

@@ -58,4 +58,16 @@ describe("KidSubjectExplorer", () => {
     expect(screen.queryByRole("button", { name: /English/ })).toBeNull();
     expect(screen.getByRole("link", { name: /Polygons/ })).toBeTruthy();
   });
+
+  it("lets a kid open chapter and topic management controls", () => {
+    render(<KidSubjectExplorer subjects={subjects} childId="child_1" />);
+
+    fireEvent.click(screen.getByText("Edit chapter"));
+    fireEvent.click(screen.getByText("Edit topic"));
+
+    expect(screen.getByDisplayValue("Reading")).toBeTruthy();
+    expect(screen.getByDisplayValue("Inference")).toBeTruthy();
+    expect(screen.getByRole("button", { name: "Delete chapter" })).toBeTruthy();
+    expect(screen.getByRole("button", { name: "Delete topic" })).toBeTruthy();
+  });
 });

@@ -6,6 +6,7 @@ import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Card, CardTitle } from "@/components/ui/card";
 import { Progress } from "@/components/ui/progress";
+import { Notice } from "@/components/ui/notice";
 import { loadAssignmentsForKid } from "@/features/assignments/service";
 import { buildChildAnalytics } from "@/features/dashboard/queries";
 import { KidSubjectExplorer } from "@/features/dashboard/kid-subject-explorer";
@@ -17,8 +18,9 @@ import { minutesLabel } from "@/lib/utils";
 
 export const dynamic = "force-dynamic";
 
-export default async function KidPage() {
+export default async function KidPage({ searchParams }: { searchParams?: Promise<{ deleteError?: string }> }) {
   const user = await requireKidUser();
+  const query = await searchParams;
   if (!user.childId) notFound();
 
   const [child, assignments, papers] = await Promise.all([
@@ -39,6 +41,8 @@ export default async function KidPage() {
           <h1 className="mt-1 text-3xl font-semibold tracking-tight text-slate-950">Welcome, {child.name}</h1>
           <p className="mt-2 text-sm text-slate-600">Continue learning, complete assignments, or take an assigned test.</p>
         </header>
+
+        {query?.deleteError ? <Notice tone="error">{query.deleteError}</Notice> : null}
 
         <section className="grid gap-4 sm:grid-cols-2 xl:grid-cols-4">
           <Metric icon={<Clock size={18} />} label="Today's study time" value={minutesLabel(analytics.todayStudyTime)} />
@@ -88,7 +92,15 @@ export default async function KidPage() {
             chapters: subject.chapters.map((chapter) => ({
               id: chapter.id,
               name: chapter.name,
-              topics: chapter.topics.map((topic) => ({ id: topic.id, name: topic.name, status: topic.status })),
+              order: chapter.order,
+              topics: chapter.topics.map((topic) => ({
+                id: topic.id,
+                name: topic.name,
+                description: topic.description,
+                status: topic.status,
+                confidenceRating: topic.confidenceRating,
+                notes: topic.notes,
+              })),
             })),
           }))}
         />

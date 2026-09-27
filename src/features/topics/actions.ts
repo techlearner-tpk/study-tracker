@@ -1,11 +1,11 @@
 "use server";
 
-import { LearningStatus } from "@prisma/client";
+import { LearningStatus, Prisma } from "@prisma/client";
 import { revalidatePath } from "next/cache";
 import { redirect } from "next/navigation";
 import { prisma } from "@/lib/prisma";
 import { getOwnedChapter, getOwnedTopic } from "@/lib/ownership";
-import { requireCurrentUser, requireParentUser } from "@/lib/auth";
+import { requireCurrentUser } from "@/lib/auth";
 import { formDataToObject, topicSchema } from "@/lib/validations";
 import { invalidateChildDashboardCaches } from "@/lib/cache-tags";
 
@@ -24,7 +24,8 @@ export async function saveTopic(formData: FormData) {
   };
 
   if (data.id) {
-    await getOwnedTopic(user.id, data.id);
+    const existingTopic = await getOwnedTopic(user.id, data.id);
+    if (existingTopic.chapterId !== data.chapterId) throw new Error("Topic and chapter mismatch.");
   }
   const topic = data.id
     ? await prisma.topic.update({ where: { id: data.id }, data: payload })
@@ -42,11 +43,22 @@ export async function saveTopic(formData: FormData) {
 }
 
 export async function deleteTopic(formData: FormData) {
-  const user = await requireParentUser();
+  const user = await requireCurrentUser();
   const id = String(formData.get("id"));
   const topic = await getOwnedTopic(user.id, id);
-  await prisma.topic.delete({ where: { id } });
+  const child = topic.chapter.subject.child;
+  const destination = user.role === "KID" ? "/kid" : `/children/${child.id}`;
+  try {
+    await prisma.topic.delete({ where: { id } });
+  } catch (error) {
+    if (error instanceof Prisma.PrismaClientKnownRequestError && error.code === "P2003") {
+      const message = "This topic cannot be deleted because it is used by an assignment or test paper.";
+      redirect(`${destination}?deleteError=${encodeURIComponent(message)}`);
+    }
+    throw error;
+  }
   revalidatePath(`/children/${topic.chapter.subject.childId}`);
-  invalidateChildDashboardCaches(topic.chapter.subject.childId, user.id);
-  redirect(`/children/${topic.chapter.subject.childId}`);
+  revalidatePath("/kid");
+  invalidateChildDashboardCaches(child.id, child.userId);
+  redirect(destination);
 }

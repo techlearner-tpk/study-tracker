@@ -12,13 +12,13 @@ import { calculateTopicProgress } from "@/lib/analytics";
 import { requireParentUser } from "@/lib/auth";
 import { resolveSubjectColor } from "@/lib/subject-colors";
 import { minutesLabel } from "@/lib/utils";
-import { ChapterForm } from "@/features/chapters/components";
+import { ChapterForm, DeleteChapterButton } from "@/features/chapters/components";
 import { ChildForm, DangerDeleteChild } from "@/features/children/components";
 import { DynamicGreeting } from "@/features/dashboard/greeting";
 import { getChildDashboard } from "@/features/dashboard/queries";
 import { createHabitGoal, createOutcomeGoal } from "@/features/goals/actions";
 import { DeleteSubjectButton, SubjectForm } from "@/features/subjects/components";
-import { TopicForm, TopicRow } from "@/features/topics/components";
+import { DeleteTopicButton, TopicForm, TopicRow } from "@/features/topics/components";
 
 export const dynamic = "force-dynamic";
 
@@ -263,8 +263,26 @@ export default async function ChildPage({
                               </div>
                               <div className="w-full sm:w-56"><Progress value={chapterProgress.progress} /></div>
                             </div>
+                            <details className="mt-4 rounded-md border border-slate-200 bg-slate-50/70 p-3">
+                              <summary className="cursor-pointer text-sm font-medium text-slate-700">Edit chapter</summary>
+                              <div className="mt-3 grid gap-3">
+                                <ChapterForm subjectId={subject.id} chapter={{ id: chapter.id, name: chapter.name, order: chapter.order }} />
+                                <div className="flex justify-end"><DeleteChapterButton chapter={chapter} /></div>
+                              </div>
+                            </details>
                             <div className="mt-4 grid gap-2">
-                              {chapter.topics.length ? chapter.topics.map((topic) => <TopicRow key={topic.id} topic={topic} />) : <p className="text-sm text-slate-500">No topics yet.</p>}
+                              {chapter.topics.length ? chapter.topics.map((topic) => (
+                                <div key={topic.id} className="grid gap-2">
+                                  <TopicRow topic={topic} />
+                                  <details className="mt-2 border-t border-slate-200 px-1 pt-2">
+                                    <summary className="cursor-pointer text-sm font-medium text-slate-700">Edit topic</summary>
+                                    <div className="mt-3 grid gap-3">
+                                      <TopicForm chapterId={chapter.id} topic={topic} />
+                                      <div className="flex justify-end"><DeleteTopicButton topic={topic} /></div>
+                                    </div>
+                                  </details>
+                                </div>
+                              )) : <p className="text-sm text-slate-500">No topics yet.</p>}
                             </div>
                             <details className="mt-4">
                               <summary className="cursor-pointer text-sm font-medium text-emerald-800">Add topic</summary>
