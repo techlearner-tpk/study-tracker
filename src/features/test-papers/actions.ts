@@ -24,6 +24,7 @@ import {
   allowedQuestionTypesForSubject,
   deleteFailedOnlineTestPapersForParent,
   deleteOwnedOnlineTestPaper,
+  evaluateOnlineTestAttempt,
   generateOnlineTestPaper,
   getOwnedOnlineTestPaper,
   startOnlineTestAttempt,
@@ -325,6 +326,16 @@ export async function submitOnlineTestAttemptAction(formData: FormData) {
     }
   }
   await submitOnlineTestAttempt({ userId: currentUser.id, attemptId: data.attemptId, answers });
+  revalidatePath(`/test-papers/${data.paperId}`);
+  revalidatePath(`/kid/tests/${data.paperId}`);
+  redirect(currentUser.role === "KID" ? `/kid/tests/${data.paperId}` : `/test-papers/${data.paperId}`);
+}
+
+export async function retryOnlineTestEvaluationAction(formData: FormData) {
+  const currentUser = await requireCurrentUser();
+  const data = onlineTestSubmitSchema.parse(formDataToObject(formData));
+  await getOwnedOnlineTestPaper(currentUser.id, data.paperId);
+  await evaluateOnlineTestAttempt({ userId: currentUser.id, attemptId: data.attemptId });
   revalidatePath(`/test-papers/${data.paperId}`);
   revalidatePath(`/kid/tests/${data.paperId}`);
   redirect(currentUser.role === "KID" ? `/kid/tests/${data.paperId}` : `/test-papers/${data.paperId}`);

@@ -25,6 +25,7 @@ import {
   deleteOnlineTestPaperAction,
   deleteTestTemplateRuleAction,
   deleteTestTemplateSectionAction,
+  retryOnlineTestEvaluationAction,
   startOnlineTestAttemptAction,
   updateTestTemplateAction,
   updateTestTemplateRuleAction,
@@ -398,6 +399,18 @@ export function TestPaperDetail({ paper, canTake = false, parentMode = false }: 
               </form>
             ) : null}
           </div>
+        </Card>
+      ) : attempt?.status === OnlineTestAttemptStatus.SUBMITTED ? (
+        <Card>
+          <CardTitle>Answers submitted</CardTitle>
+          <p className="mt-2 text-sm text-slate-600">
+            {attempt.overallFeedback ?? "Your answers are saved and waiting for AI grading."}
+          </p>
+          <form action={retryOnlineTestEvaluationAction} className="mt-4">
+            <input type="hidden" name="paperId" value={paper.id} />
+            <input type="hidden" name="attemptId" value={attempt.id} />
+            <Button type="submit" pendingText="Grading...">Retry AI grading</Button>
+          </form>
         </Card>
       ) : canTake ? (
         <Card>

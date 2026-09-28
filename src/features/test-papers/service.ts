@@ -696,8 +696,78 @@ export async function submitOnlineTestAttempt({
   if (!attempt || (attempt.testPaper.child.userId !== userId && attempt.testPaper.child.kidUser?.id !== userId)) {
     throw new Error("Test attempt not found.");
   }
-  if (attempt.status === OnlineTestAttemptStatus.SUBMITTED || attempt.status === OnlineTestAttemptStatus.EVALUATED) {
+  if (attempt.status === OnlineTestAttemptStatus.EVALUATED || attempt.status === OnlineTestAttemptStatus.NEEDS_REVIEW) {
     throw new Error("This test has already been submitted.");
+  }
+
+  if (attempt.status !== OnlineTestAttemptStatus.SUBMITTED) {
+    const questions = attempt.testPaper.sections.flatMap((section) => section.questions);
+    await prisma.$transaction(async (tx) => {
+      await tx.onlineTestAnswer.deleteMany({ where: { attemptId } });
+      await tx.onlineTestAnswer.createMany({
+        data: questions.map((question) => ({
+          attemptId,
+          questionId: question.id,
+          answerText: answers[question.id] ?? "",
+        })),
+      });
+      await tx.onlineTestAttempt.update({
+        where: { id: attemptId },
+        data: {
+          status: OnlineTestAttemptStatus.SUBMITTED,
+          submittedAt: new Date(),
+          evaluatedAt: null,
+          aiAwardedMarks: null,
+          finalMarks: null,
+          percentage: null,
+          overallFeedback: "Your answers are saved. AI grading is in progress.",
+        },
+      });
+      await tx.onlineTestPaper.update({
+        where: { id: attempt.testPaperId },
+        data: { status: OnlineTestPaperStatus.SUBMITTED },
+      });
+    }, { timeout: 15000 });
+  }
+
+  return evaluateOnlineTestAttempt({ userId, attemptId, provider });
+}
+
+export async function evaluateOnlineTestAttempt({
+  userId,
+  attemptId,
+  provider = createAiLearningProvider(),
+}: {
+  userId: string;
+  attemptId: string;
+  provider?: Pick<AiLearningProvider, "evaluateSubjectiveAnswer">;
+}) {
+  const attempt = await prisma.onlineTestAttempt.findUnique({
+    where: { id: attemptId },
+    include: {
+      answers: true,
+      testPaper: {
+        include: {
+          child: { include: { kidUser: true, curriculumAssignments: { include: { curriculumVersion: { include: { board: true } } } } } },
+          subject: true,
+          sections: { include: { questions: { include: { topic: true, chapter: true } } } },
+        },
+      },
+    },
+  });
+  if (!attempt || (attempt.testPaper.child.userId !== userId && attempt.testPaper.child.kidUser?.id !== userId)) {
+    throw new Error("Test attempt not found.");
+  }
+  if (attempt.status === OnlineTestAttemptStatus.EVALUATED || attempt.status === OnlineTestAttemptStatus.NEEDS_REVIEW) {
+    return {
+      paperId: attempt.testPaperId,
+      percentage: attempt.percentage,
+      needsReview: attempt.status === OnlineTestAttemptStatus.NEEDS_REVIEW,
+      gradingPending: false,
+    };
+  }
+  if (attempt.status !== OnlineTestAttemptStatus.SUBMITTED) {
+    throw new Error("Submit the test before requesting AI grading.");
   }
 
   const boardName = attempt.testPaper.child.curriculumAssignments[0]?.curriculumVersion.board.name ?? null;
@@ -705,27 +775,53 @@ export async function submitOnlineTestAttempt({
   let aiAwardedMarks = 0;
   let finalMarks = 0;
   let needsReview = false;
-  const allAnswers: Prisma.OnlineTestAnswerCreateManyInput[] = [];
+  const savedAnswers = new Map(attempt.answers.map((answer) => [answer.questionId, answer.answerText ?? ""]));
+  const evaluations: Array<{
+    questionId: string;
+    awarded: number;
+    confidence: number;
+    feedback: string | null;
+    needsReview: boolean;
+  }> = [];
 
   for (const question of attempt.testPaper.sections.flatMap((section) => section.questions)) {
-    const answerText = answers[question.id] ?? "";
+    const answerText = savedAnswers.get(question.id) ?? "";
     let awarded = 0;
     let confidence = 1;
     let feedback = question.explanation;
     if (subjectiveTypes.has(question.questionType)) {
-      const evaluation = await provider.evaluateSubjectiveAnswer({
-        className: attempt.testPaper.child.className,
-        boardName,
-        subjectName: attempt.testPaper.subject.name,
-        chapterName: question.chapter.name,
-        topicName: question.topic.name,
-        questionType: question.questionType,
-        questionText: question.questionText,
-        maximumMarks: question.marks,
-        correctAnswer: question.correctAnswerJson,
-        markingScheme: question.markingSchemeJson,
-        studentAnswer: answerText,
-      });
+      let evaluation;
+      try {
+        evaluation = await provider.evaluateSubjectiveAnswer({
+          className: attempt.testPaper.child.className,
+          boardName,
+          subjectName: attempt.testPaper.subject.name,
+          chapterName: question.chapter.name,
+          topicName: question.topic.name,
+          questionType: question.questionType,
+          questionText: question.questionText,
+          maximumMarks: question.marks,
+          correctAnswer: question.correctAnswerJson,
+          markingScheme: question.markingSchemeJson,
+          studentAnswer: answerText,
+        });
+      } catch (error) {
+        console.error("[test-papers] AI grading deferred", {
+          attemptId,
+          questionId: question.id,
+          error: error instanceof Error ? error.message : String(error),
+        });
+        await prisma.onlineTestAttempt.update({
+          where: { id: attemptId },
+          data: { overallFeedback: "Your answers are saved. AI grading is temporarily unavailable. Please retry grading shortly." },
+        });
+        return {
+          paperId: attempt.testPaperId,
+          percentage: null,
+          needsReview: false,
+          gradingPending: true,
+        };
+      }
       awarded = Math.min(question.marks, Math.max(0, evaluation.awardedMarks));
       confidence = evaluation.confidence;
       feedback = evaluation.feedback;
@@ -735,14 +831,11 @@ export async function submitOnlineTestAttempt({
     }
     aiAwardedMarks += awarded;
     finalMarks += awarded;
-    allAnswers.push({
-      attemptId,
+    evaluations.push({
       questionId: question.id,
-      answerText,
-      aiAwardedMarks: awarded,
-      finalMarks: awarded,
-      aiFeedback: feedback,
-      evaluationConfidence: confidence,
+      awarded,
+      confidence,
+      feedback,
       needsReview: confidence < threshold,
     });
   }
@@ -750,7 +843,18 @@ export async function submitOnlineTestAttempt({
   const percentage = attempt.testPaper.totalMarks ? Math.round((finalMarks / attempt.testPaper.totalMarks) * 100) : 0;
   const status = needsReview ? OnlineTestAttemptStatus.NEEDS_REVIEW : OnlineTestAttemptStatus.EVALUATED;
   await prisma.$transaction(async (tx) => {
-    await tx.onlineTestAnswer.createMany({ data: allAnswers });
+    for (const evaluation of evaluations) {
+      await tx.onlineTestAnswer.update({
+        where: { attemptId_questionId: { attemptId, questionId: evaluation.questionId } },
+        data: {
+          aiAwardedMarks: evaluation.awarded,
+          finalMarks: evaluation.awarded,
+          aiFeedback: evaluation.feedback,
+          evaluationConfidence: evaluation.confidence,
+          needsReview: evaluation.needsReview,
+        },
+      });
+    }
     await tx.onlineTestAttempt.update({
       where: { id: attemptId },
       data: {
@@ -769,7 +873,7 @@ export async function submitOnlineTestAttempt({
     });
   }, { timeout: 15000 });
 
-  return { paperId: attempt.testPaperId, percentage, needsReview };
+  return { paperId: attempt.testPaperId, percentage, needsReview, gradingPending: false };
 }
 
 export async function getTopicUsageForPaper(paper: OnlineTestPaperTree) {
