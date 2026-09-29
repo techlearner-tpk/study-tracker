@@ -10,6 +10,7 @@ import {
   Prisma,
   TestTemplateStatus,
 } from "@prisma/client";
+import { canTakeOnlineTestPaper, OnlineTestPaperUnavailableError } from "./availability";
 import { prisma } from "@/lib/prisma";
 import { getAiConfig } from "@/lib/ai/config";
 import { createAiLearningProvider } from "@/lib/ai/gemini-provider";
@@ -642,8 +643,8 @@ export async function getOwnedOnlineTestPaper(userId: string, paperId: string): 
 
 export async function startOnlineTestAttempt(userId: string, paperId: string) {
   const paper = await getOwnedOnlineTestPaper(userId, paperId);
-  if (paper.status !== OnlineTestPaperStatus.ASSIGNED && paper.status !== OnlineTestPaperStatus.IN_PROGRESS) {
-    throw new Error("This paper is not available for taking.");
+  if (!canTakeOnlineTestPaper(paper.status)) {
+    throw new OnlineTestPaperUnavailableError();
   }
   const existing = paper.attempts.find((attempt) => attempt.status === OnlineTestAttemptStatus.IN_PROGRESS);
   if (existing) return existing.id;

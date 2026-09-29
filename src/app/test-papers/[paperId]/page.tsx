@@ -5,14 +5,21 @@ import { requireParentUser } from "@/lib/auth";
 
 export const dynamic = "force-dynamic";
 
-export default async function TestPaperDetailPage({ params }: { params: Promise<{ paperId: string }> }) {
+export default async function TestPaperDetailPage({
+  params,
+  searchParams,
+}: {
+  params: Promise<{ paperId: string }>;
+  searchParams: Promise<{ error?: string }>;
+}) {
   const user = await requireParentUser();
   const { paperId } = await params;
+  const { error } = await searchParams;
   const paper = await getOwnedOnlineTestPaper(user.id, paperId);
 
   return (
     <AppShell>
-      <TestPaperDetail paper={paper} canTake parentMode />
+      <TestPaperDetail paper={paper} canTake parentMode error={error} />
     </AppShell>
   );
 }

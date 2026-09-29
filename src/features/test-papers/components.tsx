@@ -33,6 +33,7 @@ import {
 } from "./actions";
 import { allowedQuestionTypesForSubject, supportedTestPaperSubjects, type OnlineTestPaperTree } from "./service";
 import { OnlineTestTakeForm } from "./take-form";
+import { canTakeOnlineTestPaper } from "./availability";
 
 type Template = Awaited<ReturnType<typeof import("./queries").loadTestTemplatesForAdmin>>[number];
 type SelectionData = Awaited<ReturnType<typeof import("./service").loadTestPaperSelectionForParent>>;
@@ -299,7 +300,7 @@ export function TestPaperList({ papers, hrefBase, newHref, canDelete = false }: 
         <div className="flex flex-wrap gap-2">
           {canDelete && hasFailedPapers ? (
             <form action={deleteFailedOnlineTestPapersAction}>
-              <Button type="submit" variant="danger" pendingText="Deleting...">Delete failed</Button>
+              <Button type="submit" variant="danger" pendingText="Deleting...">Delete failed papers</Button>
             </form>
           ) : null}
           <Link href={newHref}><Button type="button">New test paper</Button></Link>
@@ -363,9 +364,10 @@ export function TestPaperCreateForm({
   );
 }
 
-export function TestPaperDetail({ paper, canTake = false, parentMode = false }: { paper: OnlineTestPaperTree; canTake?: boolean; parentMode?: boolean }) {
+export function TestPaperDetail({ paper, canTake = false, parentMode = false, error }: { paper: OnlineTestPaperTree; canTake?: boolean; parentMode?: boolean; error?: string | null }) {
   const attempt = paper.attempts[0];
   const earned = attempt?.finalMarks ?? attempt?.aiAwardedMarks ?? 0;
+  const isAvailableForTaking = canTake && canTakeOnlineTestPaper(paper.status);
   return (
     <div className="grid gap-6">
       <header className="flex flex-col gap-3 sm:flex-row sm:items-start sm:justify-between">
@@ -385,6 +387,10 @@ export function TestPaperDetail({ paper, canTake = false, parentMode = false }: 
         </div>
       </header>
       <AiCautionNote />
+      {error ? <Notice tone="error">{error}</Notice> : null}
+      {paper.status === OnlineTestPaperStatus.FAILED ? (
+        <Notice tone="error">This paper could not be generated. Delete it and create a new paper.</Notice>
+      ) : null}
       {attempt?.status === OnlineTestAttemptStatus.EVALUATED || attempt?.status === OnlineTestAttemptStatus.NEEDS_REVIEW ? (
         <Card>
           <CardTitle>Result</CardTitle>
@@ -412,7 +418,7 @@ export function TestPaperDetail({ paper, canTake = false, parentMode = false }: 
             <Button type="submit" pendingText="Grading...">Retry AI grading</Button>
           </form>
         </Card>
-      ) : canTake ? (
+      ) : isAvailableForTaking ? (
         <Card>
           <CardTitle>{parentMode ? "Open test player" : "Ready to take"}</CardTitle>
           <p className="mt-2 text-sm text-slate-600">

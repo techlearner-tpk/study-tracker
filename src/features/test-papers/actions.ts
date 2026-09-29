@@ -31,6 +31,10 @@ import {
   submitOnlineTestAttempt,
   validateTemplateTotals,
 } from "./service";
+import {
+  OnlineTestPaperUnavailableError,
+  onlineTestPaperUnavailableMessage,
+} from "./availability";
 
 function revalidateTemplateAdmin() {
   revalidatePath("/admin/test-templates");
@@ -311,7 +315,15 @@ export async function generateOnlineTestPaperAction(formData: FormData) {
 export async function startOnlineTestAttemptAction(formData: FormData) {
   const currentUser = await requireCurrentUser();
   const { paperId } = onlineTestSubmitSchema.pick({ paperId: true }).parse(formDataToObject(formData));
-  await startOnlineTestAttempt(currentUser.id, paperId);
+  try {
+    await startOnlineTestAttempt(currentUser.id, paperId);
+  } catch (error) {
+    if (error instanceof OnlineTestPaperUnavailableError) {
+      const detailPath = currentUser.role === "KID" ? `/kid/tests/${paperId}` : `/test-papers/${paperId}`;
+      redirect(`${detailPath}?error=${encodeURIComponent(onlineTestPaperUnavailableMessage)}`);
+    }
+    throw error;
+  }
   redirect(currentUser.role === "KID" ? `/kid/tests/${paperId}/take` : `/test-papers/${paperId}/take`);
 }
 
