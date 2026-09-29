@@ -44,8 +44,10 @@ export default async function AiAdminPage({
             <CardTitle>Provider</CardTitle>
             <div className="mt-3 grid gap-2 text-sm text-stone-600">
               <p>Enabled: {String(config.enabled)}</p>
-              <p>Provider: {config.provider}</p>
-              <p>Model: {config.model || "Not set"}</p>
+              <p>Primary provider: {config.provider}</p>
+              <p>Primary model: {config.model || "Not set"}</p>
+              <p>Backup provider: {config.fallbackProvider ?? "Disabled"}</p>
+              <p>Backup model: {config.fallbackProvider ? config.openRouterModel : "Not set"}</p>
             </div>
           </Card>
 

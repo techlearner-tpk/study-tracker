@@ -16,6 +16,7 @@ import { buildGenerateTestPaperSectionPrompt } from "./prompts/generate-test-pap
 import { buildReviewTestPaperPrompt } from "./prompts/review-test-paper";
 import { buildTeachTopicPrompt } from "./prompts/teach-topic";
 import { z } from "zod";
+import { AiProviderError, isRetryableAiProviderError } from "./provider";
 import type {
   AiLearningProvider,
   EvaluateTestInput,
@@ -31,6 +32,8 @@ import type {
   SubjectiveAnswerEvaluation,
   TestPaperReview,
 } from "./provider";
+import { FallbackAiLearningProvider } from "./fallback-provider";
+import { OpenRouterAiLearningProvider } from "./openrouter-provider";
 
 type GeminiCallOptions = {
   maxOutputTokens?: number;
@@ -57,31 +60,47 @@ async function readGeminiText(response: Response) {
 
 async function callGemini(system: string, user: string, options: GeminiCallOptions = {}) {
   const config = getAiConfig();
-  const response = await fetch(`https://generativelanguage.googleapis.com/v1beta/models/${encodeURIComponent(config.model)}:generateContent?key=${encodeURIComponent(config.apiKey)}`, {
-    method: "POST",
-    headers: { "Content-Type": "application/json" },
-    body: JSON.stringify({
-      systemInstruction: {
-        parts: [{ text: system }],
-      },
-      contents: [
-        {
-          role: "user",
-          parts: [{ text: user }],
+  let response: Response;
+  try {
+    response = await fetch(`https://generativelanguage.googleapis.com/v1beta/models/${encodeURIComponent(config.model)}:generateContent?key=${encodeURIComponent(config.apiKey)}`, {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({
+        systemInstruction: {
+          parts: [{ text: system }],
         },
-      ],
-      generationConfig: {
-        temperature: 0.3,
-        maxOutputTokens: options.maxOutputTokens ?? config.maxOutputTokens,
-        responseMimeType: "application/json",
-      },
-    }),
-    signal: AbortSignal.timeout(config.requestTimeoutMs),
-  });
+        contents: [
+          {
+            role: "user",
+            parts: [{ text: user }],
+          },
+        ],
+        generationConfig: {
+          temperature: 0.3,
+          maxOutputTokens: options.maxOutputTokens ?? config.maxOutputTokens,
+          responseMimeType: "application/json",
+        },
+      }),
+      signal: AbortSignal.timeout(config.requestTimeoutMs),
+    });
+  } catch (error) {
+    throw new AiProviderError(
+      `Gemini request failed: ${error instanceof Error ? error.message : String(error)}`,
+      "gemini",
+      null,
+      true,
+    );
+  }
 
   if (!response.ok) {
     const body = await response.text().catch(() => "");
-    throw new Error(`AI provider error: ${response.status}${body ? ` - ${body.slice(0, 500)}` : ""}`);
+    const retryable = response.status === 408 || response.status === 429 || response.status >= 500;
+    throw new AiProviderError(
+      `AI provider error: ${response.status}${body ? ` - ${body.slice(0, 500)}` : ""}`,
+      "gemini",
+      response.status,
+      retryable,
+    );
   }
 
   return readGeminiText(response);
@@ -101,6 +120,9 @@ async function callWithValidation<T>(
       const parsed = JSON.parse(extractJson(raw));
       return schema.parse(parsed);
     } catch (error) {
+      if (error instanceof AiProviderError && !isRetryableAiProviderError(error)) {
+        throw error;
+      }
       if (error instanceof SyntaxError) {
         lastError = new Error("AI returned malformed JSON. Please try again; if it repeats, reduce the test size or increase AI_TEST_PAPER_MAX_OUTPUT_TOKENS.");
       } else {
@@ -112,6 +134,11 @@ async function callWithValidation<T>(
 }
 
 export class GeminiAiLearningProvider implements AiLearningProvider {
+  getLastProviderInfo() {
+    const config = getAiConfig();
+    return { provider: "gemini" as const, model: config.model };
+  }
+
   async teachTopic(input: TeachTopicInput): Promise<TeachTopicResult> {
     const config = getAiConfig();
     return callWithValidation(
@@ -174,5 +201,7 @@ export function createAiLearningProvider() {
   if (config.provider !== "gemini") {
     throw new Error(`Unsupported AI provider: ${config.provider}`);
   }
-  return new GeminiAiLearningProvider();
+  const primary = new GeminiAiLearningProvider();
+  if (config.fallbackProvider !== "openrouter") return primary;
+  return new FallbackAiLearningProvider(primary, new OpenRouterAiLearningProvider());
 }

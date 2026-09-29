@@ -243,325 +243,6 @@ export async function evaluateSubmittedTestAnswers({
   return { evaluation, scorePercentage, correctCount };
 }
 
-function isMathTopicName(topicName: string) {
-  const lower = topicName.toLowerCase();
-  return lower.includes("integer") || lower.includes("number") || lower.includes("fraction") || lower.includes("decimal") || lower.includes("equation") || lower.includes("operation");
-}
-
-function isReadingTopicName(topicName: string) {
-  const lower = topicName.toLowerCase();
-  return lower.includes("passage") || lower.includes("reading") || lower.includes("comprehension");
-}
-
-function fallbackTeachLesson(input: TeachTopicInput): TeachTopicResult {
-  const isMathTopic = isMathTopicName(input.topicName);
-  const isReadingTopic = isReadingTopicName(input.topicName);
-  const topicLower = input.topicName.toLowerCase();
-  const chapterLower = input.chapterName.toLowerCase();
-
-  let explanation = input.topicDescription?.trim() || `This topic is part of ${input.subjectName} for ${input.className}.`;
-  let example = `Example: use the topic in one specific way from the lesson.`;
-  let mistake = `A common mistake is to treat ${topicLower} as a generic idea instead of the exact topic in this chapter.`;
-  let practice = `Try one question from ${topicLower} and explain your answer.`;
-  let learningGoal = `The student will understand ${topicLower} and use it in a simple question.`;
-  let prerequisite = `The student should already know the basic ideas from ${chapterLower}.`;
-  let checkQuestion = {
-    question: `What is the key idea of ${topicLower}?`,
-    expectedAnswer: `An explanation of ${topicLower} using the lesson.`,
-    hint: `Look at the concept and the worked example.`,
-  };
-
-  if (topicLower.includes("polygon")) {
-    learningGoal = "Calculate the total sum of the interior angles for any polygon using the number of its sides.";
-    prerequisite = "You should know that the sum of the interior angles of a triangle is always 180 degrees.";
-    explanation = "A polygon is a closed flat shape made of three or more straight lines called sides. To find the total sum of its interior angles, we use the formula (n - 2) × 180 degrees, where n is the number of sides. This works because any polygon with n sides can be divided into (n - 2) triangles, and each triangle has an angle sum of 180 degrees.";
-    example = "To find the sum of interior angles of a hexagon (a 6-sided polygon), we set n = 6.\nStep 1: Use the formula (n - 2) × 180 degrees.\nStep 2: (6 - 2) × 180 degrees = 4 × 180 degrees.\nStep 3: 4 × 180 degrees = 720 degrees.\nAnswer: The sum of the interior angles of a hexagon is 720 degrees.";
-    mistake = "A common mistake is using the number of sides directly instead of subtracting 2 first. For example, for a square, 4 × 180 = 720 degrees is wrong; the correct answer is (4 - 2) × 180 = 360 degrees.";
-    practice = "Calculate the sum of the interior angles for a heptagon, which has 7 sides.";
-    checkQuestion = {
-      question: "What is the sum of the interior angles of a polygon with 10 sides (a decagon)?",
-      expectedAnswer: "1440 degrees",
-      hint: "Subtract 2 from 10, then multiply the result by 180.",
-    };
-  }
-
-  if (isMathTopic) {
-    if (!topicLower.includes("polygon")) {
-      explanation = `This topic teaches how to work with numbers in a clear step-by-step way. It shows you how to use rules, signs, and operations without getting confused. If you read the steps carefully, you can work out the answer one part at a time.`;
-      example = `Example: if you add -3 and 5, the answer is 2 because 5 has 3 more than -3.`;
-      mistake = `A common mistake is to ignore the sign and treat -3 + 5 like 3 + 5. That changes the answer completely.`;
-      practice = `Try solving -4 + 7 and explain why the answer is positive.`;
-      learningGoal = `The student will understand how to apply the rules for operations on integers in a simple calculation.`;
-      prerequisite = `The student should know the difference between positive and negative numbers.`;
-      checkQuestion = {
-        question: `What happens when you add 5 to -3?`,
-        expectedAnswer: `The answer is 2.`,
-        hint: `Think about moving 5 steps right from -3 on a number line.`,
-      };
-    }
-  } else if (isReadingTopic) {
-    explanation = `A ${input.topicName.toLowerCase()} is a piece of reading that can tell a story, explain an idea, or give information. When you read it, you look for the main idea, important details, and the message the writer wants to share. It is a way to practice understanding text carefully instead of just reading the words quickly.`;
-    example = `Example: a passage about school rules may explain why we line up quietly and how it helps everyone.`;
-    mistake = `A common mistake is to copy one sentence without understanding the main idea of the passage.`;
-    practice = `Read one sentence and say what it is mainly about in your own words.`;
-    learningGoal = `The student will understand what a ${input.topicName.toLowerCase()} means and answer a question about its main idea.`;
-    prerequisite = `The student should be able to read a short sentence or paragraph.`;
-    checkQuestion = {
-      question: `What is the main idea of a ${input.topicName.toLowerCase()}?`,
-      expectedAnswer: `The central message or idea of the passage.`,
-      hint: `Think about what the whole text is mostly about.`,
-    };
-  } else if (input.topicDescription?.trim()) {
-    explanation = input.topicDescription.trim();
-  }
-
-  return {
-    title: `A short lesson on ${input.topicName}`,
-    learningGoal,
-    prerequisite,
-    explanation,
-    example,
-    mistake,
-    practice,
-    suggestedActions: [
-      "Explain more simply",
-      "Show another worked example",
-      "Ask me one question at a time",
-      "Explain my mistake",
-    ],
-    checkQuestion,
-  };
-}
-
-export function fallbackTeachLessonV2(input: TeachTopicInput): TeachTopicResult {
-  const topicLower = input.topicName.toLowerCase();
-  const chapterLower = input.chapterName.toLowerCase();
-  const isPolygonTopic = topicLower.includes("polygon");
-
-  if (isPolygonTopic) {
-    return {
-      title: "Calculating the Sum of Interior Angles of a Polygon",
-      learningGoal: "Understand and apply the formula to calculate the sum of interior angles for any convex polygon using its number of sides.",
-      prerequisite: "You should already know that the sum of the interior angles of a triangle is 180 degrees.",
-      explanation:
-        "A polygon is a closed flat shape made of three or more straight sides. To find the total sum of its interior angles, we use the formula (n - 2) x 180 degrees, where n is the number of sides. This works because any polygon with n sides can be divided into (n - 2) triangles, and each triangle has an angle sum of 180 degrees.",
-      example:
-        "Find the sum of the interior angles of a hexagon, which has 6 sides.\nStep 1: Write the formula (n - 2) x 180 degrees.\nStep 2: Substitute n = 6.\nStep 3: (6 - 2) x 180 = 4 x 180.\nStep 4: 4 x 180 = 720 degrees.\nAnswer: The sum of the interior angles of a hexagon is 720 degrees.",
-      mistake:
-        "A common mistake is forgetting to subtract 2 from the number of sides. For example, a square does not have 4 x 180 = 720 degrees; it has (4 - 2) x 180 = 360 degrees.",
-      practice: "Calculate the sum of the interior angles for a heptagon with 7 sides.",
-      suggestedActions: [
-        "Explain more simply",
-        "Show another worked example",
-        "Ask me one question at a time",
-        "Explain my mistake",
-      ],
-      checkQuestion: {
-        question: "What is the sum of the interior angles of a polygon with 10 sides?",
-        expectedAnswer: "1440 degrees",
-        hint: "Use (n - 2) x 180 and substitute n = 10.",
-      },
-    };
-  }
-
-  if (isMathTopicName(input.topicName)) {
-    return {
-      title: `Learning ${input.topicName}`,
-      learningGoal: `The student will understand how to apply the rules for ${input.topicName.toLowerCase()} in a simple calculation.`,
-      prerequisite: "The student should know the difference between positive and negative numbers.",
-      explanation:
-        "This topic teaches how to work with numbers in a clear step-by-step way. It shows you how to use rules, signs, and operations without getting confused. If you read the steps carefully, you can work out the answer one part at a time.",
-      example: "Example: if you add -3 and 5, the answer is 2 because 5 has 3 more than -3.",
-      mistake: "A common mistake is to ignore the sign and treat -3 + 5 like 3 + 5. That changes the answer completely.",
-      practice: "Try solving -4 + 7 and explain why the answer is positive.",
-      suggestedActions: [
-        "Explain more simply",
-        "Show another worked example",
-        "Ask me one question at a time",
-        "Explain my mistake",
-      ],
-      checkQuestion: {
-        question: "What happens when you add 5 to -3?",
-        expectedAnswer: "The answer is 2.",
-        hint: "Think about moving 5 steps right from -3 on a number line.",
-      },
-    };
-  }
-
-  if (isReadingTopicName(input.topicName)) {
-    return {
-      title: `Learning ${input.topicName}`,
-      learningGoal: `The student will understand what a ${topicLower} means and answer a question about its main idea.`,
-      prerequisite: `The student should be able to read a short sentence or paragraph from ${chapterLower}.`,
-      explanation:
-        `A ${topicLower} is a piece of reading that can tell a story, explain an idea, or give information. When you read it, you look for the main idea, important details, and the message the writer wants to share. It is a way to practice understanding text carefully instead of just reading the words quickly.`,
-      example: "Example: a passage about school rules may explain why we line up quietly and how it helps everyone.",
-      mistake: "A common mistake is to copy one sentence without understanding the main idea of the passage.",
-      practice: "Read one sentence and say what it is mainly about in your own words.",
-      suggestedActions: [
-        "Explain more simply",
-        "Show another worked example",
-        "Ask me one question at a time",
-        "Explain my mistake",
-      ],
-      checkQuestion: {
-        question: `What is the main idea of a ${topicLower}?`,
-        expectedAnswer: "The central message or idea of the passage.",
-        hint: "Think about what the whole text is mostly about.",
-      },
-    };
-  }
-
-  return {
-    title: `A short lesson on ${input.topicName}`,
-    learningGoal: `The student will understand ${topicLower} and use it in a simple question.`,
-    prerequisite: `The student should already know the basic ideas from ${chapterLower}.`,
-    explanation: input.topicDescription?.trim() || `This topic is part of ${input.subjectName} for ${input.className}.`,
-    example: `Example: use the topic in one specific way from the lesson.`,
-    mistake: `A common mistake is to treat ${topicLower} as a generic idea instead of the exact topic in this chapter.`,
-    practice: `Try one question from ${topicLower} and explain your answer.`,
-    suggestedActions: [
-      "Explain more simply",
-      "Show another worked example",
-      "Ask me one question at a time",
-      "Explain my mistake",
-    ],
-    checkQuestion: {
-      question: `What is the key idea of ${topicLower}?`,
-      expectedAnswer: `An explanation of ${topicLower} using the lesson.`,
-      hint: "Look at the concept and the worked example.",
-    },
-  };
-}
-
-function fallbackGeneratedTest(input: TeachTopicInput, questionCount: number) {
-  const isMathTopic = isMathTopicName(input.topicName);
-  const isReadingTopic = isReadingTopicName(input.topicName);
-  const topicLower = input.topicName.toLowerCase();
-  const mathTemplates = [
-    {
-      type: "SHORT_ANSWER" as const,
-      question: `What does ${input.topicName.toLowerCase()} mean in your own words?`,
-      correctAnswer: `Working with numbers in ${input.topicName.toLowerCase()}.`,
-      explanation: `This checks the basic meaning of ${input.topicName.toLowerCase()}.`,
-    },
-    {
-      type: "MULTIPLE_CHOICE" as const,
-      question: `What is the answer to -3 + 5?`,
-      options: ["2", "-8", "-2", "8"],
-      correctAnswer: "2",
-      explanation: "Adding 5 to -3 moves 5 steps to the right on the number line, giving 2.",
-    },
-    {
-      type: "TRUE_FALSE" as const,
-      question: `True or false: adding a negative number makes the result smaller.`,
-      options: ["True", "False"],
-      correctAnswer: "True",
-      explanation: "Adding a negative number moves the result left on the number line.",
-    },
-    {
-      type: "SHORT_ANSWER" as const,
-      question: `Explain what happens when you subtract a negative number.`,
-      correctAnswer: "It becomes addition.",
-      explanation: "Subtracting a negative is the same as adding the positive version.",
-    },
-    {
-      type: "MULTIPLE_CHOICE" as const,
-      question: `Which number is greater: -2 or -6?`,
-      options: ["-2", "-6", "Both are equal", "Cannot tell"],
-      correctAnswer: "-2",
-      explanation: "On a number line, -2 is to the right of -6, so it is greater.",
-    },
-  ];
-  const readingTemplates = [
-    {
-      type: "SHORT_ANSWER" as const,
-      question: `What is the main idea of a ${topicLower}?`,
-      correctAnswer: `The central message or idea of the ${topicLower}.`,
-      explanation: `This checks whether the child understands the overall idea, not just one word.`,
-    },
-    {
-      type: "TRUE_FALSE" as const,
-      question: `True or false: a reading passage can include both facts and opinions.`,
-      options: ["True", "False"],
-      correctAnswer: "True",
-      explanation: "Many reading passages mix facts, examples, and the writer's point of view.",
-    },
-    {
-      type: "MULTIPLE_CHOICE" as const,
-      question: `Which detail best helps you understand the topic?`,
-      options: ["A random sentence", "A key example", "A page number only", "A title only"],
-      correctAnswer: "A key example",
-      explanation: "Examples help show the meaning of the topic more clearly.",
-    },
-    {
-      type: "SHORT_ANSWER" as const,
-      question: `Give one detail that supports the main idea of the passage.`,
-      correctAnswer: "A detail from the passage.",
-      explanation: "Good readers support the main idea with evidence from the text.",
-    },
-    {
-      type: "MULTIPLE_CHOICE" as const,
-      question: `What should you do first when you read a passage?`,
-      options: ["Look for the main idea", "Ignore the title", "Guess randomly", "Skip the details"],
-      correctAnswer: "Look for the main idea",
-      explanation: "Finding the main idea helps you understand the passage as a whole.",
-    },
-  ];
-  const genericTemplates = [
-    {
-      type: "SHORT_ANSWER" as const,
-      question: `Explain ${input.topicName.toLowerCase()} in one clear sentence.`,
-      correctAnswer: `${input.topicName} is the idea or skill being studied in this lesson.`,
-      explanation: `This checks the core meaning of the topic.`,
-    },
-    {
-      type: "MULTIPLE_CHOICE" as const,
-      question: `Which example best matches ${input.topicName.toLowerCase()}?`,
-      options: ["A correct example", "A random unrelated thing", "A wrong topic", "None of these"],
-      correctAnswer: "A correct example",
-      explanation: "A topic-specific example shows understanding.",
-    },
-    {
-      type: "TRUE_FALSE" as const,
-      question: `True or false: you should use the idea from ${input.topicName.toLowerCase()} when solving a related problem.`,
-      options: ["True", "False"],
-      correctAnswer: "True",
-      explanation: "The lesson should help the child apply the topic in practice.",
-    },
-    {
-      type: "SHORT_ANSWER" as const,
-      question: `What is one way ${input.topicName.toLowerCase()} is used in real work or daily life?`,
-      correctAnswer: "A real-life use of the topic.",
-      explanation: "Application questions make the test feel more like a challenge.",
-    },
-    {
-      type: "MULTIPLE_CHOICE" as const,
-      question: `Which statement is most likely correct for ${input.topicName.toLowerCase()}?`,
-      options: ["The one that fits the topic", "Any random answer", "A completely unrelated idea", "No answer"],
-      correctAnswer: "The one that fits the topic",
-      explanation: "The child should connect the topic to the correct statement.",
-    },
-  ];
-  const templates = isMathTopic ? mathTemplates : isReadingTopic ? readingTemplates : genericTemplates;
-
-  return {
-    title: `${input.topicName} practice test`,
-    questions: Array.from({ length: questionCount }, (_, index) => {
-      const number = index + 1;
-      const template = templates[(number - 1) % templates.length];
-      return {
-        id: `q${number}`,
-        type: template.type,
-        question: `${number}. ${template.question}`,
-        options: template.options,
-        correctAnswer: template.correctAnswer,
-        explanation: template.explanation,
-      };
-    }),
-  };
-}
-
 async function createRequestLog(requestId: string, operation: string, sessionId?: string | null) {
   try {
     await prisma.aiRequestLog.create({
@@ -705,6 +386,7 @@ export async function startTeachSession(userId: string, topicId: string, assignm
     const teachInput = topicContext(access.topic);
     const teachPrompt = teachPromptPayload(teachInput);
     const lesson = aiTeachResultSchema.parse(await provider.teachTopic(teachInput));
+    const providerInfo = provider.getLastProviderInfo?.() ?? { provider: getAiConfig().provider, model: getAiConfig().model };
     const settings = await resolveRuntimeAiSettings();
 
     const session = await prisma.$transaction(async (tx) => {
@@ -716,8 +398,8 @@ export async function startTeachSession(userId: string, topicId: string, assignm
           assignmentId: assignmentId ?? null,
           mode: AiLearningMode.TEACH,
           status: AiSessionStatus.ACTIVE,
-          provider: getAiConfig().provider,
-          model: getAiConfig().model,
+          provider: providerInfo.provider,
+          model: providerInfo.model,
           promptVersion: teachTopicPromptVersion,
           messages: {
             create: [
@@ -861,6 +543,7 @@ export async function generateTopicTest(userId: string, topicId: string, assignm
     };
     const testPrompt = testPromptPayload(testInput, settings.testQuestionCount);
     const test = aiGeneratedTestSchema.parse(await provider.generateTest(testInput));
+    const providerInfo = provider.getLastProviderInfo?.() ?? { provider: getAiConfig().provider, model: getAiConfig().model };
 
     const session = await prisma.$transaction(async (tx) => {
       await consumeAiUsageInTx(tx, access.topic.chapter.subject.child.id, topicId, settings);
@@ -871,8 +554,8 @@ export async function generateTopicTest(userId: string, topicId: string, assignm
           assignmentId: assignmentId ?? null,
           mode: AiLearningMode.TEST,
           status: AiSessionStatus.ACTIVE,
-          provider: getAiConfig().provider,
-          model: getAiConfig().model,
+          provider: providerInfo.provider,
+          model: providerInfo.model,
           promptVersion: generateTestPromptVersion,
           messages: {
             create: [

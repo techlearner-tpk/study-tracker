@@ -1,4 +1,4 @@
-import { beforeEach, describe, expect, it, vi } from "vitest";
+import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 
 vi.mock("server-only", () => ({}));
 
@@ -17,6 +17,13 @@ describe("ai config", () => {
     vi.stubEnv("AI_REQUEST_TIMEOUT_MS", "30000");
     vi.stubEnv("AI_INTERNAL_RETRY_COUNT", "1");
     vi.stubEnv("AI_TEST_PAPER_MAX_OUTPUT_TOKENS", "8192");
+    vi.stubEnv("AI_FALLBACK_PROVIDER", "none");
+    vi.stubEnv("OPENROUTER_API_KEY", "");
+  });
+
+  afterEach(() => {
+    vi.unstubAllEnvs();
+    resetAiConfigForTests();
   });
 
   it("normalizes Gemini model names from URLs and prefixed paths", () => {
@@ -46,5 +53,24 @@ describe("ai config", () => {
 
     expect(getAiConfig().maxOutputTokens).toBe(1200);
     expect(getAiConfig().testPaperMaxOutputTokens).toBe(10000);
+  });
+
+  it("configures OpenRouter Llama 3.1 8B as the backup model", () => {
+    vi.stubEnv("AI_MODEL", "gemini-2.5-flash");
+    vi.stubEnv("AI_FALLBACK_PROVIDER", "openrouter");
+    vi.stubEnv("OPENROUTER_API_KEY", "test-openrouter-key");
+
+    expect(getAiConfig()).toMatchObject({
+      fallbackProvider: "openrouter",
+      openRouterModel: "meta-llama/llama-3.1-8b-instruct",
+      openRouterApiKey: "test-openrouter-key",
+    });
+  });
+
+  it("fails fast when OpenRouter backup is enabled without an API key", () => {
+    vi.stubEnv("AI_MODEL", "gemini-2.5-flash");
+    vi.stubEnv("AI_FALLBACK_PROVIDER", "openrouter");
+
+    expect(() => getAiConfig()).toThrow(/OPENROUTER_API_KEY must be set/i);
   });
 });

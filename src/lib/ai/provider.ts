@@ -8,6 +8,29 @@ import {
   onlineTestSectionGenerationSchema,
 } from "@/features/ai/schema";
 
+export type AiProviderName = "gemini" | "openrouter";
+
+export type AiProviderInfo = {
+  provider: AiProviderName;
+  model: string;
+};
+
+export class AiProviderError extends Error {
+  constructor(
+    message: string,
+    public readonly provider: AiProviderName,
+    public readonly status: number | null,
+    public readonly retryable: boolean,
+  ) {
+    super(message);
+    this.name = "AiProviderError";
+  }
+}
+
+export function isRetryableAiProviderError(error: unknown): error is AiProviderError {
+  return error instanceof AiProviderError && error.retryable;
+}
+
 export type TeachTopicInput = {
   className: string;
   boardName?: string | null;
@@ -97,4 +120,5 @@ export interface AiLearningProvider {
   generateTestPaperSection(input: GenerateTestPaperSectionInput): Promise<GeneratedTestPaperSection>;
   reviewTestPaper(input: ReviewTestPaperInput): Promise<TestPaperReview>;
   evaluateSubjectiveAnswer(input: EvaluateSubjectiveAnswerInput): Promise<SubjectiveAnswerEvaluation>;
+  getLastProviderInfo?(): AiProviderInfo;
 }

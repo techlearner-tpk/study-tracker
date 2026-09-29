@@ -7,6 +7,11 @@ const envSchema = z.object({
   AI_PROVIDER: z.enum(["gemini"]).default("gemini"),
   AI_MODEL: z.string().trim().default(""),
   AI_API_KEY: z.string().trim().default(""),
+  AI_FALLBACK_PROVIDER: z.enum(["none", "openrouter"]).default("none"),
+  OPENROUTER_API_KEY: z.string().trim().default(""),
+  OPENROUTER_MODEL: z.string().trim().default("meta-llama/llama-3.1-8b-instruct"),
+  OPENROUTER_SITE_URL: z.string().trim().default(""),
+  OPENROUTER_APP_NAME: z.string().trim().default("Study Tracker"),
   AI_TOPIC_PROMPT_LIMIT: z.coerce.number().int().positive().default(5),
   AI_TEST_QUESTION_COUNT: z.coerce.number().int().positive().default(5),
   AI_MAX_USER_PROMPT_LENGTH: z.coerce.number().int().positive().default(500),
@@ -26,6 +31,11 @@ export type AiConfig = {
   provider: "gemini";
   model: string;
   apiKey: string;
+  fallbackProvider: "openrouter" | null;
+  openRouterApiKey: string;
+  openRouterModel: string;
+  openRouterSiteUrl: string;
+  openRouterAppName: string;
   topicPromptLimit: number;
   testQuestionCount: number;
   maxUserPromptLength: number;
@@ -92,6 +102,14 @@ function assertGeminiModelName(model: string) {
   }
 }
 
+function assertOpenRouterModelName(model: string) {
+  if (!/^[a-z0-9._-]+\/[a-z0-9._:-]+$/i.test(model)) {
+    throw new Error(
+      `OPENROUTER_MODEL must be a plain OpenRouter model id like "meta-llama/llama-3.1-8b-instruct". Received: ${model || "<empty>"}`,
+    );
+  }
+}
+
 export function getAiConfig(): AiConfig {
   if (cachedConfig) return cachedConfig;
 
@@ -105,6 +123,12 @@ export function getAiConfig(): AiConfig {
     if (!parsed.AI_API_KEY) {
       throw new Error("AI_API_KEY must be set when AI_ENABLED=true");
     }
+    if (parsed.AI_FALLBACK_PROVIDER === "openrouter") {
+      if (!parsed.OPENROUTER_API_KEY) {
+        throw new Error("OPENROUTER_API_KEY must be set when AI_FALLBACK_PROVIDER=openrouter");
+      }
+      assertOpenRouterModelName(parsed.OPENROUTER_MODEL);
+    }
   }
 
   cachedConfig = {
@@ -116,6 +140,11 @@ export function getAiConfig(): AiConfig {
       return normalized;
     })(),
     apiKey: parsed.AI_API_KEY,
+    fallbackProvider: parsed.AI_FALLBACK_PROVIDER === "openrouter" ? "openrouter" : null,
+    openRouterApiKey: parsed.OPENROUTER_API_KEY,
+    openRouterModel: parsed.OPENROUTER_MODEL,
+    openRouterSiteUrl: parsed.OPENROUTER_SITE_URL,
+    openRouterAppName: parsed.OPENROUTER_APP_NAME,
     topicPromptLimit: parsed.AI_TOPIC_PROMPT_LIMIT,
     testQuestionCount: parsed.AI_TEST_QUESTION_COUNT,
     maxUserPromptLength: parsed.AI_MAX_USER_PROMPT_LENGTH,
