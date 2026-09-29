@@ -9,6 +9,7 @@ import {
   onlineTestPaperReviewSchema,
   onlineTestSectionGenerationSchema,
 } from "@/features/ai/schema";
+import { appUrl } from "@/lib/app-url";
 import { getAiConfig } from "./config";
 import { buildEvaluateAnswerPrompt } from "./prompts/evaluate-answer";
 import { buildEvaluateSubjectiveAnswerPrompt } from "./prompts/evaluate-subjective-answer";
@@ -49,9 +50,9 @@ async function callOpenRouter(system: string, user: string, options: OpenRouterC
   const headers: Record<string, string> = {
     Authorization: `Bearer ${config.openRouterApiKey}`,
     "Content-Type": "application/json",
+    "HTTP-Referer": appUrl(),
+    "X-Title": "Study Tracker",
   };
-  if (config.openRouterSiteUrl) headers["HTTP-Referer"] = config.openRouterSiteUrl;
-  if (config.openRouterAppName) headers["X-Title"] = config.openRouterAppName;
 
   let response: Response;
   try {

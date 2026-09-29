@@ -10,8 +10,6 @@ const envSchema = z.object({
   AI_FALLBACK_PROVIDER: z.enum(["none", "openrouter"]).default("none"),
   OPENROUTER_API_KEY: z.string().trim().default(""),
   OPENROUTER_MODEL: z.string().trim().default("meta-llama/llama-3.1-8b-instruct"),
-  OPENROUTER_SITE_URL: z.string().trim().default(""),
-  OPENROUTER_APP_NAME: z.string().trim().default("Study Tracker"),
   AI_TOPIC_PROMPT_LIMIT: z.coerce.number().int().positive().default(5),
   AI_TEST_QUESTION_COUNT: z.coerce.number().int().positive().default(5),
   AI_MAX_USER_PROMPT_LENGTH: z.coerce.number().int().positive().default(500),
@@ -34,8 +32,6 @@ export type AiConfig = {
   fallbackProvider: "openrouter" | null;
   openRouterApiKey: string;
   openRouterModel: string;
-  openRouterSiteUrl: string;
-  openRouterAppName: string;
   topicPromptLimit: number;
   testQuestionCount: number;
   maxUserPromptLength: number;
@@ -143,8 +139,6 @@ export function getAiConfig(): AiConfig {
     fallbackProvider: parsed.AI_FALLBACK_PROVIDER === "openrouter" ? "openrouter" : null,
     openRouterApiKey: parsed.OPENROUTER_API_KEY,
     openRouterModel: parsed.OPENROUTER_MODEL,
-    openRouterSiteUrl: parsed.OPENROUTER_SITE_URL,
-    openRouterAppName: parsed.OPENROUTER_APP_NAME,
     topicPromptLimit: parsed.AI_TOPIC_PROMPT_LIMIT,
     testQuestionCount: parsed.AI_TEST_QUESTION_COUNT,
     maxUserPromptLength: parsed.AI_MAX_USER_PROMPT_LENGTH,

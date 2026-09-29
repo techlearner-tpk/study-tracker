@@ -17,8 +17,7 @@ describe("OpenRouter AI provider", () => {
     vi.stubEnv("AI_FALLBACK_PROVIDER", "openrouter");
     vi.stubEnv("OPENROUTER_API_KEY", "openrouter-key");
     vi.stubEnv("OPENROUTER_MODEL", "meta-llama/llama-3.1-8b-instruct");
-    vi.stubEnv("OPENROUTER_SITE_URL", "https://study-tracker.example");
-    vi.stubEnv("OPENROUTER_APP_NAME", "Study Tracker");
+    vi.stubEnv("APP_URL", "https://study-tracker.example");
     vi.stubEnv("AI_INTERNAL_RETRY_COUNT", "0");
   });
 
