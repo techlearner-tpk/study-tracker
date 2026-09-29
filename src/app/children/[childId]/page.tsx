@@ -17,7 +17,7 @@ import { ChildForm, DangerDeleteChild } from "@/features/children/components";
 import { DynamicGreeting } from "@/features/dashboard/greeting";
 import { getChildDashboard } from "@/features/dashboard/queries";
 import { createHabitGoal, createOutcomeGoal } from "@/features/goals/actions";
-import { DeleteSubjectButton, SubjectForm } from "@/features/subjects/components";
+import { AddSubjectCard, DeleteSubjectButton, SubjectForm } from "@/features/subjects/components";
 import { DeleteTopicButton, TopicForm, TopicRow } from "@/features/topics/components";
 
 export const dynamic = "force-dynamic";
@@ -181,6 +181,7 @@ export default async function ChildPage({
                 </a>
               );
             })}
+            <AddSubjectCard childId={child.id} childThemeColor={child.themeColor} />
           </div>
           {!visibleSubjects.length ? <p className="mt-4 text-sm text-stone-600">No subjects match that search yet.</p> : null}
         </Card>
@@ -356,10 +357,6 @@ export default async function ChildPage({
             <Card>
               <IconTitle icon={<PenLine size={18} />} title="Edit child" />
               <div className="mt-4"><ChildForm child={child} showKidEmail /></div>
-            </Card>
-            <Card>
-              <IconTitle icon={<PlusCircle size={18} />} title="Add subject" />
-              <div className="mt-4"><SubjectForm childId={child.id} childThemeColor={child.themeColor} /></div>
             </Card>
             <DangerDeleteChild child={child} errorMessage={deleteError} />
           </aside>

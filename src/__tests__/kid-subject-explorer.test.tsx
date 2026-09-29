@@ -70,4 +70,11 @@ describe("KidSubjectExplorer", () => {
     expect(screen.getByRole("button", { name: "Delete chapter" })).toBeTruthy();
     expect(screen.getByRole("button", { name: "Delete topic" })).toBeTruthy();
   });
+
+  it("keeps add subject visible in the subject map", () => {
+    render(<KidSubjectExplorer subjects={subjects} childId="child_1" />);
+
+    expect(screen.getByText("Add subject", { selector: "summary span" })).toBeTruthy();
+    expect(screen.getByText(/Olympiad/)).toBeTruthy();
+  });
 });

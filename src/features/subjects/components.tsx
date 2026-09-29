@@ -1,6 +1,7 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useState } from "react";
+import { Plus } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { ColorSwatchField } from "@/components/ui/color-swatch-field";
 import { Input, Label } from "@/components/ui/form";
@@ -20,10 +21,10 @@ export function SubjectForm({
   const [color, setColor] = useState(resolveSubjectColor(subject?.name ?? "", subject?.color));
   const colorChoices = subjectColorChoicesForChildTheme(childThemeColor);
 
-  useEffect(() => {
-    if (subject?.color) return;
-    setColor(resolveSubjectColor(name, color));
-  }, [color, name, subject?.color]);
+  function updateName(nextName: string) {
+    setName(nextName);
+    if (!subject?.color) setColor(resolveSubjectColor(nextName));
+  }
 
   return (
     <form
@@ -34,7 +35,7 @@ export function SubjectForm({
       <input type="hidden" name="childId" value={childId} />
       <Label>
         Subject
-        <Input name="name" value={name} onChange={(event) => setName(event.target.value)} required />
+        <Input name="name" value={name} onChange={(event) => updateName(event.target.value)} required />
       </Label>
       <ColorSwatchField
         label="Subject color"
@@ -49,6 +50,33 @@ export function SubjectForm({
         <Button type="submit" className={subject ? "" : "w-full"}>{subject ? "Save subject" : "Add subject"}</Button>
       </div>
     </form>
+  );
+}
+
+export function AddSubjectCard({
+  childId,
+  childThemeColor,
+}: {
+  childId: string;
+  childThemeColor?: string | null;
+}) {
+  return (
+    <details className="group min-h-32 rounded-lg border border-dashed border-slate-300 bg-slate-50/40 open:col-span-full open:bg-white">
+      <summary className="flex min-h-32 cursor-pointer list-none items-center gap-3 p-4 text-left marker:hidden">
+        <span className="flex h-10 w-10 shrink-0 items-center justify-center rounded-full border border-slate-200 bg-white text-emerald-700 shadow-sm">
+          <Plus size={20} aria-hidden="true" />
+        </span>
+        <span>
+          <span className="block font-semibold text-slate-950">Add subject</span>
+          <span className="mt-1 block text-sm text-slate-600">Add school, Olympiad, hobby, or personal learning.</span>
+        </span>
+      </summary>
+      <div className="border-t border-slate-200 p-4">
+        <div className="max-w-xl">
+          <SubjectForm childId={childId} childThemeColor={childThemeColor} />
+        </div>
+      </div>
+    </details>
   );
 }
 

@@ -7,7 +7,7 @@ import { Badge } from "@/components/ui/badge";
 import { Card, CardTitle } from "@/components/ui/card";
 import { Input } from "@/components/ui/form";
 import { Progress } from "@/components/ui/progress";
-import { SubjectForm } from "@/features/subjects/components";
+import { AddSubjectCard } from "@/features/subjects/components";
 import { ChapterForm, DeleteChapterButton } from "@/features/chapters/components";
 import { DeleteTopicButton, TopicForm } from "@/features/topics/components";
 import { cn } from "@/lib/utils";
@@ -119,8 +119,9 @@ export function KidSubjectExplorer({ subjects, childId, childThemeColor }: { sub
           </div>
         </div>
 
-        {visibleSubjects.length ? (
-          <div className="mt-4 grid gap-3 sm:grid-cols-2 xl:grid-cols-4">
+        <div className="mt-4 grid gap-3 sm:grid-cols-2 xl:grid-cols-4">
+          {visibleSubjects.length ? (
+            <>
             {visibleSubjects.map((subject) => {
               const topics = subject.chapters.flatMap((chapter) => chapter.topics);
               const progress = progressFor(topics);
@@ -150,16 +151,14 @@ export function KidSubjectExplorer({ subjects, childId, childThemeColor }: { sub
                 </button>
               );
             })}
-          </div>
-        ) : (
-          <div className="mt-4 rounded-md border border-dashed border-slate-200 px-4 py-6 text-center text-sm text-slate-500">
-            {query ? `No subjects, chapters, or topics match "${query}".` : "No subjects yet. Add any school, Olympiad, hobby, or personal learning subject."}
-          </div>
-        )}
-        <details className="mt-4 border-t border-slate-200 pt-4">
-          <summary className="cursor-pointer text-sm font-semibold text-emerald-700">Add subject</summary>
-          <div className="mt-4 max-w-xl"><SubjectForm childId={childId} childThemeColor={childThemeColor} /></div>
-        </details>
+            </>
+          ) : query ? (
+            <div className="rounded-md border border-dashed border-slate-200 px-4 py-6 text-center text-sm text-slate-500 sm:col-span-2 xl:col-span-3">
+              No subjects, chapters, or topics match &quot;{query}&quot;.
+            </div>
+          ) : null}
+          <AddSubjectCard childId={childId} childThemeColor={childThemeColor} />
+        </div>
       </Card>
 
       {activeSubject ? (
